@@ -16,6 +16,8 @@
         android:theme="@style/AppTheme" >
         <service android:name=".MessageSendIntentService"
             	 android:enabled="true" />
+        <service android:name=".MessageReceiveService"
+            	 android:enabled="true" />
         <activity
             android:name="org.denovogroup.rangzen.MainActivity"
             android:label="@string/app_name" >

@@ -18,6 +18,13 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
+        // Set up to receive messages from message receiving service
+        
+        // Spawn message receiving service
+        Log.i("MainActivity", "starting receive service");
+    	Intent receiveIntent = new Intent(this, MessageReceiveService.class);
+    	startService(receiveIntent);
     }
 
 
