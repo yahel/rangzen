@@ -9,3 +9,6 @@ gen/
 #Class files
 *.class
 
+.classpath
+.project
+.settings/
