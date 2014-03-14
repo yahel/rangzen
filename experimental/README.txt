@@ -5,3 +5,4 @@ telnet localhost 5554
 > redir add udp:51689:51689
 
 In the emulator with port 5556, send a message using the app interface
+and you should see the message in the 5554 emulator
