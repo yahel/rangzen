@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.denovogroup.rangzen;
+package org.denovogroup.experimental;
 
 import android.app.Service;
 import android.content.Intent;

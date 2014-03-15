@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.denovogroup.rangzen;
+package org.denovogroup.experimental;
 
 import android.support.v4.content.LocalBroadcastManager;
 import android.content.BroadcastReceiver; 
@@ -44,6 +44,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import org.json.JSONObject;
+
+import org.denovogroup.R;
 
 /**
  * Main UI activity for experimental Rangzen app. Interfaces with user

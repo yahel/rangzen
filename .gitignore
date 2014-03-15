@@ -2,6 +2,9 @@
 bin/
 gen/
 
+#Vim swap files
+*.swp
+
 #Built APK
 *.apk
 *.ap
@@ -12,3 +15,12 @@ gen/
 .classpath
 .project
 .settings/
+
+#Eclipse/Eclim(d) related
+.metadata
+eclimd.log
+
+#Buck related files
+/buck-out/
+local.properties
+.buckd
