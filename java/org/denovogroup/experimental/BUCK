@@ -1,6 +1,6 @@
 android_library(
   name = 'experimental',
-  srcs = glob(['*.java']),
+  srcs = [ 'MainActivity.java', 'MessageReceiveService.java', 'MessageSendIntentService.java' ],
   visibility = [ 'PUBLIC' ],
   deps = [
     '//libs:android-support-v4',
