@@ -9,6 +9,7 @@ java_test(
     '//java/org/denovogroup/experimental:experimental',
   ],
 )
+
 java_test(
   name = 'nullTest',
   srcs = ['NullTest.java'],
@@ -20,3 +21,17 @@ java_test(
     '//java/org/denovogroup/experimental:experimental',
   ],
 )
+
+robolectric_test(
+  name = 'nullRoboTest',
+  srcs = ['NullRoboTest.java'],
+  source_under_test = [ '//java/org/denovogroup/experimental:experimental' ],
+  visibility = [ 'PUBLIC' ],
+  deps = [
+    '//java/org/denovogroup/experimental:experimental',
+    '//libs:robolectric-2.2',
+    '//libs:junit-4.11',
+    '//libs:hamcrest-core-1.3',
+  ],
+)
+
