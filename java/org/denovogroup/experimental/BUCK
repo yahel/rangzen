@@ -1,7 +1,7 @@
 android_library(
   name = 'experimental',
   srcs = [ 'MainActivity.java', 'MessageReceiveService.java', 'MessageSendIntentService.java',
-           'Peer.java', 'PeerNetwork.java', ],
+           'Peer.java', 'PeerNetwork.java', 'RangzenService.java' ],
   visibility = [ 'PUBLIC' ],
   deps = [
     '//libs:android-support-v4',

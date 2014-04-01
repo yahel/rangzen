@@ -28,7 +28,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.denovogroup.foo;
+package org.denovogroup.experimental;
+
+import org.denovogroup.experimental.MainActivity;
 
 import static org.junit.Assert.assertEquals;
 
@@ -36,8 +38,6 @@ import org.junit.Test;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import org.denovogroup.experimental.MainActivity;
 
 /**
  * Set of meaningless tests that demonstrate how to write JUnit tests.

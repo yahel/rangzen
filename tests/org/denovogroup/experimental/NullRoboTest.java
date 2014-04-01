@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.denovogroup.foo;
+package org.denovogroup.experimental;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -61,10 +61,13 @@ public class NullRoboTest {
   /** Used to check that setUp ran. */
   int i;
 
+  /** Meaningless constant */
+  private static final int MEANINGLESS_CONSTANT = 5;
+
   /** Runs before each test. */
   @Before
   public void setUp() {
-    i = 5;
+    i = MEANINGLESS_CONSTANT;
   }   
 
   /**
@@ -72,7 +75,7 @@ public class NullRoboTest {
    */
   @Test
   public void testSetUpRan() {
-    assertEquals(i, 5);
+    assertEquals(i, MEANINGLESS_CONSTANT);
   }
 
   /** Always succeed. */

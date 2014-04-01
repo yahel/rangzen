@@ -13,10 +13,12 @@
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme" >
+        android:theme="@android:style/Theme.Black">
         <service android:name=".MessageSendIntentService"
             	 android:enabled="true" />
         <service android:name=".MessageReceiveService"
+            	 android:enabled="true" />
+        <service android:name=".RangzenService"
             	 android:enabled="true" />
         <activity
             android:name="org.denovogroup.experimental.MainActivity"

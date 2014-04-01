@@ -30,22 +30,23 @@
  */
 package org.denovogroup.experimental;
 
-import android.support.v4.content.LocalBroadcastManager;
-import android.content.BroadcastReceiver; 
-import android.os.Bundle;
-import android.content.IntentFilter;
-import android.content.Context;
-import android.util.Log;
-import android.view.View;
+import org.denovogroup.R;
+
 import android.app.Activity;
+import android.content.BroadcastReceiver; 
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.view.Menu;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import org.json.JSONObject;
 
-import org.denovogroup.R;
 
 /**
  * Main UI activity for experimental Rangzen app. Interfaces with user
@@ -55,11 +56,14 @@ public class MainActivity extends Activity {
   public static final String MESSAGE_RECEIVED = "RANGZEN_MESSAGE_RECEIVED";
   public static final String MESSAGE_EXTRA = "RANGZEN_MESSAGE_EXTRA";
 
-  /** Broadcast receiver that handles messages received */
+  /** Tag displayed in Android Log messages logged from this class. */
+  public static final String TAG = "RangzenMainActivity";
+
+  /** Broadcast receiver that handles messages received. */
   private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
     /**
      * Triggered whenever an intent is broadcast signalling the arrival of a
-     * new Rangzen message. Dispatches the message to be handled.
+     * new Rangzen message. Displays the message.
      * @param context Application context.
      * @param intent The intent sent by the MessageReceiveService, containing
      * the rangzen message as an extra.
@@ -90,6 +94,11 @@ public class MainActivity extends Activity {
     Log.i("MainActivity", "starting receive service");
     Intent receiveIntent = new Intent(this, MessageReceiveService.class);
     startService(receiveIntent);
+
+    // Spawn Rangzen Service.
+    Log.i(TAG, "starting Rangzen Service");
+    Intent rangzenServiceIntent = new Intent(this, RangzenService.class);
+    startService(rangzenServiceIntent);
   }
 
   /**
@@ -130,6 +139,7 @@ public class MainActivity extends Activity {
 
   /**
    * Takes user entered message from UI text entry field and sends it.
+   *
    * @param view The view that triggered sendMessage (probably a button).
    */
   public void sendMessage(View view) {
@@ -144,6 +154,7 @@ public class MainActivity extends Activity {
 
   /**
    * Displays a message in the UI.
+   *
    * @param message The message to be displayed.
    */
   private void displayMessage(String message) {
