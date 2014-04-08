@@ -98,4 +98,14 @@ public class PeerNetwork {
     }
   }
 
+  /**
+   * Return a copy of the PeerNetwork, referring to the same network locations.
+   *
+   * @return A deep copy of the PeerNetwork.
+   */
+  public PeerNetwork clone() {
+    PeerNetwork clone = new PeerNetwork(new WifiP2pDevice(this.wifiP2pDevice));
+
+    return clone;
+  }
 }

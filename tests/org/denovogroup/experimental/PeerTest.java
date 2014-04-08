@@ -33,9 +33,16 @@ package org.denovogroup.experimental;
 import org.denovogroup.experimental.Peer;
 import org.denovogroup.experimental.PeerNetwork;
 
+import android.net.wifi.p2p.WifiP2pDevice;
+
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.robolectric.Robolectric.clickOn;
+import static org.robolectric.Robolectric.shadowOf;
 
 import org.junit.After;
 import org.junit.Before;
@@ -44,34 +51,44 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import org.robolectric.Robolectric;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowActivity;
+import org.robolectric.shadows.ShadowIntent;
+
 import java.util.Date;
 
 /**
  * Unit tests for Rangzen's Peer class
  */
-@RunWith(JUnit4.class)
+@Config(manifest="./apps/experimental/AndroidManifest.xml", resourceDir="../../res/org/denovogroup/experimental/res")
+@RunWith(RobolectricTestRunner.class)
 public class PeerTest {
   private Peer peer;
   private Peer sameDevicePeer;
   private Peer differentDevicePeer;
 
+  private static final String addr1 = "00:11:22:33:44:55";
+  private static final String addr2 = "99:88:77:66:55:44";
+
   @Before
   public void setUp() {
-    peer = new Peer(new PeerNetwork());
+    // Create two peers with networks pointing to the same MAC address.
+    WifiP2pDevice d1 = new WifiP2pDevice();
+    d1.deviceAddress = addr1; 
+    WifiP2pDevice d2 = new WifiP2pDevice();
+    d2.deviceAddress = addr1;
+    PeerNetwork pn1 = new PeerNetwork(d1);
+    peer = new Peer(pn1);
+    PeerNetwork pn2 = new PeerNetwork(d2);
+    sameDevicePeer = new Peer(pn2);
 
-    // This is the setup required for testing the .equals function of Peer.
-    // It is commented out because at the moment we don't know how to call into
-    // Android libraries from test cases.
-    //
-    // WifiP2pDevice p2p1 = new WifiP2pDevice();
-    // p2p1.deviceAddress = "00:11:22:33:44:55";
-    // PeerNetwork pn1 = new PeerNetwork(p2p1);
-    // sameDevicePeer = new Peer(pn1);
-    //
-    // WifiP2pDevice p2p2 = new WifiP2pDevice();
-    // p2p2.deviceAddress = "99:88:77:66:55:44";
-    // PeerNetwork pn2 = new PeerNetwork(p2p2);
-    // differentDevicePeer = new Peer(pn2);
+    // And create one peer pointing to another address.
+    WifiP2pDevice d3 = new WifiP2pDevice();
+    d3.deviceAddress = addr2;
+    PeerNetwork pn3 = new PeerNetwork(d3);
+    differentDevicePeer = new Peer(pn3);
   }
 
   /**
@@ -120,10 +137,23 @@ public class PeerTest {
    * criteria on which comparisons of PeerNetworks are based.
    */
   @Test
-  @Ignore
   public void peerEquality() {
-    assertTrue("Same network device but peers not equal.", peer.equals(sameDevicePeer));
-    assertFalse("Different network device but peers equal.", peer.equals(differentDevicePeer));
+    assertTrue("Same network device but peers not equal.", 
+            peer.equals(sameDevicePeer));
+    assertFalse("Different network device but peers equal.", 
+            peer.equals(differentDevicePeer));
+  }
+
+  /**
+   * Tests that the clone of a Peer is equal to it and its duplicates.
+   */
+  @Test
+  public void cloneEquality() {
+    assertTrue("Peer not .equals() to its clone.", 
+            peer.equals(peer.clone()));
+    assertTrue("Same network device peer not equal to clone of peer.",
+            sameDevicePeer.equals(peer.clone()));
+
   }
 
 }

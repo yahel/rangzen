@@ -21,3 +21,10 @@ prebuilt_jar(
   binary_jar = 'robolectric-2.2-jar-with-dependencies.jar',
   visibility = [ 'PUBLIC' ],
 )
+
+prebuilt_jar(
+  name = 'robolectric-2.3-SNAPSHOT',
+  binary_jar = 'robolectric-2.3-20140327.214734-149-jar-with-dependencies.jar',
+  visibility = [ 'PUBLIC' ],
+)
+

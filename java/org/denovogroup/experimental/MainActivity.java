@@ -30,8 +30,6 @@
  */
 package org.denovogroup.experimental;
 
-import org.denovogroup.R;
-
 import android.app.Activity;
 import android.content.BroadcastReceiver; 
 import android.content.Context;

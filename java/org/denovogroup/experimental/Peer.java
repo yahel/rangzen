@@ -101,4 +101,16 @@ public class Peer {
       return p.getNetwork().equals(network);
     }
   } 
+
+  /**
+   * Create a deep copy of the Peer which references the same remote peer 
+   * but whose PeerNetwork is a distinct object.
+   *
+   * @return A deep copy of the peer.
+   */
+  public Peer clone() {
+    Peer clone = new Peer(network.clone());
+
+    return clone;
+  }
 }

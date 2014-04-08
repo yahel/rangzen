@@ -1,7 +1,7 @@
 android_resource(
   name = 'res',
   res = 'res',
-  package = 'org.denovogroup',
+  package = 'org.denovogroup.experimental',
   visibility = [ 'PUBLIC' ],
 )
 
