@@ -69,3 +69,20 @@ robolectric_test(
     '//java/org/denovogroup/experimental:experimental',
   ],
 )
+
+robolectric_test(
+  name = 'wifiDirectSpeakerTest',
+  srcs = ['WifiDirectSpeakerTest.java'],
+  source_under_test = [ '//java/org/denovogroup/experimental:experimental' ],
+  visibility = [ 'PUBLIC' ],
+  resources = [
+    '//res/org/denovogroup/experimental:res',
+  ],
+  deps = [
+    '//java/org/denovogroup/experimental:experimental',
+    '//libs:robolectric-2.3-SNAPSHOT',
+    '//libs:junit-4.11',
+    '//libs:hamcrest-core-1.3',
+    '//java/org/denovogroup/experimental:experimental',
+  ],
+)
