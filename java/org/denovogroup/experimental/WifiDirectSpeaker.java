@@ -249,6 +249,6 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * device, or null if no such peer exists.
    */
   private Peer getCanonicalPeerByDevice(WifiP2pDevice device) {
-    return peerManager.getPeerInPeerList(new Peer(new PeerNetwork(device)));
+    return peerManager.getCanonicalPeer(new Peer(new PeerNetwork(device)));
   }
 }

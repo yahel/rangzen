@@ -159,7 +159,7 @@ public class PeerManagerTest {
       assertTrue("New peer not known after addPeer().", 
               manager.isKnownPeer(p));
       assertNotNull("New peer is null in peer list after addPeers().",
-              manager.getPeerInPeerList(p));
+              manager.getCanonicalPeer(p));
     }
     int gottenLength = gottenPeers.size();
     assertEquals("After addPeers() of 3 peers, list is not 3 longer.",
@@ -193,7 +193,7 @@ public class PeerManagerTest {
     assertTrue("Added peer isn't known after addPeer().", 
             manager.isKnownPeer(newPeer));
     assertNotNull("Peer is null when fetched after addPeer().",
-            manager.getPeerInPeerList(newPeer));
+            manager.getCanonicalPeer(newPeer));
     int gottenLength = gottenPeers.size();
     assertEquals("Adding random peer w/ addPeer() doesn't enlarge peer list by 1.",
             gottenLength, originalLength + 1);
@@ -232,13 +232,13 @@ public class PeerManagerTest {
     // And that the Peer retrieved when seeking either peer is .equals() to the
     // other equivalent peer.
     assertNotNull("p2 not in peer list after p1 added.", 
-            manager.getPeerInPeerList(p2));
+            manager.getCanonicalPeer(p2));
     assertNotNull("p1 not in peer list after p1 added.", 
-            manager.getPeerInPeerList(p1));
+            manager.getCanonicalPeer(p1));
     assertTrue("p2 in peer list but not equal to p1 after p1 added.",
-            manager.getPeerInPeerList(p2).equals(p1));
+            manager.getCanonicalPeer(p2).equals(p1));
     assertTrue("p1 in peer list but not equal to p2 after p1 added.",
-            manager.getPeerInPeerList(p1).equals(p2));
+            manager.getCanonicalPeer(p1).equals(p2));
   }
 
   /**
@@ -260,14 +260,14 @@ public class PeerManagerTest {
     Thread.sleep(200); 
     manager.addPeer(newPeer);
     List<Peer> peers = manager.getPeers();
-    Peer retrievedPeer = manager.getPeerInPeerList(newPeer);
+    Peer retrievedPeer = manager.getCanonicalPeer(newPeer);
     assertFalse("Peer last seen out of date after adding same peer object.",
             retrievedPeer.getLastSeen().before(new Date()));
 
     Thread.sleep(200); 
     manager.addPeer(dupePeer);
     peers = manager.getPeers();
-    retrievedPeer = manager.getPeerInPeerList(newPeer);
+    retrievedPeer = manager.getCanonicalPeer(newPeer);
     assertFalse("Peer last seen out of date after adding dupe peer.",
             retrievedPeer.getLastSeen().before(new Date()));
   }

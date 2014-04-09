@@ -138,7 +138,7 @@ public class PeerManager {
    * @see org.denovogroup.experimental.Peer
    */
   public synchronized boolean isKnownPeer(Peer peer) {
-    return getPeerInPeerList(peer) != null;
+    return getCanonicalPeer(peer) != null;
   }
 
   /**
@@ -151,7 +151,7 @@ public class PeerManager {
    * @param peer The Peer to update.
    */
   private synchronized void touchPeer(Peer peer) {
-    Peer copyInList = getPeerInPeerList(peer);
+    Peer copyInList = getCanonicalPeer(peer);
     if (copyInList != null) {
       copyInList.touch();
     } 
@@ -170,7 +170,7 @@ public class PeerManager {
    * @return The equivalent peer, or null if the peer is not found in the list.
    * @see org.denovogroup.experimental.Peer
    */
-  public synchronized Peer getPeerInPeerList(Peer peerDesired) {
+  public synchronized Peer getCanonicalPeer(Peer peerDesired) {
     if (peerDesired == null) {
       return null;
     }
