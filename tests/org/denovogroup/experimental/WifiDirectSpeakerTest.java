@@ -71,7 +71,7 @@ import java.util.Random;
 @RunWith(RobolectricTestRunner.class)
 public class WifiDirectSpeakerTest {
   /** The instance of WifiDirectSpeaker we're testing. */
-  private WifiDirectSpeaker manager;
+  private WifiDirectSpeaker speaker;
 
   /**
    * An instance of MainActivity, used as a context to get an instance
@@ -93,6 +93,12 @@ public class WifiDirectSpeakerTest {
    */
   @After
   public void tearDown() {
+  }
+  
+  @Test
+  public void onPeersChangedTest() { 
+    // Get
+
   }
 
   /**

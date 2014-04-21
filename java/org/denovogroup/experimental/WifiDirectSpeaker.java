@@ -61,10 +61,10 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   private Channel channel;
 
   /** Rangzen peer manager instance. */
-  private PeerManager peerManager;
+  private PeerManager mPeerManager;
 
-  /** The main activity, used as context. */
-  private Activity activity;
+  /** Context to retrieve a WifiP2pManager from the Wifi Direct subsystem. */
+  private Context context;
 
   /** 
    * The looper that runs the onReceive() loop to handle Wifi Direct framework
@@ -76,16 +76,16 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   private static final String TAG = "WifiDirectSpeaker";
 
   /**
-   * @param activity Main activity, used as context of Wifi Direct subsystem.
+   * @param context A context, from which to access the Wifi Direct subsystem.
    */
-  public WifiDirectSpeaker(Activity activity) {
+  public WifiDirectSpeaker(Context context) {
     super();
-    this.activity = activity;
-    this.manager = (WifiP2pManager) activity.getSystemService(Context.WIFI_P2P_SERVICE);
+    this.context = context;
+    this.manager = (WifiP2pManager) context.getSystemService(Context.WIFI_P2P_SERVICE);
     // TODO(lerner): Create our own looper that doesn't run in the main thread.
-    this.looper = activity.getMainLooper();
-    this.channel = manager.initialize(activity, looper, mChannelListener);
-    this.peerManager = PeerManager.getInstance(activity);
+    this.looper = context.getMainLooper();
+    this.channel = manager.initialize(context, looper, mChannelListener);
+    this.mPeerManager = PeerManager.getInstance(context);
     Log.d(TAG, "Initialized, listening");
   }
 
@@ -124,15 +124,22 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   }
 
   /**
-   * Receives updates to the peer list seen by the WifiP2pManager and
-   * translates those updates into Peer objects that are propagated to
-   * the rest of the application.
+   * Called when the WifiP2pManager notifies the Speaker that new peers are
+   * available. This method extracts the actual list of peers from the 
+   * intent, creates or retrieves canonical Peer objects for each, and 
+   * then adds those peers to the PeerManager.
+   *
+   * @param context Context passed to onReceive, forwarded to this method.
+   * @param intent An intent containing the list of new Wifi Direct devices as
+   * an extra.
    */
   private void onWifiP2pPeersChanged(Context context, Intent intent) {
     WifiP2pDeviceList peerDevices = (WifiP2pDeviceList)
             intent.getParcelableExtra(WifiP2pManager.EXTRA_P2P_DEVICE_LIST);
-    // TODO(lerner): Transform these devices into peers and add them to 
-    // the PeerManager.
+    for (WifiP2pDevice device : peerDevices.getDeviceList()) {
+      Peer peer = getCanonicalPeerByDevice(device);
+      mPeerManager.addPeer(peer);
+    }
     Log.d(TAG, "P2P peers changed");
   }
 
@@ -249,6 +256,6 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * device, or null if no such peer exists.
    */
   private Peer getCanonicalPeerByDevice(WifiP2pDevice device) {
-    return peerManager.getCanonicalPeer(new Peer(new PeerNetwork(device)));
+    return mPeerManager.getCanonicalPeer(new Peer(new PeerNetwork(device)));
   }
 }
