@@ -58,14 +58,17 @@ public class PeerManager {
   // TODO(lerner): I suspect we want to convert this to a Set eventually, since
   // that best represents the set of peers we can see (unordered, each is
   // unique).
-  /** The most recent, up-to-date list of peers */
+  /** The most recent, up-to-date list of peers. */
   private List<Peer> mCurrentPeers;
 
-  /** For app-local intent broadcasting/receiving of peer events */
+  /** For app-local intent broadcasting/receiving of peer events. */
   private LocalBroadcastManager mBroadcastManager;
 
-  /** Displayed in Android Monitor logs */
+  /** Displayed in Android Monitor logs. */
   private static String TAG = "RangzenPeerManager";
+
+  /** The WifiDirectSpeaker for the app. */
+  private static WifiDirectSpeaker mWifiDirectSpeaker;
 
   /**
    * Private constructor. Use PeerManager.getInstance() to obtain the app's
@@ -76,6 +79,10 @@ public class PeerManager {
   private PeerManager(Context context) {
     mCurrentPeers = new ArrayList<Peer>();
     mBroadcastManager = LocalBroadcastManager.getInstance(context); 
+
+    // WifiDirectSpeaker needs the context in order to retrieve system 
+    // Wifi P2p resources.
+    mWifiDirectSpeaker = new WifiDirectSpeaker(context);
   }
 
   /**
