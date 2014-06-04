@@ -36,16 +36,24 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.NetworkInfo;
+import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
 import android.net.wifi.p2p.WifiP2pManager.ChannelListener;
 import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
-import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
+import android.net.wifi.p2p.WifiP2pManager;
+import android.net.wifi.p2p.WifiP2pManager.ActionListener;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
+
+import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Queue;
 
 /**
  * This class communicates with the WifiP2pManager which Android exposes
@@ -65,6 +73,24 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
 
   /** Context to retrieve a WifiP2pManager from the Wifi Direct subsystem. */
   private Context context;
+
+  /** Queue of messages per Peer. */
+  private Map<WifiP2pDevice, Queue<String>> messageQueues = 
+          new HashMap<WifiP2pDevice, Queue<String>>();
+
+  /** Peer device we're attempting to speak with; null if nobody is selected. */
+  private WifiP2pDevice selectedPeerDevice;
+
+  /** Most recent WifiP2p connection info object returned by WifiP2p subsystem. */
+  private WifiP2pInfo currentConnectionInfo;
+
+  /** 
+   * Whether we're currently in a Wifi Direct network with another peer. 
+   * This starts false and changes only when the WifiP2p framework fires a
+   * connection info changed event (our callback for that event sets isConnected
+   * appropriately.
+   */
+  private boolean isConnected = false;
 
   /** 
    * The looper that runs the onReceive() loop to handle Wifi Direct framework
@@ -90,10 +116,40 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   }
 
   /**
-   * Request that the given data be sent to the given Peer via Wifi Direct.
+   * This method is called to trigger sending/receiving activities that are
+   * initiated by the app, as opposed to those triggered by callbacks from
+   * the OS. 
+   *
    */
-  public void send(String message, Peer destination) {
-    // TODO(lerner): Send or enqueue the message.
+
+  /**
+   * Request that the given data be sent to the given peer device via 
+   * Wifi Direct.
+   *
+   * @param message The message to be sent.
+   * @param destination The remote Wifi Direct peer to whom to send the message.
+   */
+  public void send(String message, WifiP2pDevice destination) {
+    // TODO(lerner): What happens if the destination is null? This works
+    // but there's a queue for null now?
+    Queue<String> queue = getDeviceMessageQueue(destination);
+    queue.add(message);
+  }
+
+  /**
+   * Get the message queue for the given peer device. Lazily creates an empty
+   * queue if one does not yet exist.
+   *
+   * @param device The Wifi Direct peer device whose queue will be retrieved.
+   */
+  private Queue getDeviceMessageQueue(WifiP2pDevice device) {
+    if (messageQueues.containsKey(device)) {
+      return messageQueues.get(device);
+    } else {
+      Queue newQueue = new ArrayDeque<String>();
+      messageQueues.put(device, newQueue);
+      return newQueue;
+    }
   }
 
   /**
@@ -145,8 +201,7 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
 
   /**
    * Called when the status of a Wifi Direct connection with a peer changes.
-   * Updates the Speaker's internal peer table with the new info (e.g. about
-   * whether we are connected to the peer or not).
+   * Updates the speaker's information on connection status.
    */
   private void onWifiP2pConnectionChanged(Context context, Intent intent) {
     if (manager == null) {
@@ -161,10 +216,12 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
       // info to find group owner IP
       // TODO(lerner): Do something when connection changes
       Log.d(TAG, "Wifi P2P connection changed, is connected");
+      isConnected = true;
       manager.requestConnectionInfo(channel, mConnectionInfoListener);
     } else {
       // It's a disconnect
       // TODO(lerner): Dispatch a notification about this.
+      isConnected = false;
       Log.d(TAG, "Wifi P2P disconnected");
       }
   }
@@ -257,5 +314,98 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    */
   private Peer getCanonicalPeerByDevice(WifiP2pDevice device) {
     return mPeerManager.getCanonicalPeer(new Peer(new PeerNetwork(device)));
+  }
+
+  /**
+   * Return a peer device for which there are queued messages, or null if
+   * all sending queues are empty.
+   *
+   * @return A WifiP2pDevice with outgoing messages queued, or null if none exists.
+   */
+  WifiP2pDevice getPeerDeviceWithQueuedMessages() {
+    for (WifiP2pDevice device : messageQueues.keySet()) {
+      if (!getDeviceMessageQueue(device).isEmpty()) {
+        return device;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * The "main loop" for WifiDirectSpeaker, in effect. Proceeds with the tasks
+   * that must be performed by the Speaker, including connecting to peers for
+   * whom outgoing messages are waiting, sending messages over sockets to peers
+   * who are already connected, and selecting new peers to connect to.
+   */
+  public void sendTasks() {
+    if (isConnected) {
+      try {
+        sendToCurrentPeerDevice();
+      } catch (NoConnectedPeerException e) {
+        Log.e(TAG, e.toString());
+      } // TODO(lerner): Catch IO exceptions that might occur here?
+    }
+    
+    // If there's a different peer with messages waiting, connect to that peer.
+    // Otherwise, either we stay connected to the same peer or 
+    WifiP2pDevice nextPeerDevice = getPeerDeviceWithQueuedMessages();
+    if (nextPeerDevice == null) {
+      disconnectFromCurrentPeer();
+    } else if (nextPeerDevice.equals(selectedPeerDevice) {
+      selectedPeerDevice = nextPeerDevice;
+      connectToPeerDevice(nextPeerDevice);
+    }
+  }
+
+  /**
+   * Initiate a Wifi Direct connection to the given peer.
+   */
+  private void connectToPeerDevice(WifiP2pDevice device) {
+    WifiP2pConfig config = new WifiP2pConfig();
+    config.deviceAddress = device.deviceAddress;
+
+    manager.connect(channel, config, new ActionListener() {
+      @Override
+      public void onSuccess() {
+        // WiFiDirectBroadcastReceiver will notify us. Ignore for now.
+      }
+
+      @Override
+      public void onFailure(int reason) {
+        Log.d(TAG, "Connect failed. " + reason);
+        // Toast.makeText(WiFiDirectActivity.this, "Connect failed." + reason,
+        //   Toast.LENGTH_SHORT).show();
+      }
+    });
+  }
+
+  /**
+   * Open a socket and send currently queued messages to the currently connected
+   * peer. If no peer is currently connected, raise an exception.
+   *
+   * @return The number of messages sent.
+   */
+  private int sendToCurrentPeerDevice() throws NoConnectedPeerException {
+    if (!isConnected) {
+      throw new NoConnectedPeerException(
+        "Attempt to send to current peer while no peer connected.");
+    } else if (currentConnectionInfo == null) {
+      throw new NoConnectedPeerException(
+        "Attempt to send to current peer but connection info null.");
+    } else {
+      // Get the IP address of the other node from the currentConnectionInfo.
+      // Create a socket to the other node.
+      // Send some/all of the queued messages.
+      // Close the socket.
+      // Return # messages sent.
+      return 0;
+    }
+    
+  }
+
+  public class NoConnectedPeerException extends Exception {
+    public NoConnectedPeerException(String message) {
+      super(message);
+    }
   }
 }
