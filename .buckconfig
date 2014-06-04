@@ -1,5 +1,6 @@
 [alias]
     experimental = //apps/experimental:experimental
+    WifiDirectSpeakerTest = //tests/org/denovogroup/experimental:wifiDirectSpeakerTest
 [java]
     src_roots = /experimental/src
 [project]
