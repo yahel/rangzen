@@ -85,6 +85,13 @@ public class Peer {
   }
 
   /**
+   * Send a message to this peer.
+   */
+  public void send(String message) {
+    network.send(message);
+  }
+
+  /**
    * Two peers are equal if they use the same network.
    *
    * @return True if the peer uses the same network connection.
