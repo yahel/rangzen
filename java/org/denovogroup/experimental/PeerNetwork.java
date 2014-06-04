@@ -42,10 +42,6 @@ public class PeerNetwork {
   /** A WifiP2pDevice (remote MAC address) associated with this Peer Network */
   WifiP2pDevice wifiP2pDevice;
 
-  // These are temporary for a single message.
-  byte[] queuedMessage;
-  int queuedMessageLength;
-
   /**
    * Create a PeerNetwork with no remote network devices to talk to.
    */
@@ -65,11 +61,7 @@ public class PeerNetwork {
    *
    * @return False if the message could not be sent, true otherwise.
    */
-  public boolean send(byte[] message, int length) {
-    // TODO(lerner): Attempt to connect to and send a message to the peer.
-    queuedMessage = Arrays.copyOf(message, length);
-    queuedMessageLength = length;
-    return true;
+  public void send(String message) {
   }
 
   /**
