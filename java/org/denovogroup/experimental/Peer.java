@@ -120,4 +120,8 @@ public class Peer {
 
     return clone;
   }
+
+  public String toString() {
+    return String.format("Peer (network: %s)", network.toString());
+  }
 }

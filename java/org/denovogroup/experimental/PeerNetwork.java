@@ -100,4 +100,11 @@ public class PeerNetwork {
 
     return clone;
   }
+
+  public String toString() {
+    if (wifiP2pDevice == null) {
+      return "<no wifi device>";
+    }
+    return wifiP2pDevice.deviceAddress;
+  }
 }
