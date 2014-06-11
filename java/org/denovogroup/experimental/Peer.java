@@ -37,7 +37,7 @@ import java.util.Date;
  */
 public class Peer {
   /** An object that encapsulates the network connection(s) to this peer */
-  private PeerNetwork network;
+  PeerNetwork network;
   /** The datetime at which this peer was last seen over the network */
   private Date lastSeen;
 

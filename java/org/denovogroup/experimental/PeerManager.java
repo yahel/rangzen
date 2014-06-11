@@ -82,7 +82,7 @@ public class PeerManager {
 
     // WifiDirectSpeaker needs the context in order to retrieve system 
     // Wifi P2p resources.
-    mWifiDirectSpeaker = new WifiDirectSpeaker(context);
+    mWifiDirectSpeaker = new WifiDirectSpeaker(context, this);
   }
 
   /**
@@ -110,7 +110,8 @@ public class PeerManager {
    * should listen for peer list events if they wish to act on peers when
    * the list is updated.
    */
-  public void seekNewPeers() {
+  public void seekPeers() {
+    Log.v(TAG, "Setting OK to seek peers on WifiDirectSpeaker.");
     // TODO(lerner); Ask for new peers to be sought!
     // This will look something like:
     //
@@ -118,6 +119,9 @@ public class PeerManager {
     // for each protocol:
     //   if <policySaysOk>
     //     protocol.seekPeers();
+    if (mWifiDirectSpeaker != null) {
+      mWifiDirectSpeaker.setSeekingDesired(true);
+    }
   }
   
   /**
@@ -145,7 +149,8 @@ public class PeerManager {
    * @see org.denovogroup.experimental.Peer
    */
   public synchronized boolean isKnownPeer(Peer peer) {
-    return getCanonicalPeer(peer) != null;
+    // return getCanonicalPeer(peer) != null;
+    return mCurrentPeers.contains(peer);
   }
 
   /**
@@ -186,7 +191,7 @@ public class PeerManager {
         return peerInList;
       }
     }
-    return null;
+    return peerDesired;
   }
 
   /**
@@ -269,4 +274,23 @@ public class PeerManager {
       return true;
     }
   }
+
+  /**
+   * Run tasks, e.g. garbage collection of peers, speaker tasks, etc.
+   */
+  public void tasks() {
+    mWifiDirectSpeaker.tasks();
+
+    // We ask to connect and ping every time but the speaker will ignore 
+    // subsequent requestse since it has a peer device selected.
+    // TODO(lerner): Don't just constantly ask to connect from here.
+    if (mCurrentPeers.size() > 0) {
+      Log.v(TAG, "Found at least 1 peer, connecting to it.");
+      Peer peer = mCurrentPeers.get(0);
+      // mWifiDirectSpeaker.connectAndPingPeer(peer);
+      mWifiDirectSpeaker.selectPeer(peer);
+    }
+    // Log.v(TAG, "Finished with PeerManager tasks.");
+  }
+  
 }
