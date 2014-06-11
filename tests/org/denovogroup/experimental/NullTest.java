@@ -49,7 +49,7 @@ public class NullTest {
    */
   @Test
   public void thisAlwaysPasses() {
-
+    // Intentionally blank.
   }
 
   /**
@@ -69,6 +69,7 @@ public class NullTest {
   @Test
   @Ignore
   public void thisIsIgnored() {
+    // Intentionally blank.
   }
 
 }
