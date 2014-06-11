@@ -89,9 +89,9 @@ public class MainActivity extends Activity {
     setContentView(R.layout.activity_main);
 
     // Spawn message receiving service.
-    Log.i("MainActivity", "starting receive service");
-    Intent receiveIntent = new Intent(this, MessageReceiveService.class);
-    startService(receiveIntent);
+    // Log.i("MainActivity", "starting receive service");
+    // Intent receiveIntent = new Intent(this, MessageReceiveService.class);
+    // startService(receiveIntent);
 
     // Spawn Rangzen Service.
     Log.i(TAG, "starting Rangzen Service");
