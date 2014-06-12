@@ -40,12 +40,12 @@ import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pInfo;
+import android.net.wifi.p2p.WifiP2pManager.ActionListener;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
 import android.net.wifi.p2p.WifiP2pManager.ChannelListener;
 import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
 import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
 import android.net.wifi.p2p.WifiP2pManager;
-import android.net.wifi.p2p.WifiP2pManager.ActionListener;
 import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
@@ -627,23 +627,35 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
 
   /**
    * Check whether we're currently connected to a Wifi Direct network,
-   * have a connection info object for that connection, and are not the group
-   * owner.
+   * have a connection info object for that connection.
    *
-   * @return True if we're connected and not the group owner. False otherwise. 
+   * @return True if we're in the connected state and have connection info
+   * for the connection.
    */
-  private boolean isConnectedAndNotGroupOwner() {
+  private boolean isConnected() {
     if (connectionState != ConnectionState.CONNECTED) {
       Log.e(TAG, "Check that we are in CONNECTED state failed.");
       return false;
     } else if (currentConnectionInfo == null) {
       Log.e(TAG, "Check that we have connection info available failed.");
       return false;
-    } else if (currentConnectionInfo.isGroupOwner) {
-      Log.e(TAG, "Check that we're not the group owner failed.");
-      return false;
     } else {
       return true;
+    }
+  }
+  
+  /**
+   * Check if we're the group owner of a connection.
+   *
+   * @return True if we're the owner of a group, false otherwise.
+   */
+  private boolean isGroupOwner() {
+    if (currentConnectionInfo == null) {
+      return false;
+    } else if (currentConnectionInfo.isGroupOwner) {
+      return true;
+    } else {
+      return false;
     }
   }
 
@@ -660,18 +672,24 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   /**
    * Send a ping to the group owner, if we are already connected. Raises an
    * exception if not already connected.
-   *
-   * @return The number of messages sent.
    */
-  private int pingGroupOwner() {
-    if (!isConnectedAndNotGroupOwner()) {
-      return -1;
+  private void pingGroupOwner() {
+    if (!isConnected() || isGroupOwner()) {
+      return;
     } else {
-      if (sendMessageToGroupOwner(PING_STRING)) {
-        return 1;
-      } else {
-        return -1;
-      }
-    }    
+      sendMessageToGroupOwner(PING_STRING);
+    }
+  }
+
+  /**
+   * Send a ping to the other device in the connection, if we know its 
+   * address.
+   */
+  private void pingOtherDevice() {
+    if (isConnected() && isGroupOwner()) {
+      // sendMessageToRemotePeer(PING_STRING);
+    } else if (isConnected() && !isGroupOwner()) {
+      sendMessageToGroupOwner(PING_STRING);
+    }
   }
 }
