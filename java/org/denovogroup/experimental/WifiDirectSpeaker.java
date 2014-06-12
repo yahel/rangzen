@@ -579,6 +579,44 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     });
   }
 
+  private boolean sendMessageToGroupOwner(String message) {
+    InetSocketAddress destination = 
+      new InetSocketAddress(currentConnectionInfo.groupOwnerAddress,
+          RANGZEN_PORT);
+    ByteBuffer data = ByteBuffer.wrap(message.getBytes());
+
+    // byte[] dataPulledOut = new byte[PING_BYTES.length];
+    // data.get(dataPulledOut);
+    Log.d(TAG, "Created a packet with contents: " + new String(data.array()));
+
+    try {
+      udpChannel.send(data, destination);
+      Log.i(TAG, "Sent packet to " + destination);
+      return true;
+    } catch (ClosedChannelException e) {
+      Log.e(TAG, "Closed channel exception: " + e);
+      return false;
+    } catch (IOException e) {
+      Log.e(TAG, "Couldn't send packet over socket: " + e);
+      return false;
+    }
+  }
+
+  private boolean isConnectedAndNotGroupOwner() {
+    if (connectionState != ConnectionState.CONNECTED) {
+      Log.e(TAG, "Attempt to send to current peer while no peer connected.");
+      return false;
+    } else if (currentConnectionInfo == null) {
+      Log.e(TAG, "Attempt to send to current peer but connection info null.");
+      return false;
+    } else if (currentConnectionInfo.isGroupOwner) {
+      Log.e(TAG, "Attempt to send ping to SELF as group owner.");
+      return false;
+    } else {
+      return true;
+    }
+  }
+
   /**
    * Send a ping to the group owner, if we are already connected. Raises an
    * exception if not already connected.
@@ -586,37 +624,15 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * @return The number of messages sent.
    */
   private int pingGroupOwner() {
-    if (connectionState != ConnectionState.CONNECTED) {
-      Log.e(TAG, "Attempt to send to current peer while no peer connected.");
-      return -1;
-    } else if (currentConnectionInfo == null) {
-      Log.e(TAG, "Attempt to send to current peer but connection info null.");
-      return -1;
-    } else if (currentConnectionInfo.isGroupOwner) {
-      Log.e(TAG, "Attempt to send ping to SELF as group owner.");
+    if (!isConnectedAndNotGroupOwner()) {
       return -1;
     } else {
-      InetSocketAddress destination = 
-              new InetSocketAddress(currentConnectionInfo.groupOwnerAddress,
-                                    RANGZEN_PORT);
-      ByteBuffer data = ByteBuffer.wrap(PING_BYTES);
-  
-      // byte[] dataPulledOut = new byte[PING_BYTES.length];
-      // data.get(dataPulledOut);
-      Log.d(TAG, "Created a packet with contents: " + new String(data.array()));
-      
-      try {
-        udpChannel.send(data, destination);
-        Log.i(TAG, "Sent packet to " + destination);
-      } catch (ClosedChannelException e) {
-        Log.e(TAG, "Closed channel exception: " + e);
-      } catch (IOException e) {
-        Log.e(TAG, "Couldn't send packet over socket: " + e);
+      if (sendMessageToGroupOwner(PING_STRING)) {
+        return 1;
+      } else {
         return -1;
       }
-      return 1;
-    }
-    
+    }    
   }
 
   public class NoConnectedPeerException extends Exception {
