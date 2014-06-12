@@ -533,25 +533,9 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * Listen (in a non-blocking fashion) for a ping.
    */
   private void listenForPing() {
-    try { 
-      ByteBuffer packet = ByteBuffer.allocate(PING_BYTES.length); 
-      packet.clear();
-      if (udpChannel.receive(packet) != null) {
-        // Ping?
-        // TODO(lerner): Check if it's actually a ping, I guess?
-        // TODO(lerner): Show something visible on the phone.
-        // byte[] data = new byte[PING_BYTES.length];
-        // packet.get(data);
-        Log.d(TAG, "Received a packet, it says: " + new String(packet.array()));
-
-        // Intent broadcastIntent = new Intent(MainActivity.MESSAGE_RECEIVED);
-        // broadcastIntent.putExtra(MainActivity.MESSAGE_EXTRA, message);
-        // LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastIntent);
-      }
-    } catch (ClosedChannelException e) {
-      Log.e(TAG, "Channel closed when called receive on udpChannel: " + e);
-    } catch (IOException e) {
-      Log.e(TAG, "IOException while receiving from udpChannel: "  + e);
+    ByteBuffer packet = tryReceivePacket();
+    if (packet != null) {
+      Log.d(TAG, "Received a packet, it says: " + (new String(packet.array())).substring(0,PING_STRING.length()));
     }
   }
 
@@ -613,6 +597,31 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   }
 
   /**
+   * Check the socket for the next recieved packet and return it if one exists.
+   *
+   * @return A single packet's content as a byte buffer, or null if no datagrams
+   * have been received since the last call or an exception occurred.
+   */
+  private ByteBuffer tryReceivePacket() {
+    try { 
+      ByteBuffer packet = ByteBuffer.allocate(MAX_PACKET_SIZE); 
+      packet.clear();
+      if (udpChannel.receive(packet) != null) {
+        // Log.d(TAG, "Received a packet, it says: " + new String(packet.array()));
+        return packet;
+      } else {
+        return null;
+      }
+    } catch (ClosedChannelException e) {
+      Log.e(TAG, "Channel closed when called receive on udpChannel: " + e);
+      return null;
+    } catch (IOException e) {
+      Log.e(TAG, "IOException while receiving from udpChannel: "  + e);
+      return null;
+    }
+  }
+
+  /**
    * Check whether we're currently connected to a Wifi Direct network,
    * have a connection info object for that connection, and are not the group
    * owner.
@@ -621,13 +630,13 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    */
   private boolean isConnectedAndNotGroupOwner() {
     if (connectionState != ConnectionState.CONNECTED) {
-      Log.e(TAG, "Attempt to send to current peer while no peer connected.");
+      Log.e(TAG, "Check that we are in CONNECTED state failed.");
       return false;
     } else if (currentConnectionInfo == null) {
-      Log.e(TAG, "Attempt to send to current peer but connection info null.");
+      Log.e(TAG, "Check that we have connection info available failed.");
       return false;
     } else if (currentConnectionInfo.isGroupOwner) {
-      Log.e(TAG, "Attempt to send ping to SELF as group owner.");
+      Log.e(TAG, "Check that we're not the group owner failed.");
       return false;
     } else {
       return true;
