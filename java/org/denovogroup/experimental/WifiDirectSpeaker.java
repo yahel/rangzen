@@ -55,6 +55,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -133,7 +134,7 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   private WifiP2pInfo currentConnectionInfo;
 
   /** If we're not the group owner, the IP address of the remote peer. */
-  private InetAddress remoteAddress;
+  private InetSocketAddress remoteAddress;
 
   /** The channel (UDP socket) for incoming/outgoing messages. */
   private DatagramChannel udpChannel;
@@ -606,8 +607,11 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     try { 
       ByteBuffer packet = ByteBuffer.allocate(MAX_PACKET_SIZE); 
       packet.clear();
-      if (udpChannel.receive(packet) != null) {
+      InetSocketAddress remoteAddress = (InetSocketAddress) udpChannel.receive(packet);
+      if (remoteAddress != null) {
         // Log.d(TAG, "Received a packet, it says: " + new String(packet.array()));
+        Log.d(TAG, "Received a packet from: " + remoteAddress);
+        this.remoteAddress = remoteAddress;
         return packet;
       } else {
         return null;
