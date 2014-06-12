@@ -150,10 +150,13 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   /**
    * @param context A context, from which to access the Wifi Direct subsystem.
    */
-  public WifiDirectSpeaker(Context context, PeerManager peerManager) {
+  public WifiDirectSpeaker(Context context, PeerManager peerManager, 
+                           WifiDirectFrameworkGetter frameworkGetter) {
     super();
+    // TODO(lerner): Figure out which context we should be using.
     this.context = context;
-    this.manager = (WifiP2pManager) context.getSystemService(Context.WIFI_P2P_SERVICE);
+    // this.manager = (WifiP2pManager) context.getSystemService(Context.WIFI_P2P_SERVICE);
+    this.manager = frameworkGetter.getWifiP2pManagerInstance(context);
     // TODO(lerner): Create our own looper that doesn't run in the main thread.
     this.looper = context.getMainLooper();
     Log.d(TAG, "Initializing Wifi P2P Channel...");
@@ -539,7 +542,6 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
         // TODO(lerner): Show something visible on the phone.
         // byte[] data = new byte[PING_BYTES.length];
         // packet.get(data);
-
         Log.d(TAG, "Received a packet, it says: " + new String(packet.array()));
 
         // Intent broadcastIntent = new Intent(MainActivity.MESSAGE_RECEIVED);

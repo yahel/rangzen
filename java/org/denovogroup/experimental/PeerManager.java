@@ -82,7 +82,8 @@ public class PeerManager {
 
     // WifiDirectSpeaker needs the context in order to retrieve system 
     // Wifi P2p resources.
-    mWifiDirectSpeaker = new WifiDirectSpeaker(context, this);
+    WifiDirectFrameworkGetter frameworkGetter = new WifiDirectFrameworkGetter();
+    mWifiDirectSpeaker = new WifiDirectSpeaker(context, this, frameworkGetter);
   }
 
   /**
