@@ -482,11 +482,14 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
         Log.wtf(TAG, "connectionState of CONNECTED but no current connection info!");
         return;
       }
-      if (currentConnectionInfo.isGroupOwner) {
-        listenForPing();
-      } else {
-        pingGroupOwner();
-      }
+      listenForPing();
+      pingOtherDevice();
+      // if (currentConnectionInfo.isGroupOwner) {
+      //   listenForPing();
+      // } else {
+      //   // pingGroupOwner();
+      //   pingOtherDevice();
+      // }
     }
     
     // Log.d(TAG, "Finished with WifiDirectSpeaker tasks.");
@@ -564,6 +567,50 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     });
   }
 
+  /**
+   * Attempts to send a packet containing the bytes of the given message
+   * over udp to the other node in the connection.
+   *
+   * TODO(lerner): Encode the string more intelligently.
+   *
+   * @param message A string to be sent to the connected peer.
+   * @return True if the message seems to have been sent without incident,
+   * false in the event of an exception/failure.
+   */
+  private boolean sendMessageToRemotePeer(String message) {
+    if (!isConnected()) {
+      return false;
+    }
+
+    InetSocketAddress destination;
+    if (!isGroupOwner()) {
+      destination = new InetSocketAddress(currentConnectionInfo.groupOwnerAddress,
+                                          RANGZEN_PORT);
+    } else if (isGroupOwner() && remoteAddress != null) {
+      destination = new InetSocketAddress(remoteAddress.getAddress(),
+                                          RANGZEN_PORT);
+    } else {
+      Log.d(TAG, "We're the group owner and we don't know the remote address.");
+      return false;
+    }
+    ByteBuffer data = ByteBuffer.wrap(message.getBytes());
+
+    // byte[] dataPulledOut = new byte[PING_BYTES.length];
+    // data.get(dataPulledOut);
+    Log.d(TAG, "Created a packet with contents: " + new String(data.array()));
+
+    try {
+      udpChannel.send(data, destination);
+      Log.i(TAG, "Sent packet to " + destination);
+      return true;
+    } catch (ClosedChannelException e) {
+      Log.e(TAG, "Closed channel exception: " + e);
+      return false;
+    } catch (IOException e) {
+      Log.e(TAG, "Couldn't send packet over socket: " + e);
+      return false;
+    }
+  }
   /**
    * Attempts to send a packet containing the bytes of the given message
    * over udp to the owner of the group.
@@ -686,10 +733,11 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * address.
    */
   private void pingOtherDevice() {
-    if (isConnected() && isGroupOwner()) {
-      // sendMessageToRemotePeer(PING_STRING);
-    } else if (isConnected() && !isGroupOwner()) {
-      sendMessageToGroupOwner(PING_STRING);
-    }
+    sendMessageToRemotePeer(PING_STRING);
+    // if (isConnected() && isGroupOwner()) {
+    //   sendMessageToRemotePeer(PING_STRING);
+    // } else if (isConnected() && !isGroupOwner()) {
+    //   sendMessageToGroupOwner(PING_STRING);
+    // }
   }
 }
