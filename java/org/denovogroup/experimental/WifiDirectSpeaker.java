@@ -579,6 +579,16 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     });
   }
 
+  /**
+   * Attempts to send a packet containing the bytes of the given message
+   * over udp to the owner of the group.
+   *
+   * TODO(lerner): Encode the string more intelligently.
+   *
+   * @param message A string to be sent to the group owner.
+   * @return True if the message seems to have been sent without incident,
+   * false in the event of an exception/failure.
+   */
   private boolean sendMessageToGroupOwner(String message) {
     InetSocketAddress destination = 
       new InetSocketAddress(currentConnectionInfo.groupOwnerAddress,
@@ -602,6 +612,13 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     }
   }
 
+  /**
+   * Check whether we're currently connected to a Wifi Direct network,
+   * have a connection info object for that connection, and are not the group
+   * owner.
+   *
+   * @return True if we're connected and not the group owner. False otherwise. 
+   */
   private boolean isConnectedAndNotGroupOwner() {
     if (connectionState != ConnectionState.CONNECTED) {
       Log.e(TAG, "Attempt to send to current peer while no peer connected.");
@@ -614,6 +631,16 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
       return false;
     } else {
       return true;
+    }
+  }
+
+  /**
+   * This exception is raised when an operation requiring a connected peer
+   * is attempted but the device is not currently connected to a peer.
+   */
+  public class NoConnectedPeerException extends Exception {
+    public NoConnectedPeerException(String message) {
+     super(message);
     }
   }
 
@@ -633,11 +660,5 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
         return -1;
       }
     }    
-  }
-
-  public class NoConnectedPeerException extends Exception {
-    public NoConnectedPeerException(String message) {
-     super(message);
-    }
   }
 }
