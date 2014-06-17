@@ -460,7 +460,7 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * The "main loop" for WifiDirectSpeaker, in effect. Proceeds with the tasks
    * that must be performed by the Speaker, including connecting to peers for
    * whom outgoing messages are waiting, sending messages over sockets to peers
-   * who are already connected, and selecting new peers to connect to.
+   * who are already connected.
    */
   public void tasks() {
     if (connectionState == ConnectionState.NOT_CONNECTED) {
