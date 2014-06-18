@@ -113,6 +113,12 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   public final int MAX_PACKET_SIZE = 1500 - UDP_HEADER_SIZE - IP_HEADER_SIZE;
   
   /** 
+   * A default int value to be returned when getIntExtra fails to find
+   * the requested key.
+   */
+  public final int DEFAULT_EXTRA_INT = -1;
+
+  /** 
    * An enum designating possible states (disconnected, connecting, connected)
    * that the speaker can be in.
    */
@@ -320,15 +326,22 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * Receives events indicating whether Wifi Direct is enabled or disabled.
    */
   private void onWifiP2pStateChanged(Context context, Intent intent) {
-    int state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1);
+    // Since int is a simple type, we have to provide a default value
+    // in case the requested key isn't contained as an extra.
+    int state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, 
+                                   DEFAULT_EXTRA_INT);
     if (state == WifiP2pManager.WIFI_P2P_STATE_ENABLED) {
       Log.d(TAG, "Wifi Direct enabled");
       // Wifi Direct mode is enabled
       // TODO(lerner): Do something since it's enabled?
-    } else {
+    } else if (state == WifiP2pManager.WIFI_P2P_STATE_DISABLED) {
       Log.d(TAG, "Wifi Direct disabled");
       // Wifi Direct mode is disabled
       // TODO(lerner): Do something since it's disabled?
+    } else if (state == DEFAULT_EXTRA_INT) {
+      Log.e(TAG, "Wifi P2P state changed event handled, but the intent " +
+                 "doesn't include an int to tell whether it's enabled or " +
+                 "disabled!");
     }
   }
 
