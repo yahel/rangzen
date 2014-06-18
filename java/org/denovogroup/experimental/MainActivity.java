@@ -88,6 +88,11 @@ public class MainActivity extends Activity {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
+    // This was for the original AP mode fiddling I started with; 
+    // no longer needed.
+    // TODO(lerner): Gut this activity and remove everything related
+    // to the old fiddling that's no longer needed.
+    //
     // Spawn message receiving service.
     // Log.i("MainActivity", "starting receive service");
     // Intent receiveIntent = new Intent(this, MessageReceiveService.class);
