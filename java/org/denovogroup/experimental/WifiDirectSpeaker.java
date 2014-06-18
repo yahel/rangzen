@@ -255,6 +255,8 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
 
   /**
    * Unimplemented (data will not actually be sent!).
+   * TODO(lerner): Enqueue messages into per-device-queues and send them
+   * when we're connected to those devices.
    *
    * Request that the given data be sent to the given peer device via 
    * Wifi Direct. 
@@ -356,8 +358,10 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * an extra.
    */
   private void onWifiP2pPeersChanged(Context context, Intent intent) {
-    WifiP2pDeviceList peerDevices = (WifiP2pDeviceList)
-            intent.getParcelableExtra(WifiP2pManager.EXTRA_P2P_DEVICE_LIST);
+    // Temp used merely for readability (avoiding very long line/weird indent).
+    Parcelable temp = intent.getParcelableExtra(WifiP2pManager.EXTRA_P2P_DEVICE_LIST);
+    WifiP2pDeviceList peerDevices = (WifiP2pDeviceList) temp;
+
     for (WifiP2pDevice device : peerDevices.getDeviceList()) {
       Peer peer = getCanonicalPeerByDevice(device);
       Log.d(TAG, "Adding peer " + peer);  
@@ -372,6 +376,8 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    */
   private void onWifiP2pConnectionChanged(Context context, Intent intent) {
     if (mWifiP2pManager == null) {
+      Log.e(TAG, "Handled Wifi Connection Changed event but don't have an " +
+                 "instance of WifiP2PManager - this shouldn't happen.");
       return;
     }
 
@@ -446,6 +452,7 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
       onWifiP2pDiscoveryChanged(context, intent);
     } else {
       // TODO(lerner): This shouldn't happen, exception?
+      Log.wtf(TAG, "Received an event we weren't expecting: " + action);
     }
   }
 
@@ -487,13 +494,6 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
       // a request an a callback.
     }
   };
-
-  /**
-   * Provided when a request is made to the WifiP2pManager. Receives "yes"
-   * or "no" notification from the framework about whether the command issued
-   * has been successfully initiated.
-   */
-  // private WifiP2pManager.ActionListener 
 
   /**
    * Determine the canonical Peer for a given device. The canonical Peer for
