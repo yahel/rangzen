@@ -47,10 +47,12 @@ import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
 import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Looper;
+import android.os.Parcelable;
 import android.util.Log;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.lang.StringBuilder;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -575,8 +577,22 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   private void listenForPing() {
     ByteBuffer packet = tryReceivePacket();
     if (packet != null) {
-      Log.d(TAG, "Received a packet, it says: " + (new String(packet.array())).substring(0,PING_STRING.length()+PING_DISPLAY_ADDON_LENGTH));
+      String packetAsString = bufferToString(packet);
+      Log.d(TAG, "Received a packet, it says: " + packetAsString);
     }
+  }
+
+  /**
+   * Convert buffer to string. (Assumes nul termination, for now.)
+   * TODO(lerner): Improve encoding.
+   */
+  private String bufferToString(ByteBuffer buf) {
+    StringBuilder sb = new StringBuilder("");
+    byte b;
+    while ((b = buf.get()) != 0) {
+      sb.append(b);
+    }
+    return sb.toString();
   }
 
   /**
