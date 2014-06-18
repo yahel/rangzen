@@ -89,6 +89,15 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   /** The bytes of the ping string. */
   public final byte[] PING_BYTES = PING_STRING.getBytes();
 
+  /** 
+   * An extra number of characters to display of the ping packet beyond
+   * the word "ping" for the counter.
+   */
+  public final int PING_DISPLAY_ADDON_LENGTH = 10;
+
+  /** A counter of number of pings sent. */
+  private int pingCount = 0;
+
   /** A well-known port for Rangzen communications. */
   public final int RANGZEN_PORT = 23985;
 
@@ -491,10 +500,15 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   }
 
   /**
-   * The "main loop" for WifiDirectSpeaker. If peer discovery is enabled
-   * but not on-going, starts peer discovery. If a peer is selected for
-   * connection but not connected, starts connection. If a peer is connected,
-   * sends/receives pings from that peer.
+   * The "main loop" for WifiDirectSpeaker. This method is called each time
+   * the RangzenService runs its backgroundTasks() method, which happens
+   * periodically over time.
+   *
+   * Higher level code sets flags for what should happen during tasks, e.g.: If
+   * peer discovery is enabled but not on-going, this method starts peer
+   * discovery. If a peer is selected for connection but not connected, it
+   * starts connection. If a peer is connected, it sends/receives pings from
+   * that peer.
    *
    * TODO(lerner): Pull messages from sending queues and send them to remote peers.
    * TODO(lerner): Receive messages from remote peers and enqueue them in 
@@ -553,7 +567,7 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   private void listenForPing() {
     ByteBuffer packet = tryReceivePacket();
     if (packet != null) {
-      Log.d(TAG, "Received a packet, it says: " + (new String(packet.array())).substring(0,PING_STRING.length()));
+      Log.d(TAG, "Received a packet, it says: " + (new String(packet.array())).substring(0,PING_STRING.length()+PING_DISPLAY_ADDON_LENGTH));
     }
   }
 
@@ -760,7 +774,8 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     if (!isConnected() || isGroupOwner()) {
       return;
     } else {
-      sendMessageToGroupOwner(PING_STRING);
+      pingCount++;
+      sendMessageToGroupOwner(PING_STRING + ": " + pingCount);
     }
   }
 
@@ -773,7 +788,8 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     if (!isConnected()) {
       return;
     } else {
-      sendMessageToRemotePeer(PING_STRING);
+      pingCount++;
+      sendMessageToRemotePeer(PING_STRING + ": " + pingCount);
     }
   }
 }
