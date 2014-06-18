@@ -684,42 +684,6 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
       return false;
     }
   }
-  /**
-   * Attempts to send a packet containing the bytes of the given message
-   * over udp to the owner of the group.
-   *
-   * TODO(lerner): Encode the string more intelligently.
-   *
-   * @param message A string to be sent to the group owner.
-   * @return True if the message seems to have been sent without incident,
-   * false in the event of an exception/failure.
-   */
-  private boolean sendMessageToGroupOwner(String message) {
-    InetSocketAddress destination = 
-      new InetSocketAddress(currentConnectionInfo.groupOwnerAddress,
-          RANGZEN_PORT);
-    ByteBuffer data = ByteBuffer.wrap(message.getBytes());
-
-    // byte[] dataPulledOut = new byte[PING_BYTES.length];
-    // data.get(dataPulledOut);
-    Log.d(TAG, "Created a packet with contents: " + new String(data.array()));
-
-    if (udpChannel == null) {
-      Log.e(TAG, "Attempted to send but udpChannel was null.");
-      return false;
-    }
-    try {
-      udpChannel.send(data, destination);
-      Log.i(TAG, "Sent packet to " + destination);
-      return true;
-    } catch (ClosedChannelException e) {
-      Log.e(TAG, "Closed channel exception: " + e);
-      return false;
-    } catch (IOException e) {
-      Log.e(TAG, "Couldn't send packet over socket: " + e);
-      return false;
-    }
-  }
 
   /**
    * Check the socket for the next recieved packet and return it if one exists.
@@ -800,19 +764,6 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   public class NoConnectedPeerException extends Exception {
     public NoConnectedPeerException(String message) {
      super(message);
-    }
-  }
-
-  /**
-   * Send a ping to the group owner, if a connection exists and this device
-   * isn't the group owner.
-   */
-  private void pingGroupOwner() {
-    if (!isConnected() || isGroupOwner()) {
-      return;
-    } else {
-      pingCount++;
-      sendMessageToGroupOwner(PING_STRING + ": " + pingCount);
     }
   }
 
