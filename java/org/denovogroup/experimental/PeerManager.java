@@ -150,7 +150,6 @@ public class PeerManager {
    * @see org.denovogroup.experimental.Peer
    */
   public synchronized boolean isKnownPeer(Peer peer) {
-    // return getCanonicalPeer(peer) != null;
     return mCurrentPeers.contains(peer);
   }
 
