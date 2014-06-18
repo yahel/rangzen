@@ -128,7 +128,7 @@ public class RangzenService extends Service {
     PeerManager.getInstance(getApplicationContext()).tasks(); 
     PeerManager.getInstance(getApplicationContext()).seekPeers();
     
-    // Log.d(TAG, "Background Tasks Finished");
+    Log.v(TAG, "Background Tasks Finished");
   }
 
   /**
