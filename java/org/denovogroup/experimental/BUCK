@@ -1,6 +1,6 @@
 android_library(
   name = 'experimental',
-  srcs = [ 'MainActivity.java', 'MessageReceiveService.java', 
+  srcs = [ 'MainActivity.java', 
            'MessageSendIntentService.java', 'Peer.java', 'PeerNetwork.java', 
            'RangzenService.java', 'PeerManager.java', 'WifiDirectSpeaker.java',
            'WifiDirectFrameworkGetter.java', ],
