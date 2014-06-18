@@ -102,7 +102,13 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   public final int RANGZEN_PORT = 23985;
 
   /** A maximum packet size for allocating packet receive buffers. */
-  public final int MAX_PACKET_SIZE = 1500;
+  public final int MAX_PACKET_SIZE = 1500 - UDP_HEADER_SIZE - IP_HEADER_SIZE;
+  
+  /** The size of the headers of a UDP packet. */
+  public final int UDP_HEADER_SIZE = 8;
+
+  /** The size of IP headers. */
+  public final int IP_HEADER_SIZE = 20;
 
   /** 
    * An enum designating possible states (disconnected, connecting, connected)
