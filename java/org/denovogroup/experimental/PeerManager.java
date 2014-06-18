@@ -173,13 +173,14 @@ public class PeerManager {
   }
 
   /**
-   * If the peer given exists in the peer list, return it.
+   * If the peer given is known to the peer manager, return a canonical
+   * Peer object which represents the peer and is .equals() to the peer
+   * given. If the peer requested is not yet known, returns the peer
+   * requested as its own canonical form.
    *
-   * Peer equality is based on whether their PeerNetworks refer to the same
-   * destinations, so two peers might be .equals() even if not ==.
-   *
-   * @param peer The peer to find in the list.
-   * @return The equivalent peer, or null if the peer is not found in the list.
+   * @param peer The peer to look up.
+   * @return The canonical version of the given peer, which is the same
+   * object if the peer is not yet known to the PeerManager.
    * @see org.denovogroup.experimental.Peer
    */
   public synchronized Peer getCanonicalPeer(Peer peerDesired) {
@@ -282,15 +283,14 @@ public class PeerManager {
     mWifiDirectSpeaker.tasks();
 
     // We ask to connect and ping every time but the speaker will ignore 
-    // subsequent requestse since it has a peer device selected.
+    // subsequent requests since it has a peer device selected.
     // TODO(lerner): Don't just constantly ask to connect from here.
     if (mCurrentPeers.size() > 0) {
       Log.v(TAG, "Found at least 1 peer, connecting to it.");
       Peer peer = mCurrentPeers.get(0);
-      // mWifiDirectSpeaker.connectAndPingPeer(peer);
       mWifiDirectSpeaker.selectPeer(peer);
     }
-    // Log.v(TAG, "Finished with PeerManager tasks.");
+    Log.v(TAG, "Finished with PeerManager tasks.");
   }
   
 }
