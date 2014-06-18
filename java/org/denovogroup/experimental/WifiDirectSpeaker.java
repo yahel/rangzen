@@ -178,6 +178,9 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
 
   /**
    * @param context A context, from which to access the Wifi Direct subsystem.
+   * @param peerManager The app's PeerManager instance.
+   * @param frameworkGetter The WifiDirectFrameworkGetter to be used to 
+   * retrieve an instance of WifiP2pSpeaker.
    */
   public WifiDirectSpeaker(Context context, PeerManager peerManager, 
                            WifiDirectFrameworkGetter frameworkGetter) {
