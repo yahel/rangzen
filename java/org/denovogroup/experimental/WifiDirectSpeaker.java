@@ -301,7 +301,7 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
       @Override
       public void onFailure(int reasonCode) {
         Log.d(TAG, "Discovery failed: " + reasonCode);
-        stopPeerDiscovery();
+        stopSeekingPeers();
       }
     });
   }
