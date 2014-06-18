@@ -86,37 +86,28 @@ import java.util.Queue;
  */
 public class WifiDirectSpeaker extends BroadcastReceiver {
   /** A string to send as the contents of a ping. */
-  public final String PING_STRING = "ping";
-
-  /** The bytes of the ping string. */
-  public final byte[] PING_BYTES = PING_STRING.getBytes();
-
-  /** 
-   * An extra number of characters to display of the ping packet beyond
-   * the word "ping" for the counter.
-   */
-  public final int PING_DISPLAY_ADDON_LENGTH = 10;
+  public static final String PING_STRING = "ping";
 
   /** A counter of number of pings sent. */
   private int pingCount = 0;
 
   /** A well-known port for Rangzen communications. */
-  public final int RANGZEN_PORT = 23985;
+  public static final int RANGZEN_PORT = 23985;
 
   /** The size of the headers of a UDP packet. */
-  public final int UDP_HEADER_SIZE = 8;
+  public static final int UDP_HEADER_SIZE = 8;
 
   /** The size of IP headers. */
-  public final int IP_HEADER_SIZE = 20;
+  public static final int IP_HEADER_SIZE = 20;
 
   /** A maximum packet size for allocating packet receive buffers. */
-  public final int MAX_PACKET_SIZE = 1500 - UDP_HEADER_SIZE - IP_HEADER_SIZE;
+  public static final int MAX_PACKET_SIZE = 1500 - UDP_HEADER_SIZE - IP_HEADER_SIZE;
   
   /** 
    * A default int value to be returned when getIntExtra fails to find
    * the requested key.
    */
-  public final int DEFAULT_EXTRA_INT = -1;
+  public static final int DEFAULT_EXTRA_INT = -1;
 
   /** 
    * An enum designating possible states (disconnected, connecting, connected)
