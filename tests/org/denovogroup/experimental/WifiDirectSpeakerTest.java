@@ -35,11 +35,12 @@ import org.denovogroup.experimental.WifiDirectSpeaker;
 
 import android.content.Context;
 import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pManager;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -60,8 +61,8 @@ import org.robolectric.shadows.ShadowActivity;
 import org.robolectric.shadows.ShadowIntent;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Date;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -85,24 +86,54 @@ public class WifiDirectSpeakerTest {
    */
   @Before
   public void setUp() {
-    activity = Robolectric.buildActivity(MainActivity.class).create().get();
+    // TODO(lerner): Instantiate as much of the app as necessary to test 
+    // the WifiDirectSpeaker - possibly just an instance of WifiDirectSpeaker
+    // that uses a mock WifiP2pManager.
   }
 
   /**
-   * Post-test actions.
+   * Test that our arbitrarily chosen integer constant doesn't conflict
+   * with the values it's supposed to be an error value for.
    */
-  @After
-  public void tearDown() {
+  @Test
+  public void defaultExtraIntIsntValidValue() {
+    assertNotEquals("Our error code is the same as the code for P2P enabled.",
+                    WifiDirectSpeaker.DEFAULT_EXTRA_INT,
+                    WifiP2pManager.WIFI_P2P_STATE_ENABLED);
+    assertNotEquals("Our error code is the same as the code for P2P disabled.",
+                    WifiDirectSpeaker.DEFAULT_EXTRA_INT,
+                    WifiP2pManager.WIFI_P2P_STATE_DISABLED);
   }
-  
+
+  /**
+   * TODO(lerner): Test that when new Wifi Direct peers are delivered to
+   * the Speaker, it passes them on to addPeers on the PeerManager.
+   */
   @Test
   public void onPeersChangedTest() { 
-    // Get
 
   }
 
   /**
-   * Empty passing test to "pass" the whole suite.
+   * TODO(lerner): Test that the Speaker attempts to seek peers after being 
+   * told to do so.
+   */
+  @Test
+  public void seekPeersWhenAskedTest() { 
+
+  }
+
+  /**
+   * TODO(lerner): Test that the Speaker attempts to stop seeking peers after
+   * being told to stop.
+   */
+  @Test
+  public void stopSeekingPeersWhenAskedTest() { 
+
+  }
+
+  /**
+   * Empty passing test to "pass" the whole suite while there aren't any tests.
    */
   @Test
   public void succeeds() { }
