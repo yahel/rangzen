@@ -101,15 +101,15 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   /** A well-known port for Rangzen communications. */
   public final int RANGZEN_PORT = 23985;
 
-  /** A maximum packet size for allocating packet receive buffers. */
-  public final int MAX_PACKET_SIZE = 1500 - UDP_HEADER_SIZE - IP_HEADER_SIZE;
-  
   /** The size of the headers of a UDP packet. */
   public final int UDP_HEADER_SIZE = 8;
 
   /** The size of IP headers. */
   public final int IP_HEADER_SIZE = 20;
 
+  /** A maximum packet size for allocating packet receive buffers. */
+  public final int MAX_PACKET_SIZE = 1500 - UDP_HEADER_SIZE - IP_HEADER_SIZE;
+  
   /** 
    * An enum designating possible states (disconnected, connecting, connected)
    * that the speaker can be in.
@@ -136,8 +136,7 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   private Context context;
 
   /** Queue of messages per Peer. */
-  private Map<WifiP2pDevice, Queue<String>> messageQueues = 
-          new HashMap<WifiP2pDevice, Queue<String>>();
+  private Map<WifiP2pDevice, Queue<String>> messageQueues;
 
   /** 
    * This flag is set to true by the overlying app when it wants to look for
@@ -185,12 +184,11 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
                            WifiDirectFrameworkGetter frameworkGetter) {
     super();
 
-    // TODO(lerner): Figure out which context we should be using.
-    //
-    // I don't understand which context is the appropriate context to be using:
-    // either the application context, the main activity's context, or the
+    // TODO(lerner): Figure out which context we should be using. I don't
+    // understand which context is the appropriate context to be using: either
+    // the application context, the main activity's context, or the
     // RangzenService's context. Most likely the correct answer is the Rangzen
-    // Service's context, since WifiDirectSpeaker is instantiated by the 
+    // Service's context, since WifiDirectSpeaker is instantiated by the
     // RangzenService.
     this.context = context;
 
@@ -200,17 +198,20 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     this.mWifiP2pManager = frameworkGetter.getWifiP2pManagerInstance(context);
       
     // TODO(lerner): Create our own looper that doesn't run in the main thread.
-    // 
-    // I don't understand loopers very well, but I'm pretty sure we want to 
+    // I don't understand loopers very well, but I'm pretty sure we want to
     // create a separate looper here for initializing the P2P framework, since
     // I believe that the main looper runs in the app's thread. That might be
     // wrong if the context passed in is, say, the Rangzen Service's context.
-    // This is a place where I don't understand Android very well where I should.
+    // This is a place where I don't understand Android very well where I
+    // should.
     this.looper = context.getMainLooper();
     Log.i(TAG, "Initializing Wifi P2P Channel...");
     this.mWifiP2pChannel = mWifiP2pManager.initialize(context, looper, mChannelListener);
     Log.i(TAG, "Finished initializing Wifi P2P Channel.");
     this.mPeerManager = peerManager;
+
+    // Initialize message queues table as empty map.
+    messageQueues = new HashMap<WifiP2pDevice, Queue<String>>();
 
     // Register WifiDirectSpeaker to receive various events from the OS 
     // Wifi Direct subsystem.
