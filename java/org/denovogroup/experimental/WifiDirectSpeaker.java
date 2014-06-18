@@ -542,7 +542,7 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * communicate with.
    */
   public void selectPeer(Peer peer) {
-    WifiP2pDevice device = peer.network.wifiP2pDevice;
+    WifiP2pDevice device = peer.getNetwork().wifiP2pDevice;
     selectedPeerDevice = device;
   }
 
