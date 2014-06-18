@@ -38,6 +38,7 @@ import java.util.Date;
 public class Peer {
   /** An object that encapsulates the network connection(s) to this peer */
   private PeerNetwork network;
+
   /** The datetime at which this peer was last seen over the network */
   private Date lastSeen;
 
@@ -85,6 +86,13 @@ public class Peer {
   }
 
   /**
+   * Send a message to this peer.
+   */
+  public void send(String message) {
+    network.send(message);
+  }
+
+  /**
    * Two peers are equal if they use the same network.
    *
    * @return True if the peer uses the same network connection.
@@ -112,5 +120,9 @@ public class Peer {
     Peer clone = new Peer(network.clone());
 
     return clone;
+  }
+
+  public String toString() {
+    return String.format("Peer (network: %s)", network.toString());
   }
 }

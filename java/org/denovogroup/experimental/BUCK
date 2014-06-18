@@ -1,7 +1,9 @@
 android_library(
   name = 'experimental',
-  srcs = [ 'MainActivity.java', 'MessageReceiveService.java', 'MessageSendIntentService.java',
-           'Peer.java', 'PeerNetwork.java', 'RangzenService.java', 'PeerManager.java', ],
+  srcs = [ 'MainActivity.java', 
+           'MessageSendIntentService.java', 'Peer.java', 'PeerNetwork.java', 
+           'RangzenService.java', 'PeerManager.java', 'WifiDirectSpeaker.java',
+           'WifiDirectFrameworkGetter.java', ],
   visibility = [ 'PUBLIC' ],
   deps = [
     '//libs:android-support-v4',

@@ -122,9 +122,13 @@ public class RangzenService extends Service {
    * Rangzen's background tasks.
    */
   public void backgroundTasks() {
-    Log.i(TAG, "Background Tasks running");
 
     mBackgroundTaskRunCount++;
+
+    PeerManager.getInstance(getApplicationContext()).tasks(); 
+    PeerManager.getInstance(getApplicationContext()).seekPeers();
+    
+    Log.v(TAG, "Background Tasks Finished");
   }
 
   /**

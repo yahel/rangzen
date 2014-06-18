@@ -58,14 +58,17 @@ public class PeerManager {
   // TODO(lerner): I suspect we want to convert this to a Set eventually, since
   // that best represents the set of peers we can see (unordered, each is
   // unique).
-  /** The most recent, up-to-date list of peers */
+  /** The most recent, up-to-date list of peers. */
   private List<Peer> mCurrentPeers;
 
-  /** For app-local intent broadcasting/receiving of peer events */
+  /** For app-local intent broadcasting/receiving of peer events. */
   private LocalBroadcastManager mBroadcastManager;
 
-  /** Displayed in Android Monitor logs */
+  /** Displayed in Android Monitor logs. */
   private static String TAG = "RangzenPeerManager";
+
+  /** The WifiDirectSpeaker for the app. */
+  private static WifiDirectSpeaker mWifiDirectSpeaker;
 
   /**
    * Private constructor. Use PeerManager.getInstance() to obtain the app's
@@ -76,6 +79,11 @@ public class PeerManager {
   private PeerManager(Context context) {
     mCurrentPeers = new ArrayList<Peer>();
     mBroadcastManager = LocalBroadcastManager.getInstance(context); 
+
+    // WifiDirectSpeaker needs the context in order to retrieve system 
+    // Wifi P2p resources.
+    WifiDirectFrameworkGetter frameworkGetter = new WifiDirectFrameworkGetter();
+    mWifiDirectSpeaker = new WifiDirectSpeaker(context, this, frameworkGetter);
   }
 
   /**
@@ -103,7 +111,8 @@ public class PeerManager {
    * should listen for peer list events if they wish to act on peers when
    * the list is updated.
    */
-  public void seekNewPeers() {
+  public void seekPeers() {
+    Log.v(TAG, "Setting OK to seek peers on WifiDirectSpeaker.");
     // TODO(lerner); Ask for new peers to be sought!
     // This will look something like:
     //
@@ -111,6 +120,9 @@ public class PeerManager {
     // for each protocol:
     //   if <policySaysOk>
     //     protocol.seekPeers();
+    if (mWifiDirectSpeaker != null) {
+      mWifiDirectSpeaker.setSeekingDesired(true);
+    }
   }
   
   /**
@@ -138,7 +150,7 @@ public class PeerManager {
    * @see org.denovogroup.experimental.Peer
    */
   public synchronized boolean isKnownPeer(Peer peer) {
-    return getPeerInPeerList(peer) != null;
+    return mCurrentPeers.contains(peer);
   }
 
   /**
@@ -151,7 +163,7 @@ public class PeerManager {
    * @param peer The Peer to update.
    */
   private synchronized void touchPeer(Peer peer) {
-    Peer copyInList = getPeerInPeerList(peer);
+    Peer copyInList = getCanonicalPeer(peer);
     if (copyInList != null) {
       copyInList.touch();
     } 
@@ -161,16 +173,17 @@ public class PeerManager {
   }
 
   /**
-   * If the peer given exists in the peer list, return it.
+   * If the peer given is known to the peer manager, return a canonical
+   * Peer object which represents the peer and is .equals() to the peer
+   * given. If the peer requested is not yet known, returns the peer
+   * requested as its own canonical form.
    *
-   * Peer equality is based on whether their PeerNetworks refer to the same
-   * destinations, so two peers might be .equals() even if not ==.
-   *
-   * @param peer The peer to find in the list.
-   * @return The equivalent peer, or null if the peer is not found in the list.
+   * @param peer The peer to look up.
+   * @return The canonical version of the given peer, which is the same
+   * object if the peer is not yet known to the PeerManager.
    * @see org.denovogroup.experimental.Peer
    */
-  public synchronized Peer getPeerInPeerList(Peer peerDesired) {
+  public synchronized Peer getCanonicalPeer(Peer peerDesired) {
     if (peerDesired == null) {
       return null;
     }
@@ -179,7 +192,7 @@ public class PeerManager {
         return peerInList;
       }
     }
-    return null;
+    return peerDesired;
   }
 
   /**
@@ -262,4 +275,22 @@ public class PeerManager {
       return true;
     }
   }
+
+  /**
+   * Run tasks, e.g. garbage collection of peers, speaker tasks, etc.
+   */
+  public void tasks() {
+    mWifiDirectSpeaker.tasks();
+
+    // We ask to connect and ping every time but the speaker will ignore 
+    // subsequent requests since it has a peer device selected.
+    // TODO(lerner): Don't just constantly ask to connect from here.
+    if (mCurrentPeers.size() > 0) {
+      Log.v(TAG, "Found at least 1 peer, connecting to it.");
+      Peer peer = mCurrentPeers.get(0);
+      mWifiDirectSpeaker.selectPeer(peer);
+    }
+    Log.v(TAG, "Finished with PeerManager tasks.");
+  }
+  
 }
