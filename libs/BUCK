@@ -23,8 +23,20 @@ prebuilt_jar(
 )
 
 prebuilt_jar(
+  name = 'robolectric-2.3',
+  binary_jar = 'robolectric-2.3-jar-with-dependencies.jar',
+  visibility = [ 'PUBLIC' ],
+)
+
+prebuilt_jar(
   name = 'robolectric-2.3-SNAPSHOT',
   binary_jar = 'robolectric-2.3-20140327.214734-149-jar-with-dependencies.jar',
+  visibility = [ 'PUBLIC' ],
+)
+
+prebuilt_jar(
+  name = 'mockito',
+  binary_jar = 'mockito-all-1.9.5.jar',
   visibility = [ 'PUBLIC' ],
 )
 

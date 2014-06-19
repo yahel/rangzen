@@ -1,0 +1,11 @@
+android_library(
+  name = 'rangzen',
+  srcs = [ 'MainActivity.java', 'Peer.java', 'PeerNetwork.java', 
+           'RangzenService.java', 'PeerManager.java', 'WifiDirectSpeaker.java',
+           'WifiDirectFrameworkGetter.java', ],
+  visibility = [ 'PUBLIC' ],
+  deps = [
+    '//libs:android-support-v4',
+    '//res/org/denovogroup/rangzen:res',
+  ],
+)
