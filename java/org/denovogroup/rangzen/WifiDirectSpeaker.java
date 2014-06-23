@@ -533,27 +533,60 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    */
   public void tasks() {
     if (connectionState == ConnectionState.NOT_CONNECTED) {
-      if (selectedPeerDevice != null) {
-        connectToPeerDevice(selectedPeerDevice);
-      } else if (!seeking && seekingDesired) {
-        seekPeers();
-      } else if (seeking && !seekingDesired) {
-        stopSeekingPeers();
-      }
-    } else if (connectionState == ConnectionState.CONNECTION_IN_PROGRESS) {
-      // In this state, we've invited another peer to connect to us but we haven't
-      // yet successfully connected or failed to do so.
-      //
-      // TODO(lerner): Time out the connection after a while.
-      Log.v(TAG, "Waiting on connection to selected peer " + selectedPeerDevice);
-    } else if (connectionState == ConnectionState.CONNECTED) {
-      if ( currentConnectionInfo == null) {
-        Log.wtf(TAG, "connectionState of CONNECTED but no current connection info!");
-        return;
-      }
-      listenForPing();
-      pingOtherDevice();
+      createGroup();
+      // Temporarily use this var to indicate whether we've created a group
+      // or not.
+      connectionState = ConnectionState.CONNECTED;
     }
+    // if (connectionState == ConnectionState.NOT_CONNECTED) {
+    //   if (selectedPeerDevice != null) {
+    //     connectToPeerDevice(selectedPeerDevice);
+    //   } else if (!seeking && seekingDesired) {
+    //     seekPeers();
+    //   } else if (seeking && !seekingDesired) {
+    //     stopSeekingPeers();
+    //   }
+    // } else if (connectionState == ConnectionState.CONNECTION_IN_PROGRESS) {
+    //   // In this state, we've invited another peer to connect to us but we haven't
+    //   // yet successfully connected or failed to do so.
+    //   //
+    //   // TODO(lerner): Time out the connection after a while.
+    //   Log.v(TAG, "Waiting on connection to selected peer " + selectedPeerDevice);
+    // } else if (connectionState == ConnectionState.CONNECTED) {
+    //   if ( currentConnectionInfo == null) {
+    //     Log.wtf(TAG, "connectionState of CONNECTED but no current connection info!");
+    //     return;
+    //   }
+    //   listenForPing();
+    //   pingOtherDevice();
+    // }
+  }
+
+  private void removeGroup() {
+    mWifiP2pManager.removeGroup(mWifiP2pChannel, new ActionListener() {
+      @Override
+      public void onSuccess() {
+        Log.i(TAG, "Group removal requested.");
+      }
+
+      @Override
+      public void onFailure(int reason) {
+        Log.w(TAG, "Group removal request rejected with reason: " + reason);
+      }
+    });
+  }
+  private void createGroup() {
+    mWifiP2pManager.createGroup(mWifiP2pChannel, new ActionListener() {
+      @Override
+      public void onSuccess() {
+        Log.i(TAG, "Group creation requested.");
+      }
+
+      @Override
+      public void onFailure(int reason) {
+        Log.w(TAG, "Group creation request rejected with reason: " + reason);
+      }
+    });
   }
 
   /** 
