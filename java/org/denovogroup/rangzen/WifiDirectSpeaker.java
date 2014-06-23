@@ -36,6 +36,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.NetworkInfo;
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
@@ -53,6 +55,8 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.lang.StringBuilder;
+import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -395,6 +399,21 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
       Log.i(TAG, "Wifi P2P disconnected");
     }
   }
+
+  private void disconnectWifiDirect() {
+    mWifiP2pManager.removeGroup(mWifiP2pChannel, new ActionListener() {
+      @Override
+      public void onSuccess() {
+        Log.i(TAG, "Successfully requested removal of Wifi Direct group.");
+      }
+
+      @Override
+      public void onFailure(int reason) {
+        Log.w(TAG, "Group removal request failed with reason: " + reason);
+      }
+    });
+
+  }
   
   /**
    * This handles events that notify us that the WifiP2pDevice object
@@ -533,28 +552,78 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    */
   public void tasks() {
     if (connectionState == ConnectionState.NOT_CONNECTED) {
-      if (selectedPeerDevice != null) {
-        connectToPeerDevice(selectedPeerDevice);
-      } else if (!seeking && seekingDesired) {
-        seekPeers();
-      } else if (seeking && !seekingDesired) {
-        stopSeekingPeers();
-      }
-    } else if (connectionState == ConnectionState.CONNECTION_IN_PROGRESS) {
-      // In this state, we've invited another peer to connect to us but we haven't
-      // yet successfully connected or failed to do so.
-      //
-      // TODO(lerner): Time out the connection after a while.
-      Log.v(TAG, "Waiting on connection to selected peer " + selectedPeerDevice);
-    } else if (connectionState == ConnectionState.CONNECTED) {
-      if ( currentConnectionInfo == null) {
-        Log.wtf(TAG, "connectionState of CONNECTED but no current connection info!");
-        return;
-      }
-      listenForPing();
-      pingOtherDevice();
+      Log.d(TAG, "Calling activateAPMode()");
+      activateAPMode();
+      // Temporarily use this enum to record whether we've started AP mode.
+      connectionState = ConnectionState.CONNECTION_IN_PROGRESS;
+    } else if (connectionState == ConnectionState.CONNECTED) { 
+      stopSeekingPeers();
+      disconnectWifiDirect();
+      connectionState = ConnectionState.NOT_CONNECTED;
+    }
+    // if (connectionState == ConnectionState.NOT_CONNECTED) {
+    //   if (selectedPeerDevice != null) {
+    //     connectToPeerDevice(selectedPeerDevice);
+    //   } else if (!seeking && seekingDesired) {
+    //     seekPeers();
+    //   } else if (seeking && !seekingDesired) {
+    //     stopSeekingPeers();
+    //   }
+    // } else if (connectionState == ConnectionState.CONNECTION_IN_PROGRESS) {
+    //   // In this state, we've invited another peer to connect to us but we haven't
+    //   // yet successfully connected or failed to do so.
+    //   //
+    //   // TODO(lerner): Time out the connection after a while.
+    //   Log.v(TAG, "Waiting on connection to selected peer " + selectedPeerDevice);
+    // } else if (connectionState == ConnectionState.CONNECTED) {
+    //   if ( currentConnectionInfo == null) {
+    //     Log.wtf(TAG, "connectionState of CONNECTED but no current connection info!");
+    //     return;
+    //   }
+    //   listenForPing();
+    //   pingOtherDevice();
+    // }
+  }
+
+  private void activateAPMode() {
+    Log.d(TAG, "Attempting to actiavte AP mode.");
+    WifiManager wifiManager = (WifiManager) context.getSystemService(context.WIFI_SERVICE);
+    WifiConfiguration wifiConfiguration = new WifiConfiguration();
+    wifiConfiguration.SSID = "RANGZEN";
+    // WifiConfiguration wifiConfiguration = null;
+    try {  
+        Method setWifiAPEnabled = wifiManager.getClass().getMethod("setWifiApEnabled", WifiConfiguration.class, boolean.class);
+        if ((Boolean)setWifiAPEnabled.invoke(wifiManager, wifiConfiguration, true)) {
+          Log.d(TAG, "SetWifiAPEnabled returned true");
+        } else {
+          Log.d(TAG, "SetWifiAPEnabled returned false");
+        }
+    } catch (NoSuchMethodException e) {
+        e.printStackTrace();
+    } catch (IllegalArgumentException e) {
+        e.printStackTrace();
+    } catch (IllegalAccessException e) {
+        e.printStackTrace();
+    } catch (InvocationTargetException e) {
+        e.printStackTrace();
     }
   }
+
+
+//     mWifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+//     wifiControlMethod = mWifiManager.getClass().getMethod("setWifiApEnabled", WifiConfiguration.class,boolean.class);
+//     wifiApConfigurationMethod = mWifiManager.getClass().getMethod("getWifiApConfiguration",null);
+//     wifiApState = mWifiManager.getClass().getMethod("getWifiApState");
+//     try {
+//       if (enabled) {
+//         mWifiManager.setWifiEnabled(!enabled);
+//       }
+//       return (Boolean) wifiControlMethod.invoke(mWifiManager, config, enabled);
+//     } catch (Exception e) {
+//       Log.e(TAG, "", e);
+//       return false;
+//     }
+  // }
 
   /** 
    * Call this method to start or stop peer discovery from outside application
