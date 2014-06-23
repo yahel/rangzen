@@ -39,6 +39,7 @@ import android.net.NetworkInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
+import android.net.wifi.p2p.WifiP2pGroup;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager.ActionListener;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
@@ -46,6 +47,7 @@ import android.net.wifi.p2p.WifiP2pManager.ChannelListener;
 import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
 import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
 import android.net.wifi.p2p.WifiP2pManager;
+import android.net.wifi.WpsInfo;
 import android.os.Looper;
 import android.os.Parcelable;
 import android.util.Log;
@@ -385,6 +387,10 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
       // Request that a WifiP2pInfo object be delivered to our connection
       // info listener, which will store the info object in currentConnectionInfo.
       mWifiP2pManager.requestConnectionInfo(mWifiP2pChannel, mConnectionInfoListener);
+
+      WifiP2pGroup group = (WifiP2pGroup) intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_GROUP);
+      Log.i(TAG, "Group password: <" + group.getPassphrase() + ">");
+      startWPS();
     } else {
       // It's a disconnect
       // TODO(lerner): Dispatch a notification about this?
@@ -395,6 +401,32 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
       Log.i(TAG, "Wifi P2P disconnected");
     }
   }
+
+  /**
+   * Initiate a Wifi Direct connection to the given peer.
+   *
+   * @param device The device to connect to.
+   */
+  private void startWPS() {
+    WifiP2pConfig config = new WifiP2pConfig();
+    config.deviceAddress = "";
+    config.wps.setup = WpsInfo.PBC;
+
+    Log.d(TAG, "starting wps: " + config.wps.setup);
+
+    mWifiP2pManager.connect(mWifiP2pChannel, config, new ActionListener() {
+      @Override
+      public void onSuccess() {
+        Log.i(TAG, "Setup of WPS returned success.");
+      }
+
+      @Override
+      public void onFailure(int reason) {
+        Log.w(TAG, "Setup of WPS rejected: " + reason);
+      }
+    });
+  }
+
   
   /**
    * This handles events that notify us that the WifiP2pDevice object
