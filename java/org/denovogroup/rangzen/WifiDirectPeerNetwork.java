@@ -33,11 +33,28 @@ package org.denovogroup.rangzen;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.ScanResult;
 
+import java.util.Arrays;
+
 /**
- * This class represents the network connectivity over 0 or more modalities
+ * This class represents the network connectivity over Wifi Direct
  * that can be used to reach a certain peer.
  */
-public interface PeerNetwork {
+public class WifiDirectPeerNetwork implements PeerNetwork {
+  /** A WifiP2pDevice (remote MAC address) associated with this Peer Network */
+  WifiP2pDevice wifiP2pDevice;
+
+  /**
+   * Create a WifiDirectPeerNetwork with no remote network devices to talk to.
+   */
+  public WifiDirectPeerNetwork() { }
+
+  /**
+   * Create a WifiDirectPeerNetwork with a remote WifiP2pDevice to talk to .
+   */
+  public WifiDirectPeerNetwork(WifiP2pDevice wifiP2pDevice) {
+    this.wifiP2pDevice = wifiP2pDevice;
+  }
+
   /**
    * Send a message. Returns immediately, sending the message asynchronously
    * as it is possible to do so given the constraints of the network media
@@ -45,7 +62,8 @@ public interface PeerNetwork {
    *
    * @return False if the message could not be sent, true otherwise.
    */
-  public void send(String message);
+  public void send(String message) {
+  }
 
   /**
    * Wait to receive a message from the peer. Currently always returns null.
@@ -53,7 +71,9 @@ public interface PeerNetwork {
    * @return A byte array containing the contents of the message, or null on 
    * an error.
    */
-  public byte[] receive();
+  public byte[] receive() {
+    return null;
+  }
 
   /**
    * Two PeerNetworks are equal if they communicate with the same network
@@ -61,33 +81,49 @@ public interface PeerNetwork {
    *
    * @return True if the PeerNetworks are equal, false otherwise.
    */
-  public boolean equals(PeerNetwork other);
+  public boolean equals(PeerNetwork other) {
+    if (other == null) {
+      return false;
+    } else if (wifiP2pDevice != null) {
+      return wifiP2pDevice.equals(other.getWifiP2pDevice());
+    } else {
+      return wifiP2pDevice == other.getWifiP2pDevice();
+    }
+  }
 
   /**
    * Return a copy of the PeerNetwork, referring to the same network locations.
    *
    * @return A deep copy of the PeerNetwork.
    */
-  public PeerNetwork clone();
+  public PeerNetwork clone() {
+    PeerNetwork clone = new WifiDirectPeerNetwork(new WifiP2pDevice(this.wifiP2pDevice));
 
-  /** A string representation of the Peer Network. */
-  public String toString();
+    return clone;
+  }
 
-  /** 
-   * If the PeerNetwork is if of a type that uses Wifi Direct, return its
-   * backing WifiP2pDevice, if any. If it is not of a Wifi Direct type, or
-   * if it is but isn't backed by any device, returns null.
+  public String toString() {
+    if (wifiP2pDevice == null) {
+      return "<no wifi device>";
+    }
+    return wifiP2pDevice.deviceAddress;
+  }
+
+  /**
+   * Return the WifiP2pDevice backing this peer network, if any.
    *
-   * @return A backing WifiP2pDevice if one exists; otherwise null.
+   * @return This peer network's Wifi Direct device.
    */
-  public WifiP2pDevice getWifiP2pDevice();
+  public WifiP2pDevice getWifiP2pDevice() {
+    return wifiP2pDevice;
+  }
 
-  /** 
-   * If the PeerNetwork is if of a type that uses Hotspot mode, return its
-   * backing ScanResult, if any. If it is not of a Hotspot type, or
-   * if it is but isn't backed by any device, returns null.
+  /**
+   * Returns null, since this Peer Network is backed by a WifiP2pDevice.
    *
-   * @return A backing ScanResult if one exists; otherwise null.
+   * @return Null.
    */
-  public ScanResult getScanResult();
+  public ScanResult getScanResult() {
+    return null;
+  }
 }
