@@ -1,9 +1,19 @@
 android_library(
   name = 'rangzen',
-  srcs = [ 'MainActivity.java', 'Peer.java', 'PeerNetwork.java', 
-           'RangzenService.java', 'PeerManager.java', 'WifiDirectSpeaker.java',
-           'WifiDirectFrameworkGetter.java', 'WifiDirectPeerNetwork.java',
-           'HotspotPeerNetwork.java', 'StorageBase.java' ],
+  srcs = [ 'MainActivity.java', 
+           'RangzenService.java',
+           'Peer.java',
+           'PeerNetwork.java',
+           'HotspotPeerNetwork.java',
+           'WifiDirectPeerNetwork.java',
+           'PeerManager.java',
+           'WifiDirectSpeaker.java',
+           'WifiDirectFrameworkGetter.java',
+           'BluetoothLESpeaker.java',
+           'StorageBase.java' ,
+            
+  ],
+
   visibility = [ 'PUBLIC' ],
   deps = [
     '//libs:android-support-v4',
