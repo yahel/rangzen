@@ -1,6 +1,6 @@
 android_library(
   name = 'rangzen',
-  srcs = [ 'MainActivity.java', 'Peer.java', 'PeerNetwork.java', 
+  srcs = [ 'MainActivity.java', 'MessageStore.java', 'Peer.java', 'PeerNetwork.java', 
            'RangzenService.java', 'PeerManager.java', 'WifiDirectSpeaker.java',
            'WifiDirectFrameworkGetter.java', 'WifiDirectPeerNetwork.java',
            'HotspotPeerNetwork.java', 'StorageBase.java' ],

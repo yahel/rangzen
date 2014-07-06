@@ -35,7 +35,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.denovogroup.rangzen.MainActivity;
-import org.denovogroup.rangzen.StorageBase;
+import org.denovogroup.rangzen.MessageStore;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -60,61 +60,85 @@ import org.robolectric.shadows.ShadowActivity;
 import org.robolectric.shadows.ShadowIntent;
 
 /**
- * Unit tests for Rangzen's StorageBase class
+ * Unit tests for Rangzen's MessageStore class
  */
 @Config(manifest="./apps/rangzen/AndroidManifest.xml", 
         emulateSdk=18, 
         resourceDir="../../res/org/denovogroup/rangzen/res")
 @RunWith(RobolectricTestRunner.class)
-public class StorageBaseTest {
-  /** The instance of StorageBase we're using for tests. */
-  private StorageBase store;
+public class MessageStoreTest {
+  /** The instance of MessageStore we're using for tests. */
+  private MessageStore store;
 
-  /** The app instance we're using to pass to StorageBase. */
+  /** The app instance we're using to pass to MessageStore. */
   private MainActivity activity;
 
   /** Test strings we're writing into the storage system. */
-  private static final String TEST_KEY = "k";
-  private static final String TEST_VALUE = "v1";
-  private static final String TEST_VALUE_2 = "v2";
+  private static final String TEST_MSG_1 = "message 1";
+  private static final String TEST_MSG_2 = "message 2";
+  private static final String TEST_MSG_3 = "message 3";
 
-  private static final String TEST_FLOAT_KEY = "fk";
-  private static final float TEST_FLOAT_VALUE = 7.7f;
+  private static final String TEST_MSG_INVALID = "invalid";
+
+  private static final float TEST_PRIORITY_1 = 1.0f;
+  private static final float TEST_PRIORITY_2 = 0.2f;
+  private static final float TEST_PRIORITY_3 = 0.9f;
+
+  private static final float TEST_PRIORITY_INVALID = 1.1f;
 
   @Before
   public void setUp() {
     activity = Robolectric.buildActivity(MainActivity.class).create().get();
-    store = new StorageBase(activity, StorageBase.ENCRYPTION_NONE);
+    store = new MessageStore(activity, StorageBase.ENCRYPTION_NONE);
   }
 
   /**
-   * Tests that we can store and retrieve a string.
+   * Tests that we can store a message and retrieve its priority.
    */
   @Test
-  public void storeString() {
-    store.put(TEST_KEY, TEST_VALUE);
-    assertEquals(store.get(TEST_KEY), TEST_VALUE);
+  public void storeMessageGetPriority() {
+    assertEquals(store.getMessagePriority(TEST_MSG_1, -1.0f), -1.0f, 0.1f);
+    store.addMessage(TEST_MSG_1, TEST_PRIORITY_1);
+    assertEquals(store.getMessagePriority(TEST_MSG_1, -1.0f), TEST_PRIORITY_1, 0.1f);
   }
 
   /**
-   * Tests that we can store and retrieve a set of strings.
+   * Tests that we can store messages and get them in order.
    */
   @Test
-  public void storeStringSet() {
-    Set<String> strings = new HashSet<String>();
-    strings.add(TEST_VALUE);
-    strings.add(TEST_VALUE_2);
+  public void storeMessages() {
+    store.addMessage(TEST_MSG_1, TEST_PRIORITY_1);
+    store.addMessage(TEST_MSG_2, TEST_PRIORITY_2);
+    store.addMessage(TEST_MSG_3, TEST_PRIORITY_3);
 
-    store.putSet(TEST_KEY, strings);
-    assertEquals(store.getSet(TEST_KEY), strings);
-  }
+    TreeMap topk = store.getTopK(0);
+    assertEquals(topk.size(), 0);
 
-  /**
-   * Tests that we can store and retrieve a float.
-   */
-  @Test
-  public void storeFloat() {
-    store.putFloat(TEST_FLOAT_KEY, TEST_FLOAT_VALUE);
-    assertEquals(store.getFloat(TEST_FLOAT_KEY, -1.0f), TEST_FLOAT_VALUE, 0.1);
+    topk = store.getTopK(1);
+    assertEquals(topk.size(), 1);
+    assertTrue(topk.values().contains(TEST_MSG_1));
+    assertFalse(topk.values().contains(TEST_MSG_2));
+    assertFalse(topk.values().contains(TEST_MSG_3));
+    assertEquals((Float) topk.lastKey(), TEST_PRIORITY_1, 0.01f);
+
+    topk = store.getTopK(2);
+    assertEquals(topk.size(), 2);
+    assertTrue(topk.values().contains(TEST_MSG_1));
+    assertFalse(topk.values().contains(TEST_MSG_2));
+    assertTrue(topk.values().contains(TEST_MSG_3));
+    assertEquals((Float) topk.lastKey(), TEST_PRIORITY_1, 0.01f);
+    assertEquals((Float) topk.lowerKey(topk.lastKey()), TEST_PRIORITY_3, 0.01f);
+
+    topk = store.getTopK(3);
+    assertEquals(topk.size(), 3);
+    assertTrue(topk.values().contains(TEST_MSG_1));
+    assertTrue(topk.values().contains(TEST_MSG_2));
+    assertTrue(topk.values().contains(TEST_MSG_3));
+    assertEquals((Float) topk.lastKey(), TEST_PRIORITY_1, 0.01f);
+    assertEquals((Float) topk.lowerKey(topk.lastKey()), TEST_PRIORITY_3, 0.01f);
+    assertEquals((Float) topk.lowerKey(topk.lowerKey(topk.lastKey())), TEST_PRIORITY_2, 0.01f);
+
+    topk = store.getTopK(4);
+    assertEquals(topk.size(), 3);
   }
 }
