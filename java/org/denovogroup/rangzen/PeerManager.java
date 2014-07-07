@@ -70,6 +70,9 @@ public class PeerManager {
   /** The WifiDirectSpeaker for the app. */
   private static WifiDirectSpeaker mWifiDirectSpeaker;
 
+  /** The Bluetooth Low Energy Speaker for the app. */
+  private static BluetoothLESpeaker mBluetoothLESpeaker;
+
   /**
    * Private constructor. Use PeerManager.getInstance() to obtain the app's
    * instance of the class.
@@ -82,8 +85,9 @@ public class PeerManager {
 
     // WifiDirectSpeaker needs the context in order to retrieve system 
     // Wifi P2p resources.
-    WifiDirectFrameworkGetter frameworkGetter = new WifiDirectFrameworkGetter();
-    mWifiDirectSpeaker = new WifiDirectSpeaker(context, this, frameworkGetter);
+    // WifiDirectFrameworkGetter frameworkGetter = new WifiDirectFrameworkGetter();
+    // mWifiDirectSpeaker = new WifiDirectSpeaker(context, this, frameworkGetter);
+    mBluetoothLESpeaker = new BluetoothLESpeaker(context, this);
   }
 
   /**
@@ -280,17 +284,20 @@ public class PeerManager {
    * Run tasks, e.g. garbage collection of peers, speaker tasks, etc.
    */
   public void tasks() {
-    mWifiDirectSpeaker.tasks();
+    // mWifiDirectSpeaker.tasks();
+    if (mBluetoothLESpeaker != null) {
+      mBluetoothLESpeaker.tasks();
+    }
 
     // We ask to connect and ping every time but the speaker will ignore 
     // subsequent requests since it has a peer device selected.
     // TODO(lerner): Don't just constantly ask to connect from here.
-    if (mCurrentPeers.size() > 0) {
-      Log.v(TAG, "Found at least 1 peer, connecting to it.");
-      Peer peer = mCurrentPeers.get(0);
-      mWifiDirectSpeaker.selectPeer(peer);
-    }
-    Log.v(TAG, "Finished with PeerManager tasks.");
+    // if (mCurrentPeers.size() > 0) {
+    //   Log.v(TAG, "Found at least 1 peer, connecting to it.");
+    //   Peer peer = mCurrentPeers.get(0);
+    //   mWifiDirectSpeaker.selectPeer(peer);
+    // }
+    // Log.v(TAG, "Finished with PeerManager tasks.");
   }
   
 }

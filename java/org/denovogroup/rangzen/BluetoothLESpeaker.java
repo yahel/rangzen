@@ -30,9 +30,18 @@
  */
 package org.denovogroup.rangzen;
 
+import android.R;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothAdapter.LeScanCallback;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattServer;
+import android.bluetooth.BluetoothGattServerCallback;
+import android.bluetooth.BluetoothGattService;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
+import android.bluetooth.BluetoothProfile.ServiceListener;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -53,28 +62,15 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousCloseException;
-import java.nio.channels.ClosedByInterruptException;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.DatagramChannel;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
+import java.util.UUID;
 
 /**
- * This class handles interactions with the Android WifiP2pManager and the rest
- * of the OS Wifi Direct framework. It acts as a layer of abstraction between
- * the Rangzen application's notion of a "peer" and the actual network
- * communication necessary to manage and communicate with Wifi Direct peers. It
- * searches for peers, manages connections to those peers, and sends and
- * receives packets from those peers. 
- *
- * Currently connected peers "ping" each other with short UDP packets
- * (these are not actual ICMP pings).
- *
- * TODO(lerner): Implement the ability to send messages that aren't just
- * pings to other devices, from higher levels of the app.
+ * This class handles using Bluetooth Low Energy to send and receive messages
+ * from nearby peers.
  */
 public class BluetoothLESpeaker extends BroadcastReceiver {
   /** A string to send as the contents of a ping. */
@@ -85,6 +81,9 @@ public class BluetoothLESpeaker extends BroadcastReceiver {
 
   /** Constant int passed to request to enable Bluetooth, required by Android. */
   public static final int REQUEST_ENABLE_BT = 54321;
+
+  /** UUID for the Rangzen Bluetooth Low Energy Service. */
+  public static final UUID SERVICE_UUID = UUID.fromString("53aaedf2-9a7e-4c72-81c7-e2f6ccb6d730");
   
   /** 
    * A default int value to be returned when getIntExtra fails to find
@@ -105,6 +104,19 @@ public class BluetoothLESpeaker extends BroadcastReceiver {
   /** A handle, retrieved from the OS, to the Wifi Direct framework. */
   private BluetoothAdapter mBluetoothAdapter;
 
+  /** A handle to a Bluetooth Manager, which is a system service. */
+  private BluetoothManager mBluetoothManager;
+
+  
+
+  /** Object representing the Bluetooth LE Gatt Service we advertsie for Rangzen. */
+  private static final int SERVICE_TYPE = BluetoothGattService.SERVICE_TYPE_PRIMARY;
+  private static final BluetoothGattService sGattService = new BluetoothGattService(SERVICE_UUID, 
+                                                                                   SERVICE_TYPE);
+
+  /** BT Profile Proxy for GattServer profile. */
+  private static BluetoothGattServer mGattServerProxy;
+
   /** Context of the Rangzen Service. */
   private Context context;
 
@@ -124,6 +136,7 @@ public class BluetoothLESpeaker extends BroadcastReceiver {
    * Create a new BluetoothLESpeaker.
    *
    * @param context The context to be used to fetch system resources.
+   * @param peerManager The system's PeerManager instance.
    */
   public BluetoothLESpeaker(Context context, PeerManager peerManager) {
     super();
@@ -132,8 +145,7 @@ public class BluetoothLESpeaker extends BroadcastReceiver {
     // understand which context is the appropriate context to be using: either
     // the application context, the main activity's context, or the
     // RangzenService's context. Most likely the correct answer is the Rangzen
-    // Service's context, since WifiDirectSpeaker is instantiated by the
-    // RangzenService.
+    // Service's context, since we're instantiated by the RangzenService.
     this.context = context;
 
     this.mPeerManager = peerManager;
@@ -143,9 +155,12 @@ public class BluetoothLESpeaker extends BroadcastReceiver {
     // Wifi Direct subsystem.
     IntentFilter intentFilter = new IntentFilter();
     intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+    intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
     context.registerReceiver(this, intentFilter);
 
-    this.mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+    mBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+    mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     if (mBluetoothAdapter == null) {
       // Device does not support Bluetooth
       Log.e(TAG, "Device doesn't support Bluetooth.");
@@ -158,12 +173,76 @@ public class BluetoothLESpeaker extends BroadcastReceiver {
       mBluetoothAdapter.enable();
     }
 
+    // This method always seems to return false in my experience, and a forum
+    // post at https://code.google.com/p/android/issues/detail?id=58582 suggests
+    // it might not work at all?
+    // // Ask for a GattServer proxy object.
+    // if (mBluetoothAdapter.getProfileProxy(context, mProxyReceiver, BluetoothProfile.GATT_SERVER)) {
+    //   Log.d(TAG, "Asked successfully for profile proxy for GATT_SERVER.");
+    // } else {
+    //   Log.d(TAG, "Asked unsuccessfully for profile proxy for GATT_SERVER.");
+    // }
+
+    // Another possible method of attempting to run a Gatt Server.
+    mGattServerProxy = mBluetoothManager.openGattServer(context, mGattServerCallback);
+    if (mGattServerProxy != null) {
+      Log.i(TAG, "Opened Gatt Server, adding service.");
+      mGattServerProxy.addService(sGattService);
+    } else {
+      Log.e(TAG, "Opened Gatt Server but got back a null server proxy object.");
+    }
+
+    // mBluetoothAdapter.startLeScan(mLeScanCallback);
+    //
     Log.d(TAG, "Finished creating WifiDirectSpeaker.");
   }
+
+  private BluetoothGattServerCallback mGattServerCallback = new BluetoothGattServerCallback() {
+    @Override
+    public void onServiceAdded(int status, BluetoothGattService service) {
+      if (status == BluetoothGatt.GATT_SUCCESS) { 
+        Log.i(TAG, "Successfully added Gatt Service!");
+      } else if (status == BluetoothGatt.GATT_FAILURE) {
+        Log.e(TAG, "Failure adding Gatt Service!");
+      } else {
+        Log.e(TAG, "Status code not GATT_SUCCESS or GATT_FAILURE adding Gatt Service: " + status);
+      }
+    }
+  };
+
+  private ServiceListener mProxyReceiver = new ServiceListener() {
+    @Override
+    public void onServiceConnected(int profile, BluetoothProfile proxy) {
+      if (profile == BluetoothProfile.GATT_SERVER) {
+        mGattServerProxy = (BluetoothGattServer) proxy;
+        Log.i(TAG, "GattServer proxy connected.");
+    } else {
+        Log.wtf(TAG, "Got a non GattServer proxy in BluetoothLE service listener.");
+      }
+    }
+
+    @Override
+    public void onServiceDisconnected(int profile) {
+      if (profile == BluetoothProfile.GATT_SERVER) {
+        mGattServerProxy = null;
+        Log.i(TAG, "GattServer proxy disconnected.");
+      } else {
+        Log.wtf(TAG, "Informed of non-GattServer service disconnection in BTLE service listener.");
+      }
+    }
+    
+  };
 
   private boolean deviceSupportsBluetooth() {
     return mBluetoothAdapter != null;
   }
+
+  private LeScanCallback mLeScanCallback = new LeScanCallback() {
+    @Override
+    public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
+      Log.d(TAG, "Found a BluetoothDevice from LE scan: " + device);
+    }
+  };
 
   /**
    * Unimplemented (data will not actually be sent!).
