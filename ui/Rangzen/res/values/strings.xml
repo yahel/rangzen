@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Rangzen</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="continueButton">Continue</string>
+    <string name="action_search">Search</string>
+    <string name="new_post">Add Post</string>
+    <string-array name="sidebar">
+        <item>Feed</item>
+        <item>New Post</item>
+        <item>Add Friend</item>
+        <item>Post to Twitter</item>
+        <item>View Friends</item>
+        <item>Saved Posts</item>
+    </string-array>
+
+    <string name="open">Navigation Drawer is Open</string>
+    <string name="close">Navigation Drawer is Closed</string>
+    <color name="whitish">#D7D7D7</color>
+    <string name="hint">Get the word out</string>
+    <string name="app_id">254046681454257</string>
+    <string name="aboutTitle">About Rangzen</string>
+    <string name="aboutBody">This application is a prototype for a research project done by De Novo Group.</string>
+
+</resources>
