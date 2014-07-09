@@ -30,6 +30,7 @@
  */
 package org.denovogroup.rangzen;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeMap;
@@ -81,6 +82,30 @@ public class StorageBaseTest {
   private static final String TEST_FLOAT_KEY = "fk";
   private static final float TEST_FLOAT_VALUE = 7.7f;
 
+  private static final String TEST_KEY_OBJECT = "ok";
+  private static final int TEST_OBJECT_INT_VALUE = 7;
+  private static final String TEST_OBJECT_STRING_VALUE = "foo";
+
+  public static class SimpleObject implements Serializable {
+    private static final long serialVersionUID = 0L;
+    private int v;
+    private String s;
+
+    public SimpleObject(int v, String s) {
+      this.v = v;
+      this.s = s;
+    }
+
+    public boolean equals(Object o) {
+      if (o instanceof SimpleObject) {
+        SimpleObject x = (SimpleObject) o;
+        return v == x.v && s.equals(x.s);
+      }
+
+      return false;
+    }
+  }
+
   @Before
   public void setUp() {
     activity = Robolectric.buildActivity(MainActivity.class).create().get();
@@ -116,5 +141,15 @@ public class StorageBaseTest {
   public void storeFloat() {
     store.putFloat(TEST_FLOAT_KEY, TEST_FLOAT_VALUE);
     assertEquals(store.getFloat(TEST_FLOAT_KEY, -1.0f), TEST_FLOAT_VALUE, 0.1);
+  }
+
+  /**
+   * Tests that we can store and retrieve an object.
+   */
+  @Test
+  public void storeObject() throws Exception {
+    SimpleObject s = new SimpleObject(TEST_OBJECT_INT_VALUE, TEST_OBJECT_STRING_VALUE);
+    store.putObject(TEST_KEY_OBJECT, s);
+    assertEquals((SimpleObject) store.getObject(TEST_KEY_OBJECT), s);
   }
 }

@@ -32,7 +32,15 @@ package org.denovogroup.rangzen;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
+import android.util.Base64;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OptionalDataException;
+import java.io.StreamCorruptedException;
 import java.util.Date;
 import java.util.Set;
 
@@ -101,6 +109,23 @@ public class StorageBase {
   }
 
   /**
+   * Stores the given object in the Rangzen generic store, using Java's object
+   * serialization and base64 coding.
+   *
+   * @param key The key under which to store the data.
+   * @param value The object to store, which must be serializable.
+   */
+  public void putObject(String key, Object value) throws IOException,
+         StreamCorruptedException, OptionalDataException {
+    ByteArrayOutputStream b = new ByteArrayOutputStream();
+    ObjectOutputStream o = new ObjectOutputStream(b);
+    o.writeObject(value);
+    o.close();
+
+    put(key, new String(Base64.encode(b.toByteArray(), Base64.DEFAULT))); 
+  }
+
+  /**
    * Stores the given set of strings in the Rangzen generic store.
    *
    * @param key The key under which to store the data.
@@ -137,6 +162,22 @@ public class StorageBase {
   public String get(String key) {
     // TODO(barath): Change this retrieval approach once we are encrypting.
     return store.getString(key, null);
+  }
+
+  /**
+   * Retrieves the object associated with the given key.
+   *
+   * @param key The key under which to retrieve a object from the store.
+   * @return The object requested or null if not found.
+   */
+  public Object getObject(String key) throws IOException,
+         ClassNotFoundException, StreamCorruptedException, OptionalDataException {
+    String v = get(key);
+    if (v == null) return null;
+
+    ObjectInputStream o = new ObjectInputStream(
+        new ByteArrayInputStream(Base64.decode(v, Base64.DEFAULT)));
+    return o.readObject();
   }
 
   /**
