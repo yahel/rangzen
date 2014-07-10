@@ -37,31 +37,34 @@ import android.bluetooth.BluetoothDevice;
 import java.util.Arrays;
 
 /**
- * This class represents the network connectivity over wifi hotspot mode
+ * This class represents the network connectivity over Bluetooth Low Energy
  * that can be used to reach a certain peer.
  */
-public class HotspotPeerNetwork implements PeerNetwork {
-  /** A ScanResult (description of an AP) associated with this Peer Network */
-  ScanResult scanResult;
+public class BluetoothLEPeerNetwork implements PeerNetwork {
+  /** 
+   * A BluetoothDevice (remote Bluetooth device) associated with this Peer Network,
+   * and used for low energy BT communication.
+   */
+  BluetoothDevice mBluetoothLEDevice;
 
   /**
-   * Create a PeerNetwork with no remote network devices to talk to.
+   * Create a BluetoothLEPeerNetwork with no remote network devices to talk to.
    */
-  public HotspotPeerNetwork() { }
+  public BluetoothLEPeerNetwork() { }
 
   /**
-   * Create a PeerNetwork with a remote WifiP2pDevice to talk to .
+   * Create a BluetoothLEPeerNetwork with a remote BluetoothDevice to talk to .
    */
-  public HotspotPeerNetwork(ScanResult scanResult) {
-    this.scanResult = scanResult;
+  public BluetoothLEPeerNetwork(BluetoothDevice bluetoothDevice) {
+    this.mBluetoothLEDevice = bluetoothDevice;
   }
 
   /**
-   * Send a message. Returns immediately, sending the message asynchronously
+   * Unimplemented.
+   *
+   * TODO(lerner): Send a message. Returns immediately, sending the message asynchronously
    * as it is possible to do so given the constraints of the network media
    * (peer comes and goes, need to connect first, etc.)
-   *
-   * @return False if the message could not be sent, true otherwise.
    */
   public void send(String message) {
   }
@@ -77,49 +80,17 @@ public class HotspotPeerNetwork implements PeerNetwork {
   }
 
   /**
-   * Two PeerNetworks are equal if they communicate with the same network
-   * devices.
+   * Two PeerNetworks are equal if they communicate with the same network devices.
    *
    * @return True if the PeerNetworks are equal, false otherwise.
    */
   public boolean equals(PeerNetwork other) {
     if (other == null) {
       return false;
-    } else if (scanResult != null) {
-      return scanResultsEqual(scanResult, other.getScanResult());
+    } else if (mBluetoothLEDevice != null) {
+      return mBluetoothLEDevice.equals(other.getBluetoothLEDevice());
     } else {
-      return scanResult == other.getScanResult();
-    }
-  }
-
-  /**
-   * Return true if the ScanResults are the same (all fields equal),
-   * false otherwise.
-   *
-   * @param a A scan result to compare.
-   * @param b Another scan result to compare.
-   * @return Whether the given scan results seem to point to the same
-   * network.
-   */
-  private boolean scanResultsEqual(ScanResult a, ScanResult b) {
-    if (a == null || b == null) {
-      return a == b;
-    } else {
-      boolean sameBSSID = (a.BSSID == null ? 
-                           b.BSSID == null : 
-                           a.BSSID.equals(b.BSSID));
-      boolean sameSSID = (a.SSID == null ? 
-                          b.SSID == null : 
-                          a.SSID.equals(b.SSID));
-      boolean sameCapabilities = (a.capabilities == null ? 
-                                  b.capabilities == null : 
-                                  a.capabilities.equals(b.capabilities));
-      boolean sameFrequency = (a.frequency == b.frequency);
-      boolean sameTimestamp = (a.timestamp == b.timestamp);
-      boolean sameLevel = (a.level == b.level);
-
-      return sameBSSID && sameSSID && sameCapabilities &&
-             sameFrequency && sameLevel && sameTimestamp;
+      return mBluetoothLEDevice == other.getBluetoothLEDevice();
     }
   }
 
@@ -129,20 +100,19 @@ public class HotspotPeerNetwork implements PeerNetwork {
    * @return A deep copy of the PeerNetwork.
    */
   public PeerNetwork clone() {
-    PeerNetwork clone = new HotspotPeerNetwork(scanResult);
-
+    PeerNetwork clone = new BluetoothLEPeerNetwork(mBluetoothLEDevice);
     return clone;
   }
 
   public String toString() {
-    if (scanResult == null) {
-      return "<no hotspot device>";
+    if (mBluetoothLEDevice == null) {
+      return "<no bluetooth device>";
     }
-    return scanResult.SSID;
+    return mBluetoothLEDevice.getAddress();
   }
 
   /**
-   * Returns null, since this Peer Network is backed by a ScanResult.
+   * Returns null, since this Peer Network is backed by a BluetoothDevice.
    *
    * @return Null.
    */
@@ -151,38 +121,41 @@ public class HotspotPeerNetwork implements PeerNetwork {
   }
 
   /**
-   * Return the ScanResult backing this peer network, if any.
-   *
-   * @return This peer network's ScanResult.
-   */
-  public ScanResult getScanResult() {
-    return scanResult;
-  }
-
-  /**
-   * Returns null, since this Peer Network is backed by a WifiP2pDevice.
+   * Returns null, since this Peer Network is backed by a BluetoothDevice.
    *
    * @return Null.
    */
-  public BluetoothDevice getBluetoothLEDevice() {
+  public ScanResult getScanResult() {
     return null;
   }
 
   /**
-   * Returns null, since this Peer Network is backed by a BluetoothDevice.
+   * Return the backing BluetoothDevice of this peer network.
    *
-   * @return Null
+   * @return The BluetoothDevice backing this peer network, or null if none
+   * exists.
+   */
+  public BluetoothDevice getBluetoothLEDevice() {
+    return mBluetoothLEDevice;
+  }
+
+  /**
+   * Returns null, since this Peer Network is low energy, not normal Bluetooth.
+   *
+   * @return Null.
    */
   public BluetoothDevice getBluetoothDevice() {
     return null;
   }
 
   /**
-   * Return a constant indicating that this peer network is of type Hotspot.
+   * Return a constant indicating that this peer network is of type
+   * Bluetooth Low Energy.
    *
-   * @return The constant PeerNetwork.HOTSPOT_TYPE.
+   * @return The constant PeerNetwork.BLUETOOTH_LOW_ENERGY_TYPE
    */
   public int getNetworkType() {
-    return PeerNetwork.HOTSPOT_TYPE;
+    return PeerNetwork.BLUETOOTH_LOW_ENERGY_TYPE;
   }
+
 }

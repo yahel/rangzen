@@ -24,3 +24,6 @@ eclimd.log
 /buck-out/
 local.properties
 .buckd
+
+#OS X stupid stuff
+.DS_Store

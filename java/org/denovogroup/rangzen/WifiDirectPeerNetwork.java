@@ -32,6 +32,7 @@ package org.denovogroup.rangzen;
 
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.ScanResult;
+import android.bluetooth.BluetoothDevice;
 
 import java.util.Arrays;
 
@@ -125,5 +126,32 @@ public class WifiDirectPeerNetwork implements PeerNetwork {
    */
   public ScanResult getScanResult() {
     return null;
+  }
+
+  /**
+   * Returns null, since this Peer Network is backed by a WifiP2pDevice.
+   *
+   * @return Null.
+   */
+  public BluetoothDevice getBluetoothLEDevice() {
+    return null;
+  }
+
+  /**
+   * Returns null, since this Peer Network is backed by a WifiP2pDevice.
+   *
+   * @return Null.
+   */
+  public BluetoothDevice getBluetoothDevice() {
+    return null;
+  }
+
+  /**
+   * Return a constant indicating that this peer network is of type Wifi Direct.
+   *
+   * @return The constant PeerNetwork.WIFI_DIRECT_TYPE.
+   */
+  public int getNetworkType() {
+    return PeerNetwork.WIFI_DIRECT_TYPE;
   }
 }

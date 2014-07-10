@@ -35,6 +35,7 @@ import org.denovogroup.rangzen.PeerNetwork;
 
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.ScanResult;
+import android.bluetooth.BluetoothDevice;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -63,6 +64,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.Date;
 
@@ -82,11 +84,22 @@ public class PeerTest {
   private Peer sameHotspotPeer;
   private Peer differentHotspotPeer;
 
+  private Peer bluetoothLEPeer;
+  private Peer sameBluetoothLEPeer;
+  private Peer differentBluetoothLEPeer;
+
+  private Peer bluetoothPeer;
+  private Peer sameBluetoothPeer;
+  private Peer differentBluetoothPeer;
+
   private static final String addr1 = "00:11:22:33:44:55";
   private static final String addr2 = "99:88:77:66:55:44";
 
   private static final String SSID1 = "SSID1";
   private static final String SSID2 = "SSID2";
+
+  private static final String BTADDR1 = "11:22:33:44:55:66";
+  private static final String BTADDR2 = "66:55:44:33:22:11";
 
   @Before
   public void setUp() {
@@ -117,6 +130,18 @@ public class PeerTest {
     sameHotspotPeer= new Peer(new HotspotPeerNetwork(scanResult1));
     differentHotspotPeer = new Peer(new HotspotPeerNetwork(scanResult2));
 
+    BluetoothDevice bluetoothDevice1 = mock(BluetoothDevice.class);
+    BluetoothDevice bluetoothDevice2 = mock(BluetoothDevice.class);
+    when(bluetoothDevice1.getAddress()).thenReturn(BTADDR1);
+    when(bluetoothDevice2.getAddress()).thenReturn(BTADDR2);
+
+    bluetoothLEPeer = new Peer(new BluetoothLEPeerNetwork(bluetoothDevice1));
+    sameBluetoothLEPeer = new Peer(new BluetoothLEPeerNetwork(bluetoothDevice1));
+    differentBluetoothLEPeer = new Peer(new BluetoothLEPeerNetwork(bluetoothDevice2));
+
+    bluetoothPeer = new Peer(new BluetoothPeerNetwork(bluetoothDevice1));
+    sameBluetoothPeer = new Peer(new BluetoothPeerNetwork(bluetoothDevice1));
+    differentBluetoothPeer = new Peer(new BluetoothPeerNetwork(bluetoothDevice2));
   }
 
   /**
@@ -128,12 +153,18 @@ public class PeerTest {
     Date timeBefore = new Date();
     Peer p = new Peer(new WifiDirectPeerNetwork());
     Peer p2 = new Peer(new HotspotPeerNetwork());
+    Peer p3 = new Peer(new BluetoothLEPeerNetwork());
+    Peer p4 = new Peer(new BluetoothPeerNetwork());
     Date timeAfter = new Date();
 
     assertFalse("Last seen time not after creation", p.getLastSeen().after(timeAfter));
     assertFalse("Last seen time not before creation", p.getLastSeen().before(timeBefore));
     assertFalse("Last seen time not after creation", p2.getLastSeen().after(timeAfter));
     assertFalse("Last seen time not before creation", p2.getLastSeen().before(timeBefore));
+    assertFalse("Last seen time not after creation", p3.getLastSeen().after(timeAfter));
+    assertFalse("Last seen time not before creation", p3.getLastSeen().before(timeBefore));
+    assertFalse("Last seen time not after creation", p4.getLastSeen().after(timeAfter));
+    assertFalse("Last seen time not before creation", p4.getLastSeen().before(timeBefore));
   }
 
   /**
@@ -144,12 +175,18 @@ public class PeerTest {
     Date timeBefore = new Date();
     peer.touch();
     hotspotPeer.touch();
+    bluetoothLEPeer.touch();
+    bluetoothPeer.touch();
     Date timeAfter = new Date();
 
     assertFalse("Last seen time not after touch", peer.getLastSeen().after(timeAfter));
     assertFalse("Last seen time not before touch", peer.getLastSeen().before(timeBefore));
     assertFalse("Last seen time not after touch", hotspotPeer.getLastSeen().after(timeAfter));
     assertFalse("Last seen time not before touch", hotspotPeer.getLastSeen().before(timeBefore));
+    assertFalse("Last seen time not after touch", bluetoothLEPeer.getLastSeen().after(timeAfter));
+    assertFalse("Last seen time not before touch", bluetoothLEPeer.getLastSeen().before(timeBefore));
+    assertFalse("Last seen time not after touch", bluetoothPeer.getLastSeen().after(timeAfter));
+    assertFalse("Last seen time not before touch", bluetoothPeer.getLastSeen().before(timeBefore));
   }
 
   /**
@@ -160,17 +197,17 @@ public class PeerTest {
     Date dateToSet = new Date(123456789);
     peer.touch(dateToSet);
     hotspotPeer.touch(dateToSet);
+    bluetoothLEPeer.touch(dateToSet);
+    bluetoothPeer.touch(dateToSet);
 
     assertTrue(peer.getLastSeen().equals(dateToSet));
     assertTrue(hotspotPeer.getLastSeen().equals(dateToSet));
+    assertTrue(bluetoothLEPeer.getLastSeen().equals(dateToSet));
+    assertTrue(bluetoothPeer.getLastSeen().equals(dateToSet));
   }
 
   /**
    * Tests that two peers with the same network device are equal.
-   *
-   * Can't run this test because it requires calling into the Android API
-   * to create WifiP2pDevices that are the same/different since that's the
-   * criteria on which comparisons of PeerNetworks are based.
    */
   @Test
   public void peerEquality() {
@@ -182,6 +219,14 @@ public class PeerTest {
             hotspotPeer.equals(sameHotspotPeer));
     assertFalse("Different network device but hotspot peers equal.", 
             hotspotPeer.equals(differentHotspotPeer));
+    assertTrue("Same network device but peers hotspot not equal.", 
+            bluetoothLEPeer.equals(sameBluetoothLEPeer));
+    assertFalse("Different network device but bluetoothLE peers equal.", 
+            bluetoothLEPeer.equals(differentBluetoothLEPeer));
+    assertTrue("Same network device but peers hotspot not equal.", 
+            bluetoothPeer.equals(sameBluetoothPeer));
+    assertFalse("Different network device but bluetooth peers equal.", 
+            bluetoothPeer.equals(differentBluetoothPeer));
   }
 
   /**
@@ -197,6 +242,14 @@ public class PeerTest {
             hotspotPeer.equals(hotspotPeer.clone()));
     assertTrue("Same network device peer not equal to clone of peer.",
             sameHotspotPeer.equals(hotspotPeer.clone()));
+    assertTrue("Peer not .equals() to its clone.", 
+            bluetoothLEPeer.equals(bluetoothLEPeer.clone()));
+    assertTrue("Same network device peer not equal to clone of peer.",
+            sameBluetoothLEPeer.equals(bluetoothLEPeer.clone()));
+    assertTrue("Peer not .equals() to its clone.", 
+            bluetoothPeer.equals(bluetoothPeer.clone()));
+    assertTrue("Same network device peer not equal to clone of peer.",
+            sameBluetoothPeer.equals(bluetoothPeer.clone()));
 
   }
 }

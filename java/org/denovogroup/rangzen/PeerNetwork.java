@@ -32,13 +32,19 @@ package org.denovogroup.rangzen;
 
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.ScanResult;
+import android.bluetooth.BluetoothDevice;
 
 /**
  * This class represents the network connectivity over 0 or more modalities
  * that can be used to reach a certain peer.
  */
 public interface PeerNetwork {
-  /**
+  public static final int BLUETOOTH_LOW_ENERGY_TYPE = 0;
+  public static final int BLUETOOTH_TYPE = 1;
+  public static final int HOTSPOT_TYPE = 2;
+  public static final int WIFI_DIRECT_TYPE = 3;
+
+/**
    * Send a message. Returns immediately, sending the message asynchronously
    * as it is possible to do so given the constraints of the network media
    * (peer comes and goes, need to connect first, etc.)
@@ -90,4 +96,31 @@ public interface PeerNetwork {
    * @return A backing ScanResult if one exists; otherwise null.
    */
   public ScanResult getScanResult();
+
+  /** 
+   * If the PeerNetwork is if of a type that uses Bluetooth low energy, 
+   * return the backing BluetoothDevice, if any. If it is not a BLE peer,
+   * or if it is but isn't backed by any device, returns null.
+   *
+   * @return A backing BluetoothDevice if the network is type Bluetooth Low
+   * Energy, and one exists; otherwise null.
+   */
+  public BluetoothDevice getBluetoothLEDevice();
+
+  /** 
+   * If the PeerNetwork is if of a type that uses regular Bluetooth,
+   * return the backing BluetoothDevice, if any. If it is not a BT peer,
+   * or if it is but isn't backed by any device, returns null.
+   *
+   * @return A backing BluetoothDevice if the network is type Bluetooth and
+   * one exists; otherwise null.
+   */
+  public BluetoothDevice getBluetoothDevice();
+
+  /**
+   * Return a constant indicating the type of network this object represents,
+   * chosen from BLUETOOTH_TYPE, BLUETOOTH_LOW_ENERGY_TYPE, HOTSPOT_TYPE and
+   * WIFI_DIRECT_TYPE.
+   */
+  public int getNetworkType();
 }
