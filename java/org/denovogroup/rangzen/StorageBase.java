@@ -154,6 +154,20 @@ public class StorageBase {
   }
 
   /**
+   * Stores the given int in the Rangzen generic store.
+   *
+   * @param key The key under which to store the data.
+   * @param value The value to store.
+   */
+  public void putInt(String key, int value) {
+    // TODO(barath): Change this storage approach once we are encrypting.
+    editor.putInt(key, value);
+
+    // TODO(barath): Consider whether we should use .commit() instead of apply().
+    editor.apply();
+  }
+
+  /**
    * Retrieves the value associated with the given key.
    *
    * @param key The key under which to retrieve a value from the store.
@@ -201,5 +215,17 @@ public class StorageBase {
   public float getFloat(String key, float defvalue) {
     // TODO(barath): Change this retrieval approach once we are encrypting.
     return store.getFloat(key, defvalue);
+  }
+
+  /**
+   * Retrieves the value associated with the given key.
+   *
+   * @param key The key under which to retrieve a value from the store.
+   * @param defvalue The default value to return if not found.
+   * @return The value requested or defvalue if not found.
+   */
+  public int getInt(String key, int defvalue) {
+    // TODO(barath): Change this retrieval approach once we are encrypting.
+    return store.getInt(key, defvalue);
   }
 }

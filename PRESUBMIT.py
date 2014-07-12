@@ -16,7 +16,7 @@ def CheckChange(input_api, output_api):
 
     # Clean and build the app before linting it so that the currect and current
     # .class files are present for lint.
-    BuckClean(input_api, output_api)
+    # BuckClean(input_api, output_api)
     results += BuckBuild(input_api, output_api)
 
     # Lint.

@@ -13,6 +13,22 @@ robolectric_test(
 )
 
 robolectric_test(
+  name = 'locationStoreTest',
+  srcs = ['LocationStoreTest.java'],
+  source_under_test = [ '//java/org/denovogroup/rangzen:rangzen' ],
+  visibility = [ 'PUBLIC' ],
+  resources = [
+    '//res/org/denovogroup/rangzen:res',
+  ],
+  deps = [
+    '//libs:robolectric-2.3',
+    '//libs:junit-4.11',
+    '//libs:hamcrest-core-1.3',
+    '//java/org/denovogroup/rangzen:rangzen',
+  ],
+)
+
+robolectric_test(
   name = 'messageStoreTest',
   srcs = ['MessageStoreTest.java'],
   source_under_test = [ '//java/org/denovogroup/rangzen:rangzen' ],
@@ -21,7 +37,6 @@ robolectric_test(
     '//res/org/denovogroup/rangzen:res',
   ],
   deps = [
-    '//java/org/denovogroup/rangzen:rangzen',
     '//libs:robolectric-2.3',
     '//libs:junit-4.11',
     '//libs:hamcrest-core-1.3',
@@ -97,7 +112,6 @@ robolectric_test(
     '//res/org/denovogroup/rangzen:res',
   ],
   deps = [
-    '//java/org/denovogroup/rangzen:rangzen',
     '//libs:robolectric-2.3',
     '//libs:junit-4.11',
     '//libs:hamcrest-core-1.3',
@@ -114,7 +128,6 @@ robolectric_test(
     '//res/org/denovogroup/rangzen:res',
   ],
   deps = [
-    '//java/org/denovogroup/rangzen:rangzen',
     '//libs:robolectric-2.3',
     '//libs:junit-4.11',
     '//libs:hamcrest-core-1.3',

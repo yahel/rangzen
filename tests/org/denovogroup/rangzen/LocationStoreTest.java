@@ -30,13 +30,16 @@
  */
 package org.denovogroup.rangzen;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.OptionalDataException;
+import java.io.StreamCorruptedException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
 
 import org.denovogroup.rangzen.MainActivity;
-import org.denovogroup.rangzen.StorageBase;
+import org.denovogroup.rangzen.MessageStore;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -53,115 +56,77 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowActivity;
 import org.robolectric.shadows.ShadowIntent;
 
+import android.location.Location;
+
 /**
- * Unit tests for Rangzen's StorageBase class
+ * Unit tests for Rangzen's MessageStore class
  */
 @Config(manifest="./apps/rangzen/AndroidManifest.xml", 
         emulateSdk=18, 
         resourceDir="../../res/org/denovogroup/rangzen/res")
 @RunWith(RobolectricTestRunner.class)
-public class StorageBaseTest {
-  /** The instance of StorageBase we're using for tests. */
-  private StorageBase store;
+public class LocationStoreTest {
+  /** The instance of MessageStore we're using for tests. */
+  private LocationStore store;
 
-  /** The app instance we're using to pass to StorageBase. */
+  /** The app instance we're using to pass to MessageStore. */
   private MainActivity activity;
 
-  /** Test strings we're writing into the storage system. */
-  private static final String TEST_KEY = "k";
-  private static final String TEST_VALUE = "v1";
-  private static final String TEST_VALUE_2 = "v2";
+  /** Some locations we store/retrieve. */
+  private Location loc1;
+  private Location loc2;
+  private SerializableLocation serialLoc1;
+  private SerializableLocation serialLoc2;
 
-  private static final String TEST_FLOAT_KEY = "fk";
-  private static final float TEST_FLOAT_VALUE = 7.7f;
+  /** The values we have in the locations. */
+  private double lat1 = 12.3;
+  private double lat2 = 23.4;
 
-  private static final String TEST_INT_KEY = "ik";
-  private static final int TEST_INT_VALUE = 512;
-
-  private static final String TEST_KEY_OBJECT = "ok";
-  private static final int TEST_OBJECT_INT_VALUE = 7;
-  private static final String TEST_OBJECT_STRING_VALUE = "foo";
-
-  public static class SimpleObject implements Serializable {
-    private static final long serialVersionUID = 0L;
-    private int v;
-    private String s;
-
-    public SimpleObject(int v, String s) {
-      this.v = v;
-      this.s = s;
-    }
-
-    public boolean equals(Object o) {
-      if (o instanceof SimpleObject) {
-        SimpleObject x = (SimpleObject) o;
-        return v == x.v && s.equals(x.s);
-      }
-
-      return false;
-    }
-  }
+  private String PROVIDER1 = "Provider1";
+  private String PROVIDER2 = "Provider2";
 
   @Before
   public void setUp() {
     activity = Robolectric.buildActivity(MainActivity.class).create().get();
-    store = new StorageBase(activity, StorageBase.ENCRYPTION_NONE);
+    store = new LocationStore(activity, StorageBase.ENCRYPTION_NONE);
+
+    loc1 = new Location(PROVIDER1);
+    loc2 = new Location(PROVIDER2);
+    loc1.setLatitude(lat1);
+    loc2.setLatitude(lat2);
+    serialLoc1 = new SerializableLocation(loc1);
+    serialLoc2 = new SerializableLocation(loc2);
+
   }
 
   /**
-   * Tests that we can store and retrieve a string.
+   * Tests that we can store locations and get them all back.
    */
   @Test
-  public void storeString() {
-    store.put(TEST_KEY, TEST_VALUE);
-    assertEquals(store.get(TEST_KEY), TEST_VALUE);
-  }
+  public void storeLocations() throws StreamCorruptedException, OptionalDataException, 
+         IOException, ClassNotFoundException {
+    assertEquals(0, store.getAllLocations().size());
+    assertTrue(store.addLocation(serialLoc1));
+    assertEquals(1, store.getAllLocations().size());
+    assertTrue(store.addLocation(serialLoc2));
+    assertEquals(2, store.getAllLocations().size());
 
-  /**
-   * Tests that we can store and retrieve a set of strings.
-   */
-  @Test
-  public void storeStringSet() {
-    Set<String> strings = new HashSet<String>();
-    strings.add(TEST_VALUE);
-    strings.add(TEST_VALUE_2);
+    List<SerializableLocation> locations = store.getAllLocations();
+    for (SerializableLocation location : locations) {
+      if (PROVIDER1.equals(location.provider)) {
+        assertEquals(lat1, location.latitude, 0.1);
+      } else if (PROVIDER2.equals(location.provider)) {
+        assertEquals(lat2, location.latitude, 0.1);
+      } else {
+        assertFalse("Provider isn't PROVIDER1 or PROVIDER2", true);
+      }
+    }
 
-    store.putSet(TEST_KEY, strings);
-    assertEquals(store.getSet(TEST_KEY), strings);
-  }
-
-  /**
-   * Tests that we can store and retrieve a float.
-   */
-  @Test
-  public void storeFloat() {
-    store.putFloat(TEST_FLOAT_KEY, TEST_FLOAT_VALUE);
-    assertEquals(store.getFloat(TEST_FLOAT_KEY, -1.0f), TEST_FLOAT_VALUE, 0.1);
-  }
-
-  /**
-   * Tests that we can store and retrieve an int.
-   */
-  @Test
-  public void storeInt() {
-    store.putInt(TEST_INT_KEY, TEST_INT_VALUE);
-    assertEquals(store.getInt(TEST_INT_KEY, -100), TEST_INT_VALUE);
-  }
-
-  /**
-   * Tests that we can store and retrieve an object.
-   */
-  @Test
-  public void storeObject() throws Exception {
-    SimpleObject s = new SimpleObject(TEST_OBJECT_INT_VALUE, TEST_OBJECT_STRING_VALUE);
-    store.putObject(TEST_KEY_OBJECT, s);
-    assertEquals((SimpleObject) store.getObject(TEST_KEY_OBJECT), s);
   }
 }
