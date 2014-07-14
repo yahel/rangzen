@@ -15,6 +15,7 @@ android_library(
            'MessageStore.java',
            'BluetoothLEPeerNetwork.java',
            'BluetoothPeerNetwork.java',
+           'ContactsGetterStorer.java',
   ],
   visibility = [ 'PUBLIC' ],
   deps = [

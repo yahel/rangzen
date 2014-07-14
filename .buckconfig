@@ -1,3 +1,7 @@
 [alias]
     rangzen = //apps/rangzen:rangzen
     WifiDirectSpeakerTest = //tests/org/denovogroup/rangzen:wifiDirectSpeakerTest
+
+[project]
+  ignore = .git, bin/
+

@@ -30,7 +30,7 @@
  */
 package org.denovogroup.rangzen;
 
-import android.app.Activity;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Base64;
 
@@ -80,17 +80,17 @@ public class StorageBase {
    * Creates a store for any Rangzen data, with a consistent application of encryption of that
    * stored data, as specified.
    *
-   * @param activity The app instance for which to perform storage.
+   * @param context The app instance for which to perform storage.
    *
    * @param encryptionMode The encryption mode to use for all calls using this instance.
    */
-  public StorageBase(Activity activity, int encryptionMode) throws IllegalArgumentException {
+  public StorageBase(Context context, int encryptionMode) throws IllegalArgumentException {
     // TODO(barath): Remove this check once we support more encryption modes.
     if (encryptionMode != ENCRYPTION_NONE) {
       throw new IllegalArgumentException("encryptionMode " + encryptionMode + " not supported.");
     }
 
-    store = activity.getSharedPreferences(STORE_FILE_NAME, Activity.MODE_PRIVATE);
+    store = context.getSharedPreferences(STORE_FILE_NAME, Context.MODE_PRIVATE);
     editor = store.edit();
   }
 
