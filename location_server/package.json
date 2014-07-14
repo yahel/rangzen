@@ -1,0 +1,9 @@
+{
+  "name": "location_server",
+    "description": "Location Server for Rangzen Test",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+      "express": "4.6.1"
+    }
+}

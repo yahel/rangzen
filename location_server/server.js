@@ -1,0 +1,177 @@
+require('log-timestamp');
+
+var express = require('express');
+var bodyParser = require('body-parser');
+var app = express();
+
+// Express declarations
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({
+    extended: true
+}));
+
+// Server data variables
+var phones = {};
+
+// Returns the distance in km between the two given locations.
+function CalculateDistance(lat1, lng1, lat2, lng2) {
+  var R = 6371; // Radius of Earth in km.
+  var dlat = (lat2 - lat1) * Math.PI / 180;
+  var dlng = (lng2 - lng1) * Math.PI / 180;
+  var a = 0.5 - Math.cos(dlat)/2 + 
+          Math.cos(lat1 * Math.PI / 180) *
+          Math.cos(lat2 * Math.PI / 180) * 
+          (1 - Math.cos(dlng)) / 2;
+
+  return R * 2 * Math.asin(Math.sqrt(a));
+};
+
+// Input fields:
+//   phoneid : <hex string>
+//   friends : [ <friend string>, ... ]
+//
+// Output fields:
+//   status : "ok" or "failed"
+function RegisterPhone(req, res) {
+  if (!('phoneid' in req.body) ||
+      req.body.phoneid in phones) {
+    console.log("RegisterPhone failed: " + JSON.stringify(req.body));
+    response = { "status" : "failed" };
+    res.send(300, JSON.stringify(response));
+    return;
+  }
+  
+  console.log("RegisterPhone ok, phone: " + req.body.phoneid);
+  phones[req.body.phoneid] = {};
+  phones[req.body.phoneid]['friends'] = req.body.friends;
+  phones[req.body.phoneid]['locations'] = [];
+
+  response = { "status" : "ok" };
+  res.send(200, JSON.stringify(response));
+}
+
+// Input fields:
+//   phoneid : <hex string>
+// 
+// Output fields:
+//   status : "ok" or "failed"
+//   friends : [ <friend string>, ... ]
+function GetFriends(req, res) {
+  if (!('phoneid' in req.body)) {
+    console.log("GetFriends failed: " + JSON.stringify(req.body));
+    response = { "status" : "failed" };
+    res.send(300, JSON.stringify(response));
+    return;
+  }
+
+  console.log("GetFriends ok, phone: " + req.body.phoneid);
+
+  response = { "status" : "ok",
+               "friends" : phones[req.body.phoneid].friends };
+  res.send(200, JSON.stringify(response));
+}
+
+// Input fields:
+//   phoneid : <hex string>
+//   locations : [ { timestamp : <time>, lat : <latitude>, lng : <longitude> },
+//                 { timestamp : <later_time>, lat : <latitude>, lng : <longitude> } ]
+//
+// Output fields:
+//   status : "ok" or "failed"
+function UpdateLocations(req, res) {
+  if (!('phoneid' in req.body)) {
+    console.log("UpdateLocations failed: " + JSON.stringify(req.body));
+    response = { "status" : "failed" };
+    res.send(300, JSON.stringify(response));
+    return;
+  }
+  
+  for (l in req.body.locations) {
+    var value = req.body.locations[l];
+    if (!('timestamp' in value && 'lat' in value && 'lng' in value)) {
+      console.log("UpdateLocations skipping malformed value: " + JSON.stringify(value));
+      continue;
+    }
+    phones[req.body.phoneid].locations.push(req.body.locations[l]);
+  }
+
+  console.log("UpdateLocations ok, phone: " + req.body.phoneid);
+  response = { "status" : "ok" };
+  res.send(200, JSON.stringify(response));
+}
+
+// Input fields:
+//   phoneid : <hex string>
+// 
+// Output fields:
+//   status : "ok" or "failed"
+//   locations : [ <location tuple>, ... ]
+function GetPreviousLocations(req, res) {
+  if (!('phoneid' in req.body)) {
+    console.log("GetPreviousLocations failed: " + JSON.stringify(req.body));
+    response = { "status" : "failed" };
+    res.send(300, JSON.stringify(response));
+    return;
+  }
+
+  console.log("GetPreviousLocations ok, phone: " + req.body.phoneid);
+
+  response = { "status" : "ok",
+               "locations" : phones[req.body.phoneid].locations };
+  res.send(200, JSON.stringify(response));
+}
+
+// Input fields:
+//   phoneid : <hex string>
+//   distance : <float in km>
+// 
+// Output fields:
+//   status : "ok" or "failed"
+//   phones : [ <hex strings>, ... ]
+function GetNearbyPhones(req, res) {
+  if (!('phoneid' in req.body && 'distance' in req.body) ||
+      isNaN(parseFloat(req.body.distance))) {
+    console.log("GetNearbyPhones failed: " + JSON.stringify(req.body));
+    response = { "status" : "failed" };
+    res.send(300, JSON.stringify(response));
+    return;
+  }
+
+  var dist_limit = parseFloat(req.body.distance);
+
+  if (phones[req.body.phoneid].locations.length < 1) {
+    console.log("GetNearbyPhones failed, current phone has no locations: " + JSON.stringify(req.body));
+    response = { "status" : "failed" };
+    res.send(300, JSON.stringify(response));
+    return;
+  }
+  var us_loc = phones[req.body.phoneid].locations[phones[req.body.phoneid].locations.length - 1];
+
+  var local_phones = [];
+  for (p in phones) {
+    if (p == req.body.phoneid) continue;
+    if (phones[p].locations.length < 1) continue;
+
+    var them_loc = phones[p].locations[phones[p].locations.length - 1];
+    var dist = CalculateDistance(us_loc.lat, us_loc.lng, them_loc.lat, them_loc.lng);
+    if (dist <= dist_limit) {
+      local_phones.push(p);
+    }
+  }
+  
+  console.log("GetNearbyPhones ok, phone: " + req.body.phoneid);
+  response = { "status" : "ok",
+               "phones" : local_phones };
+  res.send(200, JSON.stringify(response));
+}
+
+// API for Rangzen Location Server
+app.post('/register_phone', RegisterPhone);
+app.post('/get_friends', GetFriends);
+app.post('/update_locations', UpdateLocations);
+app.post('/get_previous_locations', GetPreviousLocations);
+app.post('/get_nearby_phones', GetNearbyPhones);
+
+port = 1337;
+app.listen(port);
+console.log('Rangzen Location Server listening at http://localhost:' + port)
