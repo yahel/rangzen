@@ -30,55 +30,20 @@
  */
 package org.denovogroup.rangzen;
 
-import android.location.Location;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
 
-import java.io.Serializable;
+public class StartupIntentReceiver extends BroadcastReceiver {
+  /** Included in log messages. */
+  private static final String TAG = "StartupIntentReceiver";
 
-/**
- * Serializable object with location fields that can be instantiated from an
- * Android location.
- */
-public class SerializableLocation implements Serializable {
-  /** Indicates backwards compatibility of serializability. */
-  private static final long serialVersionUID = 1L;
-
-  public double latitude;
-  public double longitude;
-  public float accuracy;
-  public double altitude;
-  public float bearing;
-  public long realTimeNanos;
-  public String provider;
-  public float speed;
-  public long time;
-
-  public boolean hasAccuracy;
-  public boolean hasAltitude;
-  public boolean hasBearing;
-  public boolean hasSpeed;
-
-  /**
-   * Create a new SerialziableLocation with the values of the given Location.
-   */
-  public SerializableLocation(Location location) {
-    this.latitude = location.getLatitude();
-    this.longitude = location.getLongitude();
-    this.accuracy = location.getAccuracy();
-    this.altitude = location.getAltitude();
-    this.bearing = location.getBearing();
-    this.realTimeNanos = location.getElapsedRealtimeNanos();
-    this.provider = location.getProvider();
-    this.speed = location.getSpeed();
-    this.time = location.getTime();
-
-    this.hasAccuracy = location.hasAccuracy();
-    this.hasAltitude = location.hasAltitude();
-    this.hasBearing = location.hasBearing();
-    this.hasSpeed = location.hasSpeed();
-  }
-
-  public String toString() {
-    return String.format("SerializableLocation[%s %f, %f acc=%f alt=%f vel=%f]", 
-                         provider, latitude, longitude, accuracy, altitude, speed);
+  @Override
+  public void onReceive(Context context, Intent intent) {
+    Log.i(TAG, "Received startup intent - starting Rangzen service.");
+    Intent serviceIntent = new Intent(context, RangzenService.class);
+    context.startService(serviceIntent);
   }
 }
+

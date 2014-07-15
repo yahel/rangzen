@@ -30,25 +30,26 @@
  */
 package org.denovogroup.rangzen;
 
-import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
-import android.net.wifi.p2p.WifiP2pManager;
-import android.net.wifi.p2p.WifiP2pDeviceList;
-import android.net.wifi.p2p.WifiP2pDevice;
-import android.net.wifi.p2p.WifiP2pManager.Channel;
-import android.net.wifi.p2p.WifiP2pManager.ActionListener;
-import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
-import android.net.wifi.p2p.WifiP2pInfo;
 import android.content.BroadcastReceiver; 
 import android.content.Context;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.content.Intent;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.WpsInfo;
 import android.app.Service;
+import android.os.Bundle;
 import android.os.IBinder;
 
+import java.io.IOException;
+import java.io.OptionalDataException;
+import java.io.StreamCorruptedException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -59,6 +60,22 @@ import java.util.Date;
  * indefinitely to perform the background tasks of Rangzen.
  */
 public class RangzenService extends Service {
+  /** 
+   * String designating the provider we want to use (GPS) for location. 
+   * We need the accuracy GPS provides - network based location is accurate to
+   * within like a mile, according to the docs.
+   */
+  private static final String LOCATION_GPS_PROVIDER = LocationManager.GPS_PROVIDER;
+
+  /** Time between location updates in milliseconds - 1 minute. */
+  private static final long LOCATION_UPDATE_INTERVAL = 1000 * 60 * 1;
+
+  /**
+   * Minimum moved distance between location updates. We want a new location
+   * even if we haven't moved, so we set it to 0.
+   * */
+  private static final float LOCATION_UPDATE_DISTANCE_MINIMUM = 0;
+
   /** The running instance of RangzenService. */
   protected static RangzenService sRangzenServiceInstance;
 
@@ -73,6 +90,12 @@ public class RangzenService extends Service {
 
   /** The number of times that backgroundTasks() has been called. */
   private int mBackgroundTaskRunCount;
+
+  /** A handle to the Android location manager. */
+  private LocationManager mLocationManager;
+
+  /** Handle to Rangzen location storage provider. */
+  private LocationStore mLocationStore;
 
   /** Android Log Tag. */
   private static String TAG = "RangzenService";
@@ -89,32 +112,40 @@ public class RangzenService extends Service {
    */
   @Override
   public int onStartCommand(Intent intent, int flags, int startid) {
-    Log.i(TAG, "RangzenService Started");
+    Log.i(TAG, "RangzenService onStartCommand.");
   
-    sRangzenServiceInstance = this;
-
-    if (mLocalBroadcastManager == null) {
-      mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
-    }
-
-    if (mStartTime == null) {
-      mStartTime = new Date();
-      mBackgroundTaskRunCount = 0;
-    }
-
-    // Schedule the background task thread to run occasionally.
-    if (mScheduleTaskExecutor == null) {
-      mScheduleTaskExecutor = Executors.newScheduledThreadPool(1);
-      mScheduleTaskExecutor.scheduleWithFixedDelay(new Runnable() {
-        public void run() {
-          backgroundTasks();
-        }
-      }, 0, 1, TimeUnit.SECONDS); 
-    }
-
     // Returning START_STICKY causes Android to leave the service running
     // even when the foreground activity is closed.
     return START_STICKY;
+  }
+
+  /**
+   * Called the first time the service is started.
+   *
+   * @see android.app.Service
+   */
+  @Override
+  public void onCreate() {
+    Log.i(TAG, "RangzenService created.");
+    sRangzenServiceInstance = this;
+
+    mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
+
+    mStartTime = new Date();
+    mBackgroundTaskRunCount = 0;
+
+    mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
+
+    mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+    registerForLocationUpdates();
+
+    // Schedule the background task thread to run occasionally.
+    mScheduleTaskExecutor = Executors.newScheduledThreadPool(1);
+    mScheduleTaskExecutor.scheduleWithFixedDelay(new Runnable() {
+      public void run() {
+        backgroundTasks();
+      }
+    }, 0, 1, TimeUnit.SECONDS); 
   }
 
   /**
@@ -126,7 +157,6 @@ public class RangzenService extends Service {
     mBackgroundTaskRunCount++;
 
     PeerManager.getInstance(getApplicationContext()).tasks(); 
-    PeerManager.getInstance(getApplicationContext()).seekPeers();
     
     Log.v(TAG, "Background Tasks Finished");
   }
@@ -140,6 +170,57 @@ public class RangzenService extends Service {
   public int getBackgroundTasksRunCount() {
     return mBackgroundTaskRunCount;
   }
+
+  private void registerForLocationUpdates() {
+     if (mLocationManager == null) { 
+       Log.e(TAG, "Can't register for location updates; location manager is null.");
+       return;
+     }
+     mLocationManager.requestLocationUpdates(LOCATION_GPS_PROVIDER,
+                                             LOCATION_UPDATE_INTERVAL,
+                                             LOCATION_UPDATE_DISTANCE_MINIMUM,
+                                             mLocationListener);
+     Log.i(TAG, "Registered for location every " + LOCATION_UPDATE_INTERVAL + "ms");
+  }
+
+  private LocationListener mLocationListener = new LocationListener() {
+    @Override
+    public void onLocationChanged(Location location) {
+      Log.d(TAG, "Got location: " + location);
+      SerializableLocation serializableLocation = new SerializableLocation(location);
+      mLocationStore.addLocation(serializableLocation);
+
+      List<SerializableLocation> locations;
+      try {
+        // TODO(lerner): Report to the server if we're failing at storing locations?
+        locations = mLocationStore.getAllLocations();
+        for (SerializableLocation sl : locations) {
+          Log.d(TAG, sl.toString());
+        }
+      } catch (IOException | ClassNotFoundException e) {
+        Log.e(TAG, "Not able to store location!");
+        e.printStackTrace();
+      }
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+      Log.d(TAG, "Provider disabled: " + provider);
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+      Log.d(TAG, "Provider enabled: " + provider);
+
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+      Log.d(TAG, "Provider " + provider + " status changed to status " + status);
+    }
+
+  };
+
   
   /**
    * Get the time at which this instance of the service was started.

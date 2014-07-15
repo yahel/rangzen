@@ -30,7 +30,7 @@
  */
 package org.denovogroup.rangzen;
 
-import android.app.Activity;
+import android.content.Context;
 
 import java.io.IOException;
 import java.io.OptionalDataException;
@@ -106,11 +106,11 @@ public class LocationStore {
    * Creates a Rangzen location store, with a consistent application of encryption of that stored
    * data, as specified.
    *
-   * @param activity The app instance for which to perform storage.
+   * @param context A context in which to do storage.
    * @param encryptionMode The encryption mode to use for all calls using this instance.
    */
-  public LocationStore(Activity activity, int encryptionMode) throws IllegalArgumentException {
-    store = new StorageBase(activity, encryptionMode);
+  public LocationStore(Context context, int encryptionMode) throws IllegalArgumentException {
+    store = new StorageBase(context, encryptionMode);
   }
 
   /**
