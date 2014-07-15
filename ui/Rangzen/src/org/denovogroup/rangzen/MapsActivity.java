@@ -35,13 +35,14 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.graphics.drawable.StateListDrawable;
 import android.location.Location;
+import android.location.LocationListener;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
@@ -49,22 +50,22 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
-import android.widget.Button;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.drive.internal.e;
 import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.LocationSource;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -79,20 +80,52 @@ import com.google.android.gms.maps.model.PolylineOptions;
  */
 public class MapsActivity extends FragmentActivity implements
         GooglePlayServicesClient.ConnectionCallbacks,
-        GooglePlayServicesClient.OnConnectionFailedListener {
+        GooglePlayServicesClient.OnConnectionFailedListener, LocationListener,
+        LocationSource {
 
+    /**
+     * The fragment that contains the map itself. It is the second most top
+     * fragment in its parent FrameLayout.
+     */
     private SupportMapFragment mapFragment;
+    /**
+     * The map object itself that is inside of the SupportMapFragment.
+     */
     private GoogleMap map;
+    /**
+     * Used to connect and disconnect from Google Location Services and
+     * locations.
+     */
     private LocationClient locationClient;
-    private FragmentTransaction ft;
+    /**
+     * The transparent fragment. It is the bottom most layer of the FrameLayout
+     * but is brought to the top if created.
+     */
     private Fragment transparent;
-    private LinearLayout transparentFragment;
-    private FrameLayout root;
+    /**
+     * Saving the users current location of the user when OnConnected is called.
+     */
     private Location myLocation;
-    private int locationSetupNeeded = 1;
+    /**
+     * This is the object that manages all of the Fragments visible and
+     * invisible, and adds, replaces or removes fragments.
+     */
     private FragmentManager fragmentManager;
+
+    /**
+     * Used in OnLocationChanged to indicate that a first location has not yet
+     * been stored so make the current location into the first location.
+     */
     private int flag;
+    /**
+     * Used in OnLocationChanged to save the previous location in order to
+     * connect a small Polyline between the previous and the current points.
+     */
     private LatLng prev;
+    /**
+     * Stores a references to the about icon in order to bring it to the front
+     * of the FrameLayout.
+     */
     private ImageButton about;
 
     /**
@@ -111,14 +144,16 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
         setContentView(R.layout.master);
-        locationClient = new LocationClient(this, this, this);
+        // action = getActionBar();
+        // action.hide();
 
         if (savedInstanceState == null) {
+            locationClient = new LocationClient(this, this, this);
             mapFragment = new MapFrag();
             mapFragment.setRetainInstance(true);
             fragmentManager = getSupportFragmentManager();
-            ft = fragmentManager.beginTransaction();
             fragmentManager.beginTransaction()
                     .replace(R.id.mapHolder, mapFragment).commit();
             createTransparentFragment();
@@ -153,24 +188,103 @@ public class MapsActivity extends FragmentActivity implements
         states.addState(new int[] {}, res);
 
         about.setBackgroundDrawable(states);
+        about.bringToFront();
     }
 
+    /**
+     * The onClickListener of the Deny button on the transparent page. Used to
+     * restart the introduction slides if they do not accept.
+     * 
+     * @param v The View for the deny button.
+     */
+    public void sDeny(View v) {
+        Intent intent = new Intent();
+        intent.setClass(this, SlidingPageIndicator.class);
+        startActivity(intent);
+        finish();
+    }
+
+    /**
+     * Make sure that the introduction and the transparent page will never be
+     * seen again and go through to the map.
+     * 
+     * @param v
+     *            - View for the accept button
+     */
+    public void sAccept(View v) {
+
+        SharedPreferences settings = getSharedPreferences(
+                SlidingPageIndicator.PREFS_NAME, 0);
+        SharedPreferences.Editor editor = settings.edit();
+
+        editor.putBoolean("hasLoggedIn", true);
+        editor.commit();
+
+        editor.putBoolean("transparent", true);
+        editor.commit();
+
+        transparent.getView().setClickable(false);
+        transparent.getView().setVisibility(View.INVISIBLE);
+        ViewGroup vg = (ViewGroup) transparent.getView().getParent();
+        vg.setClickable(false);
+        vg.setVisibility(View.INVISIBLE);
+        findViewById(R.id.accept).setClickable(false);
+        findViewById(R.id.deny).setClickable(false);
+    }
+
+    /**
+     * OnClickListener for the about icon, this handles the creation of a new
+     * fragment and pressing back button to get back to the map.
+     * 
+     * @param v
+     *            The view that contains the about icon.
+     */
     public void s(View v) {
-        Toast.makeText(this, "ib clicked", Toast.LENGTH_SHORT).show();
         Fragment info = new IntroductionFragment();
         Bundle b = new Bundle();
         b.putInt("whichScreen", 5);
         info.setArguments(b);
         findViewById(R.id.infoHolder).setClickable(true);
         fragmentManager.beginTransaction().add(R.id.infoHolder, info)
-                .addToBackStack("info").commit();
-
+                .hide(mapFragment).addToBackStack("info").commit();
+        // action.show();
+        // action.setTitle("About Rangzen");
+        // action.setIcon(R.drawable.ic_action_back);
     }
 
+    /**
+     * This is for the about icon, when the about icon is pressed then the user
+     * can press the back button on their phone to get back to the map.
+     */
     @Override
     public void onBackPressed() {
+        // SharedPreferences settings = getSharedPreferences(
+        // SlidingPageIndicator.PREFS_NAME, 0);
+        // boolean hasAcceptedTransparent = settings.getBoolean("transparent",
+        // false);
+        // if (!hasAcceptedTransparent) {
+        // return;
+        // }
         super.onBackPressed();
         findViewById(R.id.infoHolder).setClickable(false);
+        // action.hide();
+    }
+
+    /**
+     * This is for when the screen configuration changes, then the markers and
+     * the info button must be brought back into focus.
+     */
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        Toast.makeText(this, "orientation changed", Toast.LENGTH_SHORT).show();
+        if (about != null) {
+            about.bringToFront();
+        }
+        // for (int i = 0; i < locationStore.getAllLocations().size(); i++) {
+        // onLocationChanged(locationStore)
+        // }
+
     }
 
     /**
@@ -188,42 +302,14 @@ public class MapsActivity extends FragmentActivity implements
 
         if (!hasSeentransparent) {
             // //set has seen transparency in a shared save preference
-            SharedPreferences settingsGot = getSharedPreferences(
-                    SlidingPageIndicator.PREFS_NAME, 0);
-            SharedPreferences.Editor editor = settingsGot.edit();
-            editor.putBoolean("transparent", true);
-            editor.commit();
             transparent = new IntroductionFragment();
             Bundle b2 = new Bundle();
-            b2.putInt("whichScreen", 4);
+            b2.putInt("whichScreen", 6);
             transparent.setArguments(b2);
+            findViewById(R.id.transparentHolder).bringToFront();
             fragmentManager.beginTransaction()
-                    .add(R.id.transparentHolder, transparent).commit();
+                    .replace(R.id.transparentHolder, transparent).commit();
         }
-    }
-
-    /**
-     * sButton is the onClickListener for the View, "button" that exists in the
-     * xml file "master.xml". It has been assigned through xml.
-     * 
-     * @param v
-     *            The button is itself a view being passed in.
-     */
-    public void sButton(View v) {
-        Toast.makeText(this, "click", Toast.LENGTH_SHORT).show();
-        placeMarkers();
-    }
-
-    /**
-     * This is the onClickListener of the LinearLayout that holds the
-     * transparent fragment. This detects a click and makes the transparent
-     * fragment become invisible.
-     * 
-     * @param v
-     *            v is the LinearLayout that contains the transparent fragment.
-     */
-    public void sLayout(View v) {
-        v.setVisibility(View.INVISIBLE);
     }
 
     /**
@@ -288,6 +374,7 @@ public class MapsActivity extends FragmentActivity implements
      *            moved.
      */
     public void onLocationChanged(Location location) {
+        Toast.makeText(this, "location changed", Toast.LENGTH_SHORT).show();
 
         LatLng current = new LatLng(location.getLatitude(),
                 location.getLongitude());
@@ -345,24 +432,23 @@ public class MapsActivity extends FragmentActivity implements
      */
     @Override
     public void onConnected(Bundle dataBundle) {
-        if (locationSetupNeeded == 1) {
-            Location location = locationClient.getLastLocation();
-            LatLng latLng = new LatLng(location.getLatitude(),
-                    location.getLongitude());
-            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(
-                    latLng, 15);
+        Location location = locationClient.getLastLocation();
+        LatLng latLng = new LatLng(location.getLatitude(),
+                location.getLongitude());
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng,
+                15);
+        if (mapFragment != null) {
             map = mapFragment.getMap();
-            if (map != null) {
-                map.animateCamera(cameraUpdate);
-                map.setMyLocationEnabled(true);
-                map.setBuildingsEnabled(true);
-
-            }
-            if (location != null) {
-                myLocation = location;
-            }
         }
-        locationSetupNeeded = 0;
+        if (map != null) {
+            map.animateCamera(cameraUpdate);
+            map.setMyLocationEnabled(true);
+            map.setBuildingsEnabled(true);
+
+        }
+        if (location != null) {
+            myLocation = location;
+        }
     }
 
     /** Define a DialogFragment that displays the error dialog */
@@ -405,6 +491,46 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onDisconnected() {
 
+    }
+
+    /**
+     * Unimplemented methods that need to be here for implementing other
+     * classes.
+     */
+    @Override
+    public void activate(OnLocationChangedListener listener) {
+    }
+
+    /**
+     * Unimplemented methods that need to be here for implementing other
+     * classes.
+     */
+    @Override
+    public void deactivate() {
+    }
+
+    /**
+     * Unimplemented methods that need to be here for implementing other
+     * classes.
+     */
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+    }
+
+    /**
+     * Unimplemented methods that need to be here for implementing other
+     * classes.
+     */
+    @Override
+    public void onProviderEnabled(String provider) {
+    }
+
+    /**
+     * Unimplemented methods that need to be here for implementing other
+     * classes.
+     */
+    @Override
+    public void onProviderDisabled(String provider) {
     }
 
 }

@@ -5,6 +5,14 @@
     android:layout_height="fill_parent" >
 
     <LinearLayout
+        android:id="@+id/transparentHolder"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="true"
+        android:orientation="vertical" >
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/mapHolder"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -16,7 +24,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="20dp"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="20dp"
         android:orientation="vertical" >
 
         <ImageButton
@@ -27,23 +35,6 @@
             android:clickable="true"
             android:onClick="s" />
     </RelativeLayout>
-
-    <Button
-        android:id="@+id/button1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        android:onClick="sButton"
-        android:text="Button" />
-
-    <LinearLayout
-        android:id="@+id/transparentHolder"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clickable="true"
-        android:onClick="sLayout"
-        android:orientation="vertical" >
-    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/infoHolder"

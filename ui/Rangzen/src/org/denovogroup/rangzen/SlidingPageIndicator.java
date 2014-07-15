@@ -31,20 +31,13 @@
 
 package org.denovogroup.rangzen;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
-import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.viewpagerindicator.LinePageIndicator;
 import com.viewpagerindicator.PageIndicator;
@@ -115,27 +108,28 @@ public class SlidingPageIndicator extends FragmentActivity {
      *            The Linear Layout that holds the Facebook LoginButton
      */
     public void linLayoutButton(View v) {
-        if (isOnline()) {
-            findViewById(R.id.authButton).performClick();
-        } else {
-            Toast toast = Toast.makeText(this,
-                    "No internet connection detected", Toast.LENGTH_SHORT);
-            toast.setGravity(Gravity.CENTER, 0, 0);
-            toast.show();
-        }
+        // Toast toast = Toast.makeText(this, "No internet connection detected",
+        // Toast.LENGTH_SHORT);
+        // toast.setGravity(Gravity.CENTER, 0, 0);
+        // toast.show();
+        Intent intent = new Intent();
+        intent.setClass(this, MapsActivity.class);
+        startActivity(intent);
+        finish();
     }
 
-    /**
-     * This method checks to see if the device has internet access.
-     */
-    public boolean isOnline() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo netInfo = cm.getActiveNetworkInfo();
-        if (netInfo != null && netInfo.isConnectedOrConnecting()) {
-            return true;
-        }
-        return false;
-    }
+    // /**
+    // * This method checks to see if the device has internet access.
+    // */
+    // public boolean isOnline() {
+    // ConnectivityManager cm = (ConnectivityManager)
+    // getSystemService(Context.CONNECTIVITY_SERVICE);
+    // NetworkInfo netInfo = cm.getActiveNetworkInfo();
+    // if (netInfo != null && netInfo.isConnectedOrConnecting()) {
+    // return true;
+    // }
+    // return false;
+    // }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
