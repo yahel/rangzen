@@ -45,6 +45,7 @@ function RegisterPhone(req, res) {
   phones[req.body.phoneid] = {};
   phones[req.body.phoneid]['friends'] = req.body.friends;
   phones[req.body.phoneid]['locations'] = [];
+  phones[req.body.phoneid]['exchanges'] = [];
 
   response = { "status" : "ok" };
   res.send(200, JSON.stringify(response));
@@ -102,6 +103,40 @@ function UpdateLocations(req, res) {
 
 // Input fields:
 //   phoneid : <hex string>
+//   peer_phone_id : <hex string>
+//   protocol : <string>
+//   start_location : { <location tuple> }
+//   end_location : { <location tuple> }
+//
+// Output fields:
+//   status : "ok" or "failed"
+function UpdateExchange(req, res) {
+  if (!('phoneid' in req.body &&
+        'peer_phone_id' in req.body &&
+        req.body['peer_phone_id'] in phones &&
+        'protocol' in req.body &&
+        'start_location' in req.body &&
+        'end_location' in req.body)) {
+    console.log("UpdateExchange failed: " + JSON.stringify(req.body));
+    response = { "status" : "failed" };
+    res.send(300, JSON.stringify(response));
+    return;
+  }
+
+  exchange = {}
+  exchange['peer_phone_id'] = req.body['peer_phone_id']
+  exchange['protocol'] = req.body['protocol']
+  exchange['start_location'] = req.body['start_location']
+  exchange['end_location'] = req.body['end_location']
+  phones[req.body.phoneid].exchanges.push(exchange)
+
+  console.log("UpdateExchange ok, phone: " + req.body.phoneid);
+  response = { "status" : "ok" };
+  res.send(200, JSON.stringify(response));
+}
+
+// Input fields:
+//   phoneid : <hex string>
 // 
 // Output fields:
 //   status : "ok" or "failed"
@@ -118,6 +153,27 @@ function GetPreviousLocations(req, res) {
 
   response = { "status" : "ok",
                "locations" : phones[req.body.phoneid].locations };
+  res.send(200, JSON.stringify(response));
+}
+
+// Input fields:
+//   phoneid : <hex string>
+// 
+// Output fields:
+//   status : "ok" or "failed"
+//   exchanges : [ <exchange tuple>, ... ]
+function GetPreviousExchanges(req, res) {
+  if (!('phoneid' in req.body)) {
+    console.log("GetPreviousExchanges failed: " + JSON.stringify(req.body));
+    response = { "status" : "failed" };
+    res.send(300, JSON.stringify(response));
+    return;
+  }
+
+  console.log("GetPreviousExchanges ok, phone: " + req.body.phoneid);
+
+  response = { "status" : "ok",
+               "exchanges" : phones[req.body.phoneid].exchanges };
   res.send(200, JSON.stringify(response));
 }
 
@@ -169,7 +225,9 @@ function GetNearbyPhones(req, res) {
 app.post('/register_phone', RegisterPhone);
 app.post('/get_friends', GetFriends);
 app.post('/update_locations', UpdateLocations);
+app.post('/update_exchange', UpdateExchange);
 app.post('/get_previous_locations', GetPreviousLocations);
+app.post('/get_previous_exchanges', GetPreviousExchanges);
 app.post('/get_nearby_phones', GetNearbyPhones);
 
 port = 1337;

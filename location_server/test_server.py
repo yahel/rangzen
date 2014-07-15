@@ -116,8 +116,43 @@ def test_get_nearby_phones():
   assert r.json()['phones'][0] == '456'
   
 
+def test_update_exchange():
+  headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+
+  # Check that Alice has no exchanges.
+  alice = {'phoneid': '123'}
+  r = requests.post(url + "get_previous_exchanges", data=json.dumps(alice), headers=headers)
+  assert r.json()['status'] == 'ok'
+  assert len(r.json()['exchanges']) == 0
+
+  # Add an exchange for Alice with an unknown peer.
+  alice = {'phoneid': '123', 'peer_phone_id': '999', 'protocol': 'bluetooth',
+      'start_location': { 'timestamp': '1', 'lat': '1.0', 'lng': '1.0' },
+      'end_location': { 'timestamp': '2', 'lat': '1.0', 'lng': '1.0' }}
+  r = requests.post(url + "update_exchange", data=json.dumps(alice), headers=headers)
+  assert r.json()['status'] == 'failed'
+
+  # Add an exchange for Alice with a known peer.
+  alice = {'phoneid': '123', 'peer_phone_id': '456', 'protocol': 'bluetooth',
+      'start_location': { 'timestamp': '1', 'lat': '1.0', 'lng': '1.0' },
+      'end_location': { 'timestamp': '2', 'lat': '1.1', 'lng': '1.1' }}
+  r = requests.post(url + "update_exchange", data=json.dumps(alice), headers=headers)
+  assert r.json()['status'] == 'ok'
+
+  # Check that Alice's exchange is there.
+  alice = {'phoneid': '123'}
+  r = requests.post(url + "get_previous_exchanges", data=json.dumps(alice), headers=headers)
+  assert r.json()['status'] == 'ok'
+  assert len(r.json()['exchanges']) == 1
+  assert r.json()['exchanges'][0]['peer_phone_id'] == '456'
+  assert r.json()['exchanges'][0]['protocol'] == 'bluetooth'
+  assert r.json()['exchanges'][0]['start_location'] == {'timestamp': '1', 'lat': '1.0', 'lng': '1.0'}
+  assert r.json()['exchanges'][0]['end_location'] == {'timestamp': '2', 'lat': '1.1', 'lng': '1.1'}
+
+
 # Run all tests.
 test_register_phone()
 test_get_friends()
 test_update_locations()
 test_get_nearby_phones()
+test_update_exchange()
