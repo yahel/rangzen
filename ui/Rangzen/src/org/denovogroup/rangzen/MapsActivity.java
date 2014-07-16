@@ -36,6 +36,7 @@ import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -50,6 +51,7 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -146,18 +148,18 @@ public class MapsActivity extends FragmentActivity implements
         super.onCreate(savedInstanceState);
         // getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
         setContentView(R.layout.master);
+        locationClient = new LocationClient(this, this, this);
+        createAboutIcon();
         // action = getActionBar();
         // action.hide();
 
         if (savedInstanceState == null) {
-            locationClient = new LocationClient(this, this, this);
             mapFragment = new MapFrag();
             mapFragment.setRetainInstance(true);
             fragmentManager = getSupportFragmentManager();
             fragmentManager.beginTransaction()
                     .replace(R.id.mapHolder, mapFragment).commit();
             createTransparentFragment();
-            createAboutIcon();
             // ft.commit();
         }
     }
@@ -173,8 +175,8 @@ public class MapsActivity extends FragmentActivity implements
                 R.drawable.abouticon19);
         Bitmap icon2 = BitmapFactory.decodeResource(getResources(),
                 R.drawable.pressedinfo);
-        int width = 140;
-        int height = 140;
+        int width = (int) getPixels(75);
+        int height = (int) getPixels(75);
 
         Bitmap resized = Bitmap.createScaledBitmap(icon, width, height, true);
         Bitmap pressed = Bitmap.createScaledBitmap(icon2, width, height, true);
@@ -189,6 +191,20 @@ public class MapsActivity extends FragmentActivity implements
 
         about.setBackgroundDrawable(states);
         about.bringToFront();
+    }
+    
+    /**
+     * Method that finds the actual amount of pixels necessary for shifts of
+     * textViews. Borrowed from
+     * http://stackoverflow.com/questions/2406449/does-setwidthint
+     * -pixels-use-dip-or-px
+     * @param dip Density-Independent length
+     */
+    private float getPixels(int dip) {
+        Resources r = getResources();
+        float px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dip,
+                r.getDisplayMetrics());
+        return px;
     }
 
     /**
@@ -213,6 +229,16 @@ public class MapsActivity extends FragmentActivity implements
      */
     public void sAccept(View v) {
 
+        transparent.getView().setClickable(false);
+        transparent.getView().setVisibility(View.INVISIBLE);
+        ViewGroup vg = (ViewGroup) transparent.getView().getParent();
+        vg.setClickable(false);
+        vg.setVisibility(View.INVISIBLE);
+        ViewGroup vgParent = (ViewGroup) vg.getParent();
+        vgParent.removeView(vg);
+        //findViewById(R.id.accept).setClickable(false);
+        //findViewById(R.id.deny).setClickable(false);
+        
         SharedPreferences settings = getSharedPreferences(
                 SlidingPageIndicator.PREFS_NAME, 0);
         SharedPreferences.Editor editor = settings.edit();
@@ -222,14 +248,6 @@ public class MapsActivity extends FragmentActivity implements
 
         editor.putBoolean("transparent", true);
         editor.commit();
-
-        transparent.getView().setClickable(false);
-        transparent.getView().setVisibility(View.INVISIBLE);
-        ViewGroup vg = (ViewGroup) transparent.getView().getParent();
-        vg.setClickable(false);
-        vg.setVisibility(View.INVISIBLE);
-        findViewById(R.id.accept).setClickable(false);
-        findViewById(R.id.deny).setClickable(false);
     }
 
     /**
@@ -245,8 +263,12 @@ public class MapsActivity extends FragmentActivity implements
         b.putInt("whichScreen", 5);
         info.setArguments(b);
         findViewById(R.id.infoHolder).setClickable(true);
-        fragmentManager.beginTransaction().add(R.id.infoHolder, info)
-                .hide(mapFragment).addToBackStack("info").commit();
+        fragmentManager = getSupportFragmentManager();
+        FragmentTransaction ft = fragmentManager.beginTransaction();
+        ft.add(R.id.infoHolder, info);
+        //ft.hide(mapFragment);
+        ft.addToBackStack("info");
+        ft.commit();
         // action.show();
         // action.setTitle("About Rangzen");
         // action.setIcon(R.drawable.ic_action_back);

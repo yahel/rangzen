@@ -41,6 +41,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -78,12 +79,28 @@ public class IntroductionFragment extends Fragment {
     FrameLayout fl;
 
     /**
+     * This is the amount in density pixels that the title of the app will be
+     * from the top of the screen.
+     */
+    private int marginFromTop = 50;
+
+    /**
+     * This is the amount in density pixels that the bottom message of the app
+     * will be from the bottom of the screen.
+     */
+    private int marginFromBottom = 450;
+
+    /**
      * This method controls five fragment options, with different cases for
      * each, mostly it returns a formatted fragment, but it also creates the
      * UIHelper.
-     * @param inflater  A tool used to get the java code of a layout in XML.
-     * @param container This fragments containing frame.
-     * @param savedInstanceState The memory of previous instances of this fragment.
+     * 
+     * @param inflater
+     *            A tool used to get the java code of a layout in XML.
+     * @param container
+     *            This fragments containing frame.
+     * @param savedInstanceState
+     *            The memory of previous instances of this fragment.
      * @return returns the layout (fragment), already formatted to be displayed.
      */
     @Override
@@ -98,7 +115,8 @@ public class IntroductionFragment extends Fragment {
         case 0:
             View view = (View) inflater.inflate(R.layout.firstintro, container,
                     false);
-            currentRelativeLayout = (RelativeLayout) view.findViewById(R.id.firstIntro);
+            currentRelativeLayout = (RelativeLayout) view
+                    .findViewById(R.id.firstIntro);
 
             if (first == null) {
                 showFullScreenImage(R.drawable.newyorkyyyyy, 1);
@@ -112,7 +130,8 @@ public class IntroductionFragment extends Fragment {
         case 1:
             View view1 = inflater.inflate(R.layout.secondintro, container,
                     false);
-            currentRelativeLayout = (RelativeLayout) view1.findViewById(R.id.secondIntro);
+            currentRelativeLayout = (RelativeLayout) view1
+                    .findViewById(R.id.secondIntro);
 
             if (second == null) {
                 // showFullScreenImage(R.drawable.newyorkyyyyy, 2);
@@ -128,7 +147,8 @@ public class IntroductionFragment extends Fragment {
         case 2:
             View view2 = inflater
                     .inflate(R.layout.thirdintro, container, false);
-            currentRelativeLayout = (RelativeLayout) view2.findViewById(R.id.thirdIntro);
+            currentRelativeLayout = (RelativeLayout) view2
+                    .findViewById(R.id.thirdIntro);
 
             if (third == null) {
                 showFullScreenImage(R.drawable.soccer, 3);
@@ -144,7 +164,8 @@ public class IntroductionFragment extends Fragment {
 
             View view3 = (View) inflater.inflate(R.layout.fourthintro,
                     container, false);
-            currentRelativeLayout = (RelativeLayout) view3.findViewById(R.id.fourthIntro);
+            currentRelativeLayout = (RelativeLayout) view3
+                    .findViewById(R.id.fourthIntro);
             if (third == null) {
                 showFullScreenImage(R.drawable.blue, 3);
             } else {
@@ -195,7 +216,10 @@ public class IntroductionFragment extends Fragment {
                 RelativeLayout.LayoutParams.WRAP_CONTENT,
                 RelativeLayout.LayoutParams.WRAP_CONTENT);
         layoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        layoutParams.setMargins(0, 920, 0, 0); // (L, T, ?, ?)
+        layoutParams.setMargins(0, (int) getPixels(marginFromBottom), 0, 0); // (L,
+                                                                             // T,
+                                                                             // ?,
+                                                                             // ?)
         tv.setLayoutParams(layoutParams);
         tv.setWidth(750);
         tv.setGravity(Gravity.CENTER);
@@ -224,7 +248,8 @@ public class IntroductionFragment extends Fragment {
         // BitmapDrawable bd = BitmapDrawable(picture, bd);
         BitmapDrawable ob = new BitmapDrawable(bd);
         iv.setBackgroundDrawable(ob);
-        currentRelativeLayout.addView(iv, new LinearLayout.LayoutParams(width, height));
+        currentRelativeLayout.addView(iv, new LinearLayout.LayoutParams(width,
+                height));
 
         if (position == 1) {
             first = ob;
@@ -326,8 +351,25 @@ public class IntroductionFragment extends Fragment {
                 RelativeLayout.LayoutParams.WRAP_CONTENT,
                 RelativeLayout.LayoutParams.WRAP_CONTENT);
         layoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        layoutParams.setMargins(0, 150, 0, 0); // (L, T, ?, ?)
+        layoutParams.setMargins(0, (int) getPixels(marginFromTop), 0, 0); // (L,
+                                                                          // T,
+                                                                          // ?,
+                                                                          // ?)
         tv.setLayoutParams(layoutParams);
+    }
+
+    /**
+     * Method that finds the actual amount of pixels necessary for shifts of
+     * textViews. Borrowed from
+     * http://stackoverflow.com/questions/2406449/does-setwidthint
+     * -pixels-use-dip-or-px
+     * @param dip Density-Independent length
+     */
+    private float getPixels(int dip) {
+        Resources r = getResources();
+        float px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dip,
+                r.getDisplayMetrics());
+        return px;
     }
 
     /**
@@ -337,8 +379,6 @@ public class IntroductionFragment extends Fragment {
      */
     @Override
     public void onResume() {
-        getActivity().setRequestedOrientation(
-                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         super.onResume();
     }
 }
