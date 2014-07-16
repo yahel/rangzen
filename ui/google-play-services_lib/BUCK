@@ -1,0 +1,6 @@
+android_resource(
+  name = 'googlePlayServicesRes',
+  res = 'res',
+  package = 'com.google.android',
+  visibility = [ 'PUBLIC' ],
+)

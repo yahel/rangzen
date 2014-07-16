@@ -47,7 +47,8 @@ def BuckClean(input_api, output_api):
 # Runs before Android Lint so that the appropriate .class files can be linted.
 def BuckBuild(input_api, output_api):
   source_directory = str(input_api.PresubmitLocalPath())
-  args = 'buck build rangzen'.split()
+  buildTargetName = 'experimentalApp'
+  args = ('buck build %s' % (buildTargetName,)).split()
   env = input_api.environ.copy()
   subproc = input_api.subprocess.Popen(
       args,
@@ -57,12 +58,13 @@ def BuckBuild(input_api, output_api):
       stdout=input_api.subprocess.PIPE,
       stderr=input_api.subprocess.STDOUT)
   stdout_data = subproc.communicate()[0]
-  did_build_apk = lambda line: (input_api.re.match(r'^built APK', line))
-  build_success_lines = filter(did_build_apk, stdout_data.splitlines())
-  if build_success_lines:
-    return [output_api.PresubmitNotifyResult('Built Rangzen APK successfully.')]
-  else:
+  # did_build_apk = lambda line: (input_api.re.match(r'^built APK', line))
+  did_not_build_apk = lambda line: (input_api.re.match(r'^BUILD FAILED:', line))
+  build_failure_lines = filter(did_not_build_apk, stdout_data.splitlines())
+  if build_failure_lines:
     return [output_api.PresubmitError('Did not build Rangzen APK successfully.')]
+  else:
+    return [output_api.PresubmitNotifyResult('Built Rangzen APK successfully.')]
 
 # Runs Android lint on the project, manually specifying the java sources, test
 # sources, resources and classpath (compiled .class files locations).

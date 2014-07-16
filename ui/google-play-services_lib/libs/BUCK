@@ -1,0 +1,5 @@
+prebuilt_jar(
+  name = 'google-play-services',
+  binary_jar = 'google-play-services.jar', 
+  visibility = [ 'PUBLIC' ],
+)

@@ -1,0 +1,26 @@
+android_library(
+  name = 'experimentalUI',
+  srcs = [ 
+    'DepthPageTransformer.java',
+    'IntroductionFragment.java',
+    'IntroductionFragmentAdapter.java',
+    'ListFragmentOrganizer.java',
+    'MapFrag.java',
+    'MapsActivity.java',
+    'Opener.java',
+    'PostFrag.java',
+    'SidebarListAdapter.java',
+    'SlidingPageIndicator.java',
+    'ZoomOutPageTransformer.java',
+  ],
+  visibility = [ 'PUBLIC' ],
+  deps = [
+    '//libs:android-support-v4',
+    '//ui/ViewPagerIndicator/src/com/viewpagerindicator:ViewPagerIndicator',
+    '//ui/appcompat_v7_4/libs:android-support-v7-appcompat',
+    '//ui/Rangzen:experimentalUIRes',
+    '//ui/google-play-services_lib/libs:google-play-services',
+    '//ui/google-play-services_lib:googlePlayServicesRes',
+    
+  ],
+)

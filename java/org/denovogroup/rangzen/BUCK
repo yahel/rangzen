@@ -1,5 +1,5 @@
 android_library(
-  name = 'rangzen',
+  name = 'experimentalBackend',
   srcs = [ 
            'BluetoothLEPeerNetwork.java',
            'BluetoothPeerNetwork.java',

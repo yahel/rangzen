@@ -62,7 +62,7 @@ import android.widget.TextView;
 public class IntroductionFragment extends Fragment {
     private RelativeLayout currentRelativeLayout;
     private static final String TAG = "MainFragment";
-    Typeface zwodTypeFace;
+    // Typeface zwodTypeFace;
 
     /**
      * These were an attempt to speed up the fragment sliding, I don't know if
@@ -109,8 +109,8 @@ public class IntroductionFragment extends Fragment {
 
         Bundle b = getArguments();
         int whichScreen = b.getInt("whichScreen");
-        zwodTypeFace = Typeface.createFromAsset(getActivity().getAssets(),
-                "fonts/zwod.ttf");
+        // zwodTypeFace = Typeface.createFromAsset(getActivity().getAssets(),
+                // "fonts/zwod.ttf");
         switch (whichScreen) {
         case 0:
             View view = (View) inflater.inflate(R.layout.firstintro, container,
@@ -175,7 +175,7 @@ public class IntroductionFragment extends Fragment {
             Button cont = (Button) view3.findViewById(R.id.contButton);
             cont.setText("Continue");
             cont.setTextColor(Color.WHITE);
-            cont.setTypeface(zwodTypeFace);
+            // cont.setTypeface(zwodTypeFace);
             cont.bringToFront();
             return view3;
 
@@ -207,7 +207,7 @@ public class IntroductionFragment extends Fragment {
      */
     private void makeBottomTextView(String string) {
         TextView tv = new TextView(getActivity());
-        tv.setTypeface(zwodTypeFace);
+        // tv.setTypeface(zwodTypeFace);
         tv.setText(string);
         tv.setTextSize(20);
         currentRelativeLayout.addView(tv);
@@ -340,9 +340,9 @@ public class IntroductionFragment extends Fragment {
      */
     private void makeRanzenTextView() {
         TextView tv = new TextView(getActivity());
-        Typeface myTypeface = Typeface.createFromAsset(getActivity()
-                .getAssets(), "fonts/zwod.ttf");
-        tv.setTypeface(myTypeface);
+        // Typeface myTypeface = Typeface.createFromAsset(getActivity()
+        //         .getAssets(), "fonts/zwod.ttf");
+        // tv.setTypeface(myTypeface);
         tv.setText("Rangzen");
         tv.setTextColor(Color.WHITE);
         tv.setTextSize(55);
