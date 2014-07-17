@@ -4,6 +4,8 @@ android_library(
            'BluetoothLEPeerNetwork.java',
            'BluetoothPeerNetwork.java',
            'ContactsGetterStorer.java',
+           'Exchange.java',
+           'ExperimentClient.java',
            'HotspotPeerNetwork.java',
            'LocationStore.java',
            'MainActivity.java', 
@@ -22,6 +24,8 @@ android_library(
   visibility = [ 'PUBLIC' ],
   deps = [
     '//libs:android-support-v4',
+    '//libs:gson',
     '//res/org/denovogroup/rangzen:res',
+    '//java/com/github/kevinsawicki/http:httpRequest',
   ],
 )

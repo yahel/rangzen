@@ -47,7 +47,7 @@ public class SerializableLocation implements Serializable {
   public float accuracy;
   public double altitude;
   public float bearing;
-  public long realTimeNanos;
+  public long elapsedRealTimeNanos;
   public String provider;
   public float speed;
   public long time;
@@ -66,7 +66,7 @@ public class SerializableLocation implements Serializable {
     this.accuracy = location.getAccuracy();
     this.altitude = location.getAltitude();
     this.bearing = location.getBearing();
-    this.realTimeNanos = location.getElapsedRealtimeNanos();
+    this.elapsedRealTimeNanos = location.getElapsedRealtimeNanos();
     this.provider = location.getProvider();
     this.speed = location.getSpeed();
     this.time = location.getTime();
@@ -77,6 +77,57 @@ public class SerializableLocation implements Serializable {
     this.hasSpeed = location.hasSpeed();
   }
 
+  /**
+   * Two SerializableLocations are equal if all of their fields are equal.
+   * For floating point and double fields, we use an approximate equality.
+   *
+   * The other object must also be an instance of SerializableLocation.
+   *
+   * @param o Another object to compare to this location.
+   * @return True if the given object is a SerializableLocation that seems
+   * to represent the same location (and time, etc.). False otherwise.
+   */
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof SerializableLocation)) {
+      System.err.println("Not an instance of SerializableLocation.");
+      return false;
+    } else {
+      SerializableLocation sl = (SerializableLocation) o;
+      return approxEqual(latitude, sl.latitude) &&
+             approxEqual(longitude, sl.longitude) &&
+             approxEqual(accuracy, sl.accuracy) &&
+             approxEqual(altitude, sl.altitude) &&
+             approxEqual(bearing, sl.bearing) &&
+             approxEqual(elapsedRealTimeNanos, sl.elapsedRealTimeNanos) &&
+             provider.equals(sl.provider) && 
+             approxEqual(speed, sl.speed) &&
+             this.time == sl.time &&
+             this.hasAccuracy == sl.hasAccuracy &&
+             this.hasAltitude == sl.hasAltitude &&
+             this.hasBearing == sl.hasBearing &&
+             this.hasSpeed == sl.hasSpeed;
+    }
+  }
+
+  /**
+   * Determine whether two doubles are close enough, according to an arbitrarily
+   * chosen threshold.
+   *
+   * @param a A double to compare.
+   * @param b Another double to compare.
+   * @return True if the given doubles are within an arbitrarily chosen threshold; false otherwise
+   */
+  private boolean approxEqual(double a, double b) {
+    double THRESHOLD = 0.00000001;
+    double c = a - b;
+    System.err.println(Math.abs(c) <= THRESHOLD);
+    return Math.abs(c) <= THRESHOLD;
+  }
+
+  /**
+   * Return a string representing this location.
+   */
   public String toString() {
     return String.format("SerializableLocation[%s %f, %f acc=%f alt=%f vel=%f]", 
                          provider, latitude, longitude, accuracy, altitude, speed);

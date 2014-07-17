@@ -74,8 +74,8 @@ function GetFriends(req, res) {
 
 // Input fields:
 //   phoneid : <hex string>
-//   locations : [ { timestamp : <time>, lat : <latitude>, lng : <longitude> },
-//                 { timestamp : <later_time>, lat : <latitude>, lng : <longitude> } ]
+//   locations : [ { time : <time>, latitude : <latitude>, longitude : <longitude> },
+//                 { time : <later_time>, latitude : <latitude>, longitude : <longitude> } ]
 //
 // Output fields:
 //   status : "ok" or "failed"
@@ -89,7 +89,7 @@ function UpdateLocations(req, res) {
   
   for (l in req.body.locations) {
     var value = req.body.locations[l];
-    if (!('timestamp' in value && 'lat' in value && 'lng' in value)) {
+    if (!('time' in value && 'latitude' in value && 'longitude' in value)) {
       console.log("UpdateLocations skipping malformed value: " + JSON.stringify(value));
       continue;
     }
@@ -209,7 +209,7 @@ function GetNearbyPhones(req, res) {
     if (phones[p].locations.length < 1) continue;
 
     var them_loc = phones[p].locations[phones[p].locations.length - 1];
-    var dist = CalculateDistance(us_loc.lat, us_loc.lng, them_loc.lat, them_loc.lng);
+    var dist = CalculateDistance(us_loc.latitude, us_loc.longitude, them_loc.latitude, them_loc.longitude);
     if (dist <= dist_limit) {
       local_phones.push(p);
     }
@@ -221,6 +221,18 @@ function GetNearbyPhones(req, res) {
   res.send(200, JSON.stringify(response));
 }
 
+// Input fields:
+//   <none>
+// 
+// Output fields:
+//   status : "ok" 
+function Reset(req, res) {
+  console.log("Reset server, clearing out all data.");
+  phones = [];
+  response = { "status" : "ok" };
+  res.send(200, JSON.stringify(response));
+}
+
 // API for Rangzen Location Server
 app.post('/register_phone', RegisterPhone);
 app.post('/get_friends', GetFriends);
@@ -229,6 +241,9 @@ app.post('/update_exchange', UpdateExchange);
 app.post('/get_previous_locations', GetPreviousLocations);
 app.post('/get_previous_exchanges', GetPreviousExchanges);
 app.post('/get_nearby_phones', GetNearbyPhones);
+
+// TODO(lerner): Disable Reset in the live deployment.
+app.post('/reset', Reset);
 
 port = 1337;
 app.listen(port);

@@ -3,6 +3,28 @@ import requests
 
 url = "http://localhost:1337/"
 
+def test_reset_server():
+  headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+
+  # Register Alice.
+  alice = {'phoneid': '123', 'friends': [ 'bob' ]}
+  r = requests.post(url + "register_phone", data=json.dumps(alice), headers=headers)
+  assert r.json()['status'] == 'ok'
+
+  reset = {} 
+  r = requests.post(url + "reset", data=json.dumps(reset), headers=headers)
+  assert r.json()['status'] == 'ok'
+
+  # Re-Register Alice. This should work.
+  alice = {'phoneid': '123', 'friends': [ 'bob' ]}
+  r = requests.post(url + "register_phone", data=json.dumps(alice), headers=headers)
+  assert r.json()['status'] == 'ok'
+ 
+  # Leave server reset.
+  reset = {} 
+  r = requests.post(url + "reset", data=json.dumps(reset), headers=headers)
+  assert r.json()['status'] == 'ok'
+
 def test_register_phone():
   headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 
@@ -49,7 +71,7 @@ def test_update_locations():
   assert len(r.json()['locations']) == 0
 
   # Add a location for Alice.
-  alice = {'phoneid': '123', 'locations': [ {'timestamp': '1', 'lat': '1.0', 'lng': '1.0'} ] }
+  alice = {'phoneid': '123', 'locations': [ {'time': '1', 'latitude': '1.0', 'longitude': '1.0'} ] }
   r = requests.post(url + "update_locations", data=json.dumps(alice), headers=headers)
   assert r.json()['status'] == 'ok'
 
@@ -58,12 +80,12 @@ def test_update_locations():
   r = requests.post(url + "get_previous_locations", data=json.dumps(alice), headers=headers)
   assert r.json()['status'] == 'ok'
   assert len(r.json()['locations']) == 1
-  assert r.json()['locations'][0]['timestamp'] == '1'
-  assert r.json()['locations'][0]['lat'] == '1.0'
-  assert r.json()['locations'][0]['lng'] == '1.0'
+  assert r.json()['locations'][0]['time'] == '1'
+  assert r.json()['locations'][0]['latitude'] == '1.0'
+  assert r.json()['locations'][0]['longitude'] == '1.0'
 
   # Add another location for Alice.
-  alice = {'phoneid': '123', 'locations': [ {'timestamp': '2', 'lat': '1.1', 'lng': '1.1'} ] }
+  alice = {'phoneid': '123', 'locations': [ {'time': '2', 'latitude': '1.1', 'longitude': '1.1'} ] }
   r = requests.post(url + "update_locations", data=json.dumps(alice), headers=headers)
   assert r.json()['status'] == 'ok'
 
@@ -71,15 +93,15 @@ def test_update_locations():
   r = requests.post(url + "get_previous_locations", data=json.dumps(alice), headers=headers)
   assert r.json()['status'] == 'ok'
   assert len(r.json()['locations']) == 2
-  assert r.json()['locations'][0]['timestamp'] == '1'
-  assert r.json()['locations'][0]['lat'] == '1.0'
-  assert r.json()['locations'][0]['lng'] == '1.0'
-  assert r.json()['locations'][1]['timestamp'] == '2'
-  assert r.json()['locations'][1]['lat'] == '1.1'
-  assert r.json()['locations'][1]['lng'] == '1.1'
+  assert r.json()['locations'][0]['time'] == '1'
+  assert r.json()['locations'][0]['latitude'] == '1.0'
+  assert r.json()['locations'][0]['longitude'] == '1.0'
+  assert r.json()['locations'][1]['time'] == '2'
+  assert r.json()['locations'][1]['latitude'] == '1.1'
+  assert r.json()['locations'][1]['longitude'] == '1.1'
 
   # Add a location for Bob.
-  bob = {'phoneid': '456', 'locations': [ {'timestamp': '3', 'lat': '1.2', 'lng': '1.2'} ] }
+  bob = {'phoneid': '456', 'locations': [ {'time': '3', 'latitude': '1.2', 'longitude': '1.2'} ] }
   r = requests.post(url + "update_locations", data=json.dumps(bob), headers=headers)
   assert r.json()['status'] == 'ok'
 
@@ -88,9 +110,9 @@ def test_update_locations():
   r = requests.post(url + "get_previous_locations", data=json.dumps(bob), headers=headers)
   assert r.json()['status'] == 'ok'
   assert len(r.json()['locations']) == 1
-  assert r.json()['locations'][0]['timestamp'] == '3'
-  assert r.json()['locations'][0]['lat'] == '1.2'
-  assert r.json()['locations'][0]['lng'] == '1.2'
+  assert r.json()['locations'][0]['time'] == '3'
+  assert r.json()['locations'][0]['latitude'] == '1.2'
+  assert r.json()['locations'][0]['longitude'] == '1.2'
 
 
 def test_get_nearby_phones():
@@ -127,15 +149,15 @@ def test_update_exchange():
 
   # Add an exchange for Alice with an unknown peer.
   alice = {'phoneid': '123', 'peer_phone_id': '999', 'protocol': 'bluetooth',
-      'start_location': { 'timestamp': '1', 'lat': '1.0', 'lng': '1.0' },
-      'end_location': { 'timestamp': '2', 'lat': '1.0', 'lng': '1.0' }}
+      'start_location': { 'time': '1', 'latitude': '1.0', 'longitude': '1.0' },
+      'end_location': { 'time': '2', 'latitude': '1.0', 'longitude': '1.0' }}
   r = requests.post(url + "update_exchange", data=json.dumps(alice), headers=headers)
   assert r.json()['status'] == 'failed'
 
   # Add an exchange for Alice with a known peer.
   alice = {'phoneid': '123', 'peer_phone_id': '456', 'protocol': 'bluetooth',
-      'start_location': { 'timestamp': '1', 'lat': '1.0', 'lng': '1.0' },
-      'end_location': { 'timestamp': '2', 'lat': '1.1', 'lng': '1.1' }}
+      'start_location': { 'time': '1', 'latitude': '1.0', 'longitude': '1.0' },
+      'end_location': { 'time': '2', 'latitude': '1.1', 'longitude': '1.1' }}
   r = requests.post(url + "update_exchange", data=json.dumps(alice), headers=headers)
   assert r.json()['status'] == 'ok'
 
@@ -146,11 +168,11 @@ def test_update_exchange():
   assert len(r.json()['exchanges']) == 1
   assert r.json()['exchanges'][0]['peer_phone_id'] == '456'
   assert r.json()['exchanges'][0]['protocol'] == 'bluetooth'
-  assert r.json()['exchanges'][0]['start_location'] == {'timestamp': '1', 'lat': '1.0', 'lng': '1.0'}
-  assert r.json()['exchanges'][0]['end_location'] == {'timestamp': '2', 'lat': '1.1', 'lng': '1.1'}
-
+  assert r.json()['exchanges'][0]['start_location'] == {'time': '1', 'latitude': '1.0', 'longitude': '1.0'}
+  assert r.json()['exchanges'][0]['end_location'] == {'time': '2', 'latitude': '1.1', 'longitude': '1.1'}
 
 # Run all tests.
+test_reset_server()
 test_register_phone()
 test_get_friends()
 test_update_locations()

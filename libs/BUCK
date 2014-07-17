@@ -5,6 +5,18 @@ prebuilt_jar(
 )
 
 prebuilt_jar(
+  name = 'aquery',
+  binary_jar = 'android-query-full.0.26.8.jar', 
+  visibility = [ 'PUBLIC' ],
+)
+
+prebuilt_jar(
+  name = 'gson',
+  binary_jar = 'gson-2.2.4.jar', 
+  visibility = [ 'PUBLIC' ],
+)
+
+prebuilt_jar(
   name = 'junit-4.11',
   binary_jar = 'junit-4.11.jar', 
   visibility = [ 'PUBLIC' ],
