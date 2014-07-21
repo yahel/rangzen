@@ -85,6 +85,9 @@ public class MapsActivity extends FragmentActivity implements
         GooglePlayServicesClient.OnConnectionFailedListener, LocationListener,
         LocationSource {
 
+    /** Displayed in Android Log messages. */
+    private static final String TAG = "MapsActivity";
+
     /**
      * The fragment that contains the map itself. It is the second most top
      * fragment in its parent FrameLayout.
@@ -113,6 +116,11 @@ public class MapsActivity extends FragmentActivity implements
      * invisible, and adds, replaces or removes fragments.
      */
     private FragmentManager fragmentManager;
+
+    /**
+     * Handle to Rangzen storage manager.
+     */
+    private StorageBase mStore;
 
     /**
      * Used in OnLocationChanged to indicate that a first location has not yet
@@ -147,6 +155,9 @@ public class MapsActivity extends FragmentActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
+
+        mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
+
         setContentView(R.layout.master);
         locationClient = new LocationClient(this, this, this);
         createAboutIcon();
@@ -214,6 +225,7 @@ public class MapsActivity extends FragmentActivity implements
      * @param v The View for the deny button.
      */
     public void sDeny(View v) {
+        Log.i(TAG, "Denied permission.");
         Intent intent = new Intent();
         intent.setClass(this, SlidingPageIndicator.class);
         startActivity(intent);
@@ -228,7 +240,7 @@ public class MapsActivity extends FragmentActivity implements
      *            - View for the accept button
      */
     public void sAccept(View v) {
-
+        Log.i(TAG, "Accepted permission.");
         transparent.getView().setClickable(false);
         transparent.getView().setVisibility(View.INVISIBLE);
         ViewGroup vg = (ViewGroup) transparent.getView().getParent();
@@ -248,7 +260,17 @@ public class MapsActivity extends FragmentActivity implements
 
         editor.putBoolean("transparent", true);
         editor.commit();
+
+        Log.i(TAG, "Experiment state is now EXP_STATE_NOT_YET_REGISTERED.");
+        mStore.put(RangzenService.EXPERIMENT_STATE_KEY, 
+                   RangzenService.EXP_STATE_NOT_YET_REGISTERED);
+
+        // Spawn Rangzen Service.
+        Log.i(TAG, "Permission granted - Starting Rangzen Service.");
+        Intent rangzenServiceIntent = new Intent(this, RangzenService.class);
+        startService(rangzenServiceIntent);
     }
+
 
     /**
      * OnClickListener for the about icon, this handles the creation of a new
@@ -312,13 +334,13 @@ public class MapsActivity extends FragmentActivity implements
     /**
      * Stores into sharedPreferences that the transparent page has already been
      * seen. This also adds the transparent fragment into a linear layout in
-     * master.xml
+     * master.xml.
      */
     private void createTransparentFragment() {
-        // checking to create transparency
+        // Checking to create transparency.
         SharedPreferences settings = getSharedPreferences(
                 SlidingPageIndicator.PREFS_NAME, 0);
-        // Get "hasLoggedIn" value. If the value doesn't exist yet false is
+        // Get "transparent" value. If the value doesn't exist yet false is
         // returned
         boolean hasSeentransparent = settings.getBoolean("transparent", false);
 
@@ -455,21 +477,20 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onConnected(Bundle dataBundle) {
         Location location = locationClient.getLastLocation();
-        LatLng latLng = new LatLng(location.getLatitude(),
-                location.getLongitude());
-        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng,
-                15);
-        if (mapFragment != null) {
+        if (location != null) {
+          LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+          CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng,
+              15);
+          if (mapFragment != null) {
             map = mapFragment.getMap();
-        }
-        if (map != null) {
+          }
+          if (map != null) {
             map.animateCamera(cameraUpdate);
             map.setMyLocationEnabled(true);
             map.setBuildingsEnabled(true);
 
-        }
-        if (location != null) {
-            myLocation = location;
+          }
+          myLocation = location;
         }
     }
 

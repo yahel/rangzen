@@ -44,6 +44,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Robolectric.clickOn;
@@ -147,6 +148,11 @@ public class ContactsGetterStorerTest {
       number = getterStorer.hashString(number);
       assertTrue(retrievedNumbers.contains(number));
     }
+  }
+
+  @Test
+  public void testNullOnUnsetContacts() {
+    assertNull(getterStorer.getObfuscatedPhoneNumbers());
   }
   
 }

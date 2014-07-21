@@ -34,9 +34,12 @@ import com.github.kevinsawicki.http.HttpRequest;
 import com.github.kevinsawicki.http.HttpRequest.HttpRequestException;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 import android.os.AsyncTask;
 import android.util.Log;
+
+import java.util.concurrent.ExecutionException;
 
 /**
  * Class that interfaces with the experimental server, enabling the app to
@@ -154,6 +157,62 @@ public class ExperimentClient extends AsyncTask<String, Integer, String> {
     RegistrationPayload registrationData = new RegistrationPayload(phoneid, friends);
     String json = gson.toJson(registrationData);
     execute(REGISTER_PHONE_RESOURCE, json);
+  }
+
+  /**
+   * Check whether the last query - which should have been answered with a simple
+   * response (just "ok" or "failed") - was successful. The request should have
+   * already been initiated, but this call is blocking and will wait for it to
+   * complete.
+   *
+   * @return True if the status of the most recent request was "ok"; false otherwise.
+   */
+  private boolean simpleResponseWasSuccessful() {
+    if (getStatus() == AsyncTask.Status.PENDING) {
+      Log.wtf(TAG, "Checked whether registration was successful before it was executed.");
+      return false;
+    }
+
+    try {
+      return gson.fromJson(get(), SimpleResponse.class).OK();
+    } catch (JsonSyntaxException e) {
+      Log.e(TAG, "Server returned malformed JSON.");
+      return false;
+    } catch (InterruptedException | ExecutionException e) {
+      e.printStackTrace();
+      Log.e(TAG, "Execution of AsyncTask failed.");
+      return false;
+    }
+  }
+
+  /**
+   * Call this method to learn whether registration was successful. 
+   * Blocks until the asynchronous HTTP request is completed.
+   *
+   * @return True if the status of the most recent request was "ok"; false otherwise.
+   */
+  public boolean registrationWasSuccessful() {
+    return simpleResponseWasSuccessful();
+  }
+
+  /**
+   * Call this method to learn whether a location update was successful.
+   * Blocks until the asynchronous HTTP request is completed.
+   *
+   * @return True if the status of the most recent request was "ok"; false otherwise.
+   */
+  public boolean updateLocationsWasSuccessful() {
+    return simpleResponseWasSuccessful();
+  }
+
+  /**
+   * Call this method to learn whether an exchange update was successful.
+   * Blocks until the asynchronous HTTP request is completed.
+   *
+   * @return True if the status of the most recent request was "ok"; false otherwise.
+   */
+  public boolean updateExchangeWasSuccessful() {
+    return simpleResponseWasSuccessful();
   }
 
   /**

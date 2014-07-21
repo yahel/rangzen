@@ -117,15 +117,11 @@ public class ExperimentClientTest {
   public void testRegisterAndGetFriends() throws InterruptedException, ExecutionException {
     // Register.
     client.register(EXAMPLE_ID1, friends1);
-    String response = client.get();
-    ExperimentClient.SimpleResponse simpleResponse;
-    simpleResponse = gson.fromJson(response, ExperimentClient.SimpleResponse.class);
-    assertNotNull(simpleResponse);
-    assertTrue(simpleResponse.OK());
+    assertTrue(client.registrationWasSuccessful());
 
     // Check that friends are the same we registered.
     client.getFriends(EXAMPLE_ID1);
-    response = client.get();
+    String response = client.get();
     ExperimentClient.GetFriendsResponse friendsResponse;
     friendsResponse = gson.fromJson(response, ExperimentClient.GetFriendsResponse.class);
     assertNotNull(friendsResponse);
@@ -143,15 +139,11 @@ public class ExperimentClientTest {
   @Test
   public void testRegisterNoFriends() throws InterruptedException, ExecutionException {
     client.register(EXAMPLE_ID2, emptyFriends);
-    String response = client.get();
-    ExperimentClient.SimpleResponse simpleResponse;
-    simpleResponse = gson.fromJson(response, ExperimentClient.SimpleResponse.class);
-    assertNotNull(simpleResponse);
-    assertTrue(simpleResponse.OK());
+    assertTrue(client.registrationWasSuccessful());
 
     // Check that friends are the same we registered.
     client.getFriends(EXAMPLE_ID2);
-    response = client.get();
+    String response = client.get();
     ExperimentClient.GetFriendsResponse friendsResponse;
     friendsResponse = gson.fromJson(response, ExperimentClient.GetFriendsResponse.class);
     assertNotNull(friendsResponse);
@@ -173,25 +165,18 @@ public class ExperimentClientTest {
     SerializableLocation[] locations = {sl0, sl1, sl2};
 
     client.register(EXAMPLE_ID3, friends1);
-    String response = client.get();
-    ExperimentClient.SimpleResponse simpleResponse;
-    simpleResponse = gson.fromJson(response, ExperimentClient.SimpleResponse.class);
-    assertNotNull(simpleResponse);
-    assertTrue(simpleResponse.OK());
+    assertTrue(client.registrationWasSuccessful());
 
     client.updateLocations(EXAMPLE_ID3, locations);
-    response = client.get();
-    simpleResponse = gson.fromJson(response, ExperimentClient.SimpleResponse.class);
-    assertNotNull(simpleResponse);
-    assertTrue(simpleResponse.OK());
+    assertTrue(client.updateLocationsWasSuccessful());
 
     client.getPreviousLocations(EXAMPLE_ID3);
-    response = client.get();
+    String response = client.get();
     ExperimentClient.GetPreviousLocationsResponse locationsResponse;
     locationsResponse = gson.fromJson(response,  ExperimentClient.GetPreviousLocationsResponse.class);
     assertNotNull(locationsResponse);
-    assertTrue(simpleResponse.OK());
     SerializableLocation[] gottenLocations = locationsResponse.getLocations();
+    assertEquals(locations.length, gottenLocations.length);
     for (int i=0; i<gottenLocations.length; i++) {
       assertEquals(locations[i], gottenLocations[i]);
     }
@@ -216,18 +201,16 @@ public class ExperimentClientTest {
 
     // Register two new clients.
     client.register(EXAMPLE_ID4, friends1);
+    assertTrue(client.registrationWasSuccessful());
     client.register(EXAMPLE_ID5, friends1);
+    assertTrue(client.registrationWasSuccessful());
 
     // Upload some exchanges for them and make sure we can get them back.
     client.updateExchange(exchange0);
-    String response = client.get();
-    ExperimentClient.SimpleResponse simpleResponse;
-    simpleResponse = gson.fromJson(response, ExperimentClient.SimpleResponse.class);
-    assertNotNull(simpleResponse);
-    assertTrue(simpleResponse.OK());
+    assertTrue(client.updateExchangeWasSuccessful());
 
     client.getPreviousExchanges(EXAMPLE_ID4);
-    response = client.get();
+    String response = client.get();
     ExperimentClient.GetPreviousExchangesResponse exchangesResponse;
     exchangesResponse = gson.fromJson(response, ExperimentClient.GetPreviousExchangesResponse.class);
     assertNotNull(exchangesResponse);
@@ -237,10 +220,7 @@ public class ExperimentClientTest {
     assertEquals(exchange0, gottenExchanges[0]);
 
     client.updateExchange(exchange1);
-    response = client.get();
-    simpleResponse = gson.fromJson(response, ExperimentClient.SimpleResponse.class);
-    assertNotNull(simpleResponse);
-    assertTrue(simpleResponse.OK());
+    assertTrue(client.updateExchangeWasSuccessful());
 
     client.getPreviousExchanges(EXAMPLE_ID4);
     response = client.get();
@@ -273,7 +253,9 @@ public class ExperimentClientTest {
 
     // Register two new clients.
     client.register(EXAMPLE_ID6, friends1);
+    assertTrue(client.registrationWasSuccessful());
     client.register(EXAMPLE_ID7, friends1);
+    assertTrue(client.registrationWasSuccessful());
 
     client.updateLocations(EXAMPLE_ID6, locs0);
     client.updateLocations(EXAMPLE_ID7, locs1);

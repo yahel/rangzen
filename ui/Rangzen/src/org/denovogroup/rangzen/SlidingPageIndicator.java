@@ -31,11 +31,15 @@
 
 package org.denovogroup.rangzen;
 
+import org.denovogroup.rangzen.RangzenService;
+import org.denovogroup.rangzen.StorageBase;
+
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 
@@ -51,10 +55,15 @@ import com.viewpagerindicator.PageIndicator;
  */
 public class SlidingPageIndicator extends FragmentActivity {
 
+    /** Shown in Android log. */
+    private static final String TAG = "SlidingPageIndicator";
+    
     /**
      * Give your SharedPreferences file a name and save it to a static variable.
      */
     public static final String PREFS_NAME = "rememberPagesSeen";
+
+    private StorageBase mStore; 
 
     IntroductionFragmentAdapter mAdapter;
     ViewPager mPager;
@@ -68,11 +77,22 @@ public class SlidingPageIndicator extends FragmentActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
+        String state = getExperimentState();
+        if (state == null) {
+          Log.i(TAG, "Initializing experiment state to EXP_STATE_START.");
+          mStore.put(RangzenService.EXPERIMENT_STATE_KEY, RangzenService.EXP_STATE_START);
+        } else {
+          Log.i(TAG, "Creating SlidingPageIndicator, state is " + state);
+        }
+
         SharedPreferences settings = getSharedPreferences(
                 SlidingPageIndicator.PREFS_NAME, 0);
         boolean hasLoggedIn = settings.getBoolean("hasLoggedIn", false);
 
         if (hasLoggedIn) {
+            Log.i(TAG, "Has logged in.");
             Intent intent = new Intent();
             intent.setClass(SlidingPageIndicator.this, MapsActivity.class);
             startActivity(intent);
@@ -134,6 +154,14 @@ public class SlidingPageIndicator extends FragmentActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * Retrieve the current experiment state. Sets the experiment state to
+     * START if none is set already.
+     */
+    private String getExperimentState() {
+      return mStore.get(RangzenService.EXPERIMENT_STATE_KEY);
     }
 
 }

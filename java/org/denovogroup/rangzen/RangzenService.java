@@ -30,6 +30,7 @@
  */
 package org.denovogroup.rangzen;
 
+import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver; 
 import android.content.Context;
 import android.support.v4.content.LocalBroadcastManager;
@@ -38,8 +39,6 @@ import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.net.wifi.p2p.WifiP2pConfig;
-import android.net.wifi.WpsInfo;
 import android.app.Service;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -47,6 +46,7 @@ import android.os.IBinder;
 import java.io.IOException;
 import java.io.OptionalDataException;
 import java.io.StreamCorruptedException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -60,6 +60,12 @@ import java.util.Date;
  * indefinitely to perform the background tasks of Rangzen.
  */
 public class RangzenService extends Service {
+  /** Host of the experiment server. */
+  public static final String EXPERIMENT_SERVER_HOSTNAME = "http://s.rangzen.io";
+
+  /** Listening port of the experiment server. */
+  public static final int EXPERIMENT_SERVER_PORT = 1337;
+
   /** 
    * String designating the provider we want to use (GPS) for location. 
    * We need the accuracy GPS provides - network based location is accurate to
@@ -97,6 +103,52 @@ public class RangzenService extends Service {
   /** Handle to Rangzen location storage provider. */
   private LocationStore mLocationStore;
 
+  /** Handle to Rangzen key-value storage provider. */
+  private StorageBase mStore;
+
+  /** Client for contacting experimental server. */
+  private ExperimentClient mExperimentClient;
+
+  /** Handle to Rangzen contacts getter/storer. */
+  private ContactsGetterStorer mContactsGetterStorer;
+
+  /** Display intro screen = service does nothing. */
+  public static final String EXP_STATE_START = "START";
+  /** Opted-in = but not yet registered with server. */
+  public static final String EXP_STATE_NOT_YET_REGISTERED = "NOT_REGISTERED";
+  /** Registered = GPS/BT on. */
+  public static final String EXP_STATE_ON = "ON";
+  /** GPS is off; service waits for GPS to turn back on. */
+  public static final String EXP_STATE_PAUSED_NO_GPS = "PAUSED_NO_GPS";
+  /** Bluetooth is off; service records location =  */
+  public static final String EXP_STATE_PAUSED_NO_BLUETOOTH = "PAUSED_NO_BLUETOOTH";
+  /** User opted out after opting in. Display intro screen. waits for BT to turn back on. */
+  public static final String EXP_STATE_OPTED_OUT = "OPTED_OUT";
+  /** The key under which the experiment state is stored in the StorageBase. */
+  public static final String EXPERIMENT_STATE_KEY = "EXPERIMENT_STATE_KEY";
+
+  /** 
+   * If registration fails, we store the way it failed under this key.
+   * 
+   * TODO(lerner): Add status codes for failure reasons.
+   * TODO(lerner): Retry differently given each status code.
+  */
+  public static final String REGISTRATION_FAILURE_REASON_KEY = "REGISRATION_FAILURE_REASON_KEY";
+
+  /** Error code indicating a NoSuchAlgorithmException was rasied by the Contacts getter. */
+  private static final String REGISTRATION_FAILED_BAD_ALGORITHM = "NoAlgorithmException";
+  /** Contacts weren't stored even after the ContactsGetterStorer tried. */
+  private static final String REGISTRATION_FAILED_NULL_CONTACTS = "Null contacts after retrieval";
+  /** Phone ID was null. */
+  private static final String REGISTRATION_FAILED_NULL_PHONE_ID = "Null phone id";
+  /** Success in registration. */
+  private static final String REGISTRATION_SUCCESS = "Success";
+  /** Got contacts and phoneid, but contacting the server failed, or it answered "failed". */
+  private static final String REGISTRATION_FAILED_SERVER_NOT_OK = "Server response not OK";
+
+  /** Current state of the experiment. */
+  private String experimentState;
+
   /** Android Log Tag. */
   private static String TAG = "RangzenService";
 
@@ -113,6 +165,8 @@ public class RangzenService extends Service {
   @Override
   public int onStartCommand(Intent intent, int flags, int startid) {
     Log.i(TAG, "RangzenService onStartCommand.");
+
+    experimentState = getExperimentState();
   
     // Returning START_STICKY causes Android to leave the service running
     // even when the foreground activity is closed.
@@ -131,10 +185,15 @@ public class RangzenService extends Service {
 
     mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
 
+    mExperimentClient = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME, 
+                                             EXPERIMENT_SERVER_PORT);
+
     mStartTime = new Date();
     mBackgroundTaskRunCount = 0;
 
     mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
+
+    mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
 
     mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
     registerForLocationUpdates();
@@ -154,6 +213,18 @@ public class RangzenService extends Service {
    */
   public void backgroundTasks() {
 
+    experimentState = getExperimentState();
+    if (experimentState.equals(EXP_STATE_NOT_YET_REGISTERED)) {
+      String status = mStore.get(REGISTRATION_FAILURE_REASON_KEY);
+      if (status == null) {
+        String newStatus = registerWithExperimentServer();
+        mStore.put(REGISTRATION_FAILURE_REASON_KEY, newStatus);
+        if (newStatus == REGISTRATION_SUCCESS) {
+          mStore.put(EXPERIMENT_STATE_KEY, EXP_STATE_ON);
+        }
+      }
+    }
+
     mBackgroundTaskRunCount++;
 
     PeerManager.getInstance(getApplicationContext()).tasks(); 
@@ -171,6 +242,92 @@ public class RangzenService extends Service {
     return mBackgroundTaskRunCount;
   }
 
+  /**
+   * Return the current state of the experiment, as stored in the StorageBase.
+   *
+   * @return The current experiment state from among the choices defined in this
+   * class (START, PRE_REGISTRATION, ON, etc.)
+   */
+  public String getExperimentState() {
+    String state = mStore.get(EXPERIMENT_STATE_KEY);
+    if (state == null) {
+      Log.wtf(TAG, "Experiment state should never be null in RangzenService!");
+      return EXP_STATE_START;
+    } else {
+      return state;
+    }
+
+  }
+
+  /**
+   * Register with the experiment server.
+   */
+  private String registerWithExperimentServer() {
+    try { 
+      if (mContactsGetterStorer == null) {
+        mContactsGetterStorer = new ContactsGetterStorer(this);
+      }
+    } catch (NoSuchAlgorithmException e) {
+       Log.e(TAG, "Couldn't create ContactsGetterStorer, aborting registration. " + e);
+       return REGISTRATION_FAILED_BAD_ALGORITHM;
+    }
+
+    Set<String> contacts = mContactsGetterStorer.getObfuscatedPhoneNumbers();
+    if (contacts == null) {
+      Log.i(TAG, "Contacts are null; retrieving and storing them.");
+      mContactsGetterStorer.retrieveAndStoreContacts();
+    }
+
+    contacts = mContactsGetterStorer.getObfuscatedPhoneNumbers();
+    if (contacts == null) {
+      Log.e(TAG, "Couldn't retrieve contacts, not even an empty list.");
+      return REGISTRATION_FAILED_NULL_CONTACTS;
+    } else {
+      Log.i(TAG, String.format("Retrieved %d contacts.", contacts.size()));
+    }
+
+    String phoneid = getPhoneID();
+    if (phoneid == null) {
+      return REGISTRATION_FAILED_NULL_PHONE_ID;
+    } 
+
+    mExperimentClient.register(phoneid, contacts.toArray(new String[0])); 
+    if (mExperimentClient.registrationWasSuccessful()) {
+      Log.i(TAG, String.format("id: %s registered successfully with %d friends.",
+                               phoneid, contacts.size()));
+      return REGISTRATION_SUCCESS;
+    } else {
+      Log.e(TAG, "Registration failed, server answer was not OK!");
+      return REGISTRATION_FAILED_SERVER_NOT_OK;
+    }
+  }
+
+  /**
+   * Get an ID for this phone which can be used to register and identify the phone
+   * to the server and other phones. Currently, a Bluetooth MAC address is use.
+   *
+   * @return A string to be used as the ID for this phone.
+   */
+  private String getPhoneID() {
+    // TODO(lerner): Move this to the BluetoothSpeaker.
+    // TODO(lerner): Ensure this can't fail.
+    Log.v(TAG, "Getting default adapter");
+    BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+    Log.v(TAG, "Got default adapter, it's" + adapter);
+    if (adapter != null) {
+      Log.i(TAG, "Getting adapter address");
+      String address = adapter.getAddress();
+      Log.i(TAG, "Got adapter address");
+      return adapter.getAddress();
+    } else {
+      Log.e(TAG, "Device doesn't support Bluetooth, can't get address for phone ID.");
+      return null;
+    }
+  }
+
+  /**
+   * Register to receive regular updates of the phone's location.
+   */
   private void registerForLocationUpdates() {
      if (mLocationManager == null) { 
        Log.e(TAG, "Can't register for location updates; location manager is null.");

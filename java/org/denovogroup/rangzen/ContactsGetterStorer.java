@@ -136,16 +136,12 @@ public class ContactsGetterStorer {
   /**
    * Get the set of obfuscated phone numbers stored for this device.
    *
-   * @return A set of hex-string encoded obfuscated phone numbers. An empty
-   * set if none have ever been stored.
+   * @return A set of hex-string encoded obfuscated phone numbers, or null if
+   * none have eve been stored.
    */
   public Set<String> getObfuscatedPhoneNumbers() {
     Set<String> numbers = store.getSet(CONTACTS_KEY);
-    if (numbers == null) {
-      return new HashSet<String>();
-    } else {
-      return numbers;
-    }
+    return numbers;
   }
 
   /**
