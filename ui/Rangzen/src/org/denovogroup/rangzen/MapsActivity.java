@@ -31,11 +31,16 @@
 
 package org.denovogroup.rangzen;
 
+import java.io.IOException;
+import java.io.OptionalDataException;
+import java.io.StreamCorruptedException;
+import java.util.List;
+
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -44,6 +49,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.location.Location;
 import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
@@ -54,24 +60,18 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.android.gms.drive.internal.e;
 import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.LocationSource;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 /**
@@ -82,8 +82,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
  */
 public class MapsActivity extends FragmentActivity implements
         GooglePlayServicesClient.ConnectionCallbacks,
-        GooglePlayServicesClient.OnConnectionFailedListener, LocationListener,
-        LocationSource {
+        GooglePlayServicesClient.OnConnectionFailedListener {
 
     /** Displayed in Android Log messages. */
     private static final String TAG = "MapsActivity";
@@ -93,6 +92,12 @@ public class MapsActivity extends FragmentActivity implements
      * fragment in its parent FrameLayout.
      */
     private SupportMapFragment mapFragment;
+
+    /**
+     * Variable that will last the length of the activity, so the map will not
+     * be centered gain while the activity is up.
+     */
+    private static boolean hasCentered = false;
     /**
      * The map object itself that is inside of the SupportMapFragment.
      */
@@ -107,10 +112,6 @@ public class MapsActivity extends FragmentActivity implements
      * but is brought to the top if created.
      */
     private Fragment transparent;
-    /**
-     * Saving the users current location of the user when OnConnected is called.
-     */
-    private Location myLocation;
     /**
      * This is the object that manages all of the Fragments visible and
      * invisible, and adds, replaces or removes fragments.
@@ -154,24 +155,51 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
-
-        mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
 
         setContentView(R.layout.master);
         locationClient = new LocationClient(this, this, this);
         createAboutIcon();
-        // action = getActionBar();
-        // action.hide();
+        mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
+        mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_NONE);
+        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        registerForLocationUpdates();
 
         if (savedInstanceState == null) {
-            mapFragment = new MapFrag();
+            mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                    .findFragmentById(R.id.mapHolder);
             mapFragment.setRetainInstance(true);
             fragmentManager = getSupportFragmentManager();
             fragmentManager.beginTransaction()
                     .replace(R.id.mapHolder, mapFragment).commit();
             createTransparentFragment();
-            // ft.commit();
+        }
+        drawPoints();
+
+    }
+
+    /**
+     * Will only be called in OnCreate and also the app needs to have been
+     * destroyed in order for the method to be called again.
+     */
+    private void centerMap() {
+        Toast.makeText(this, "onConnected", Toast.LENGTH_SHORT).show();
+        Location location = locationClient.getLastLocation();
+        LatLng latLng = new LatLng(location.getLatitude(),
+                location.getLongitude());
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng,
+                15);
+        setUpMapIfNeeded();
+        if (map != null) {
+            // int haveCentered = storageBase.getInt("haveCenteredMap", 0);
+            // Toast.makeText(this, "value of centeredMap = " + haveCentered,
+            // Toast.LENGTH_SHORT).show();
+            if (!hasCentered) {
+                map.animateCamera(cameraUpdate);
+                hasCentered = true;
+                // storageBase.putInt("haveCenteredMap", 1);
+            }
+            map.setMyLocationEnabled(true);
+            map.setBuildingsEnabled(true);
         }
     }
 
@@ -203,13 +231,15 @@ public class MapsActivity extends FragmentActivity implements
         about.setBackgroundDrawable(states);
         about.bringToFront();
     }
-    
+
     /**
      * Method that finds the actual amount of pixels necessary for shifts of
      * textViews. Borrowed from
      * http://stackoverflow.com/questions/2406449/does-setwidthint
      * -pixels-use-dip-or-px
-     * @param dip Density-Independent length
+     * 
+     * @param dip
+     *            Density-Independent length
      */
     private float getPixels(int dip) {
         Resources r = getResources();
@@ -222,7 +252,8 @@ public class MapsActivity extends FragmentActivity implements
      * The onClickListener of the Deny button on the transparent page. Used to
      * restart the introduction slides if they do not accept.
      * 
-     * @param v The View for the deny button.
+     * @param v
+     *            The View for the deny button.
      */
     public void sDeny(View v) {
         Log.i(TAG, "Denied permission.");
@@ -248,9 +279,7 @@ public class MapsActivity extends FragmentActivity implements
         vg.setVisibility(View.INVISIBLE);
         ViewGroup vgParent = (ViewGroup) vg.getParent();
         vgParent.removeView(vg);
-        //findViewById(R.id.accept).setClickable(false);
-        //findViewById(R.id.deny).setClickable(false);
-        
+
         SharedPreferences settings = getSharedPreferences(
                 SlidingPageIndicator.PREFS_NAME, 0);
         SharedPreferences.Editor editor = settings.edit();
@@ -288,7 +317,7 @@ public class MapsActivity extends FragmentActivity implements
         fragmentManager = getSupportFragmentManager();
         FragmentTransaction ft = fragmentManager.beginTransaction();
         ft.add(R.id.infoHolder, info);
-        //ft.hide(mapFragment);
+        // ft.hide(mapFragment);
         ft.addToBackStack("info");
         ft.commit();
         // action.show();
@@ -302,33 +331,8 @@ public class MapsActivity extends FragmentActivity implements
      */
     @Override
     public void onBackPressed() {
-        // SharedPreferences settings = getSharedPreferences(
-        // SlidingPageIndicator.PREFS_NAME, 0);
-        // boolean hasAcceptedTransparent = settings.getBoolean("transparent",
-        // false);
-        // if (!hasAcceptedTransparent) {
-        // return;
-        // }
         super.onBackPressed();
         findViewById(R.id.infoHolder).setClickable(false);
-        // action.hide();
-    }
-
-    /**
-     * This is for when the screen configuration changes, then the markers and
-     * the info button must be brought back into focus.
-     */
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        Toast.makeText(this, "orientation changed", Toast.LENGTH_SHORT).show();
-        if (about != null) {
-            about.bringToFront();
-        }
-        // for (int i = 0; i < locationStore.getAllLocations().size(); i++) {
-        // onLocationChanged(locationStore)
-        // }
-
     }
 
     /**
@@ -370,15 +374,6 @@ public class MapsActivity extends FragmentActivity implements
     }
 
     /**
-     * PlaceMarkers finds the saved markers of Rangzen user contact using
-     * Barath's data storage API and places the markers onto the map.
-     */
-    private void placeMarkers() {
-        Marker marker = map.addMarker((new MarkerOptions().position(new LatLng(
-                myLocation.getLatitude(), myLocation.getLongitude()))));
-    }
-
-    /**
      * Called when the Activity is no longer visible.
      */
     @Override
@@ -407,34 +402,6 @@ public class MapsActivity extends FragmentActivity implements
             }
 
         }
-    }
-
-    /**
-     * This will add points to memory using Barath's data storage and will
-     * constantly keep a line on the map of saved movements.
-     * 
-     * @param location
-     *            Location is the current location of the user when they have
-     *            moved.
-     */
-    public void onLocationChanged(Location location) {
-        Toast.makeText(this, "location changed", Toast.LENGTH_SHORT).show();
-
-        LatLng current = new LatLng(location.getLatitude(),
-                location.getLongitude());
-
-        if (flag == 0) // when the first update comes, we have no previous
-                       // points,hence this
-        {
-            prev = current;
-            flag = 1;
-        }
-        CameraUpdate update = CameraUpdateFactory.newLatLngZoom(current, 16);
-        map.animateCamera(update);
-        map.addPolyline((new PolylineOptions()).add(prev, current).width(6)
-                .color(Color.BLUE).visible(true));
-        prev = current;
-        current = null;
     }
 
     /**
@@ -476,22 +443,7 @@ public class MapsActivity extends FragmentActivity implements
      */
     @Override
     public void onConnected(Bundle dataBundle) {
-        Location location = locationClient.getLastLocation();
-        if (location != null) {
-          LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-          CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng,
-              15);
-          if (mapFragment != null) {
-            map = mapFragment.getMap();
-          }
-          if (map != null) {
-            map.animateCamera(cameraUpdate);
-            map.setMyLocationEnabled(true);
-            map.setBuildingsEnabled(true);
-
-          }
-          myLocation = location;
-        }
+        centerMap();
     }
 
     /** Define a DialogFragment that displays the error dialog */
@@ -536,44 +488,203 @@ public class MapsActivity extends FragmentActivity implements
 
     }
 
-    /**
-     * Unimplemented methods that need to be here for implementing other
-     * classes.
-     */
     @Override
-    public void activate(OnLocationChangedListener listener) {
+    protected void onPause() {
+        map.setMyLocationEnabled(false);
+        super.onPause();
+    }
+
+    /** A handle to the Android location manager. */
+    private LocationManager mLocationManager;
+
+    /**
+     * String designating the provider we want to use (GPS) for location. We
+     * need the accuracy GPS provides - network based location is accurate to
+     * within like a mile, according to the docs.
+     */
+    private static final String LOCATION_GPS_PROVIDER = LocationManager.PASSIVE_PROVIDER;
+
+    /** Time between location updates in milliseconds - 1 minute. */
+    private static final long LOCATION_UPDATE_INTERVAL = 1000 * 60 * 1;
+
+    /**
+     * Minimum moved distance between location updates. We want a new location
+     * even if we haven't moved, so we set it to 0.
+     * */
+    private static final float LOCATION_UPDATE_DISTANCE_MINIMUM = 0;
+
+    /** Handle to Rangzen location storage provider. */
+    private LocationStore mLocationStore;
+
+    private void registerForLocationUpdates() {
+        if (mLocationManager == null) {
+            Log.e(TAG,
+                    "Can't register for location updates; location manager is null.");
+            return;
+        }
+        mLocationManager.requestLocationUpdates(LOCATION_GPS_PROVIDER,
+                LOCATION_UPDATE_INTERVAL, LOCATION_UPDATE_DISTANCE_MINIMUM,
+                mLocationListener);
+        Log.i(TAG, "Registered for location every " + LOCATION_UPDATE_INTERVAL
+                + "ms");
     }
 
     /**
-     * Unimplemented methods that need to be here for implementing other
-     * classes.
+     * Called from OnCreate in order to only draw the previous points once.
      */
-    @Override
-    public void deactivate() {
+    private void drawPoints() {
+        int size = -1;
+        setUpMapIfNeeded();
+        // Log.e(TAG, "starting the for loop to get locations - no polyline");
+        List<SerializableLocation> locations;
+        try {
+            locations = mLocationStore.getAllLocations();
+            size = locations.size();
+            LatLng prevLL = null;
+            for (SerializableLocation current : locations) {
+                LatLng currentLL = new LatLng(current.latitude,
+                        current.longitude);
+                if (prevLL == null) {
+                    prevLL = currentLL;
+                }
+                if (distanceAllows(prevLL, currentLL)) {
+                    map.addPolyline((new PolylineOptions())
+                            .add(prevLL, currentLL).width(6).color(Color.BLUE)
+                            .visible(true));
+                }
+                prevLL = currentLL;
+            }
+        } catch (StreamCorruptedException e) {
+            Log.e(TAG, "Not able to make polyLine on onResume!");
+            e.printStackTrace();
+        } catch (OptionalDataException e) {
+            Log.e(TAG, "Not able to make polyLine on onResume!");
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            Log.e(TAG, "Not able to make polyLine on onResume!");
+            e.printStackTrace();
+        } catch (IOException e) {
+            Log.e(TAG, "Not able to make polyLine on onResume!");
+            e.printStackTrace();
+        }
+        // Log.e(TAG, "finished loop, no polyline");
+        Toast.makeText(this, "number of locations stored " + size,
+                Toast.LENGTH_SHORT).show();
     }
 
     /**
-     * Unimplemented methods that need to be here for implementing other
-     * classes.
+     * Will add a polyline between previous and current points on a location
+     * change, if the distance between them is large enough.
      */
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
+    private LocationListener mLocationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            LatLng current = new LatLng(location.getLatitude(),
+                    location.getLongitude());
+
+            if (flag == 0) // when the first update comes, we have no previous
+                           // points,hence this
+            {
+                prev = current;
+                flag = 1;
+            }
+            setUpMapIfNeeded();
+            if (distanceAllows(prev, current)) {
+                map.addPolyline((new PolylineOptions()).add(prev, current)
+                        .width(6).color(Color.BLUE).visible(true));
+            }
+            prev = current;
+            current = null;
+
+            SerializableLocation serializableLocation = new SerializableLocation(
+                    location);
+            mLocationStore.addLocation(serializableLocation);
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+            Log.d(TAG, "Provider disabled: " + provider);
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+            Log.d(TAG, "Provider enabled: " + provider);
+
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+            Log.d(TAG, "Provider " + provider + " status changed to status "
+                    + status);
+        }
+
+    };
+
+    /**
+     * Determines if the distance between two LatLng points is large enough
+     * using the haversine method.
+     * 
+     * @param prev
+     *            previous saved LatLng point.
+     * @param current
+     *            current saved LatLng point.
+     * @return true if the distance is large enough, false otherwise.
+     */
+    private boolean distanceAllows(LatLng prev, LatLng current) {
+        if (haversine(prev.latitude, prev.longitude, current.latitude,
+                current.longitude) > 10d) {
+            return true;
+        }
+        return false;
     }
 
     /**
-     * Unimplemented methods that need to be here for implementing other
-     * classes.
+     * Used to determine if the points are far enough away to be worth drawing a
+     * polyline.
+     * 
+     * @param lat1
+     *            - Latitude of previous point.
+     * @param lon1
+     *            - Longitude of previous point.
+     * @param lat2
+     *            - Latitude of current point.
+     * @param lon2
+     *            - Longitude of current point.
+     * @return true if far enough away, false if not.
      */
-    @Override
-    public void onProviderEnabled(String provider) {
+    public double haversine(double lat1, double lon1, double lat2, double lon2) {
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        lat1 = Math.toRadians(lat1);
+        lat2 = Math.toRadians(lat2);
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2)
+                * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return radius * c;
     }
 
+    /** Radius of the Erf (Earth). */
+    private int radius = 6371000;
+
     /**
-     * Unimplemented methods that need to be here for implementing other
-     * classes.
+     * Sets up the map if it is possible to do so (i.e., the Google Play
+     * services APK is correctly installed) and the map has not already been
+     * instantiated. This will ensure that we only ever manipulate the map once
+     * when it is not null.
      */
-    @Override
-    public void onProviderDisabled(String provider) {
+    private void setUpMapIfNeeded() {
+        // Do a null check to confirm that we have not already instantiated the
+        // map.
+        if (map == null) {
+            mapFragment = ((SupportMapFragment) getSupportFragmentManager()
+                    .findFragmentById(R.id.mapHolder));
+            if (mapFragment != null) {
+                map = mapFragment.getMap();
+            }
+        }
     }
 
 }

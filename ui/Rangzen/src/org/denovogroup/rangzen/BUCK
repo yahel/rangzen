@@ -5,7 +5,6 @@ android_library(
     'IntroductionFragment.java',
     'IntroductionFragmentAdapter.java',
     'ListFragmentOrganizer.java',
-    'MapFrag.java',
     'MapsActivity.java',
     'Opener.java',
     'PostFrag.java',
@@ -22,6 +21,6 @@ android_library(
     '//ui/Rangzen:experimentalUIRes',
     '//ui/google-play-services_lib/libs:google-play-services',
     '//ui/google-play-services_lib:googlePlayServicesRes',
-    
+    '//java/org/denovogroup/rangzen:experimentalBackend',
   ],
 )

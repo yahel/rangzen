@@ -27,3 +27,6 @@ local.properties
 
 #OS X stupid stuff
 .DS_Store
+
+#Temporary Files
+*~
