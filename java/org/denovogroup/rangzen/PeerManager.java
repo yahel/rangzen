@@ -38,6 +38,7 @@ import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Date;
@@ -64,11 +65,11 @@ public class PeerManager {
   /** For app-local intent broadcasting/receiving of peer events. */
   private LocalBroadcastManager mBroadcastManager;
 
+  /** Handle to the app's BluetoothSpeaker. */
+  private BluetoothSpeaker mBluetoothSpeaker;
+
   /** Displayed in Android Monitor logs. */
   private static String TAG = "RangzenPeerManager";
-
-  /** The WifiDirectSpeaker for the app. */
-  private static WifiDirectSpeaker mWifiDirectSpeaker;
 
   /**
    * Private constructor. Use PeerManager.getInstance() to obtain the app's
@@ -80,10 +81,7 @@ public class PeerManager {
     mCurrentPeers = new ArrayList<Peer>();
     mBroadcastManager = LocalBroadcastManager.getInstance(context); 
 
-    // WifiDirectSpeaker needs the context in order to retrieve system 
-    // Wifi P2p resources.
-    WifiDirectFrameworkGetter frameworkGetter = new WifiDirectFrameworkGetter();
-    mWifiDirectSpeaker = new WifiDirectSpeaker(context, this, frameworkGetter);
+    Log.d(TAG, "Finished PeerManager constructor.");
   }
 
   /**
@@ -94,8 +92,8 @@ public class PeerManager {
    */
   public static PeerManager getInstance(Context context) {
     if (sPeerManager == null) {
-      Log.d(TAG, "Created instance of PeerManager");
       sPeerManager = new PeerManager(context);
+      Log.d(TAG, "Created instance of PeerManager");
     }
     return sPeerManager;
   }
@@ -105,26 +103,6 @@ public class PeerManager {
    */
   public static final long PEER_TIMEOUT = 300 * 1000;
 
-  /**
-   * Ask the PeerManager to start the process of looking for new remote
-   * peers to communicate with. This method returns immediately. Callers
-   * should listen for peer list events if they wish to act on peers when
-   * the list is updated.
-   */
-  public void seekPeers() {
-    Log.v(TAG, "Setting OK to seek peers on WifiDirectSpeaker.");
-    // TODO(lerner); Ask for new peers to be sought!
-    // This will look something like:
-    //
-    // <consult policy>
-    // for each protocol:
-    //   if <policySaysOk>
-    //     protocol.seekPeers();
-    if (mWifiDirectSpeaker != null) {
-      mWifiDirectSpeaker.setSeekingDesired(true);
-    }
-  }
-  
   /**
    * This method garbage runs the peer garbage collector on all peers that
    * should be garbage collected. It runs synchronously and returns when done,
@@ -192,6 +170,8 @@ public class PeerManager {
         return peerInList;
       }
     }
+    // Add the peer to make it actually canonical.
+    addPeer(peerDesired);
     return peerDesired;
   }
 
@@ -276,19 +256,27 @@ public class PeerManager {
     }
   }
 
+  public void setBluetoothSpeaker(BluetoothSpeaker speaker) {
+    mBluetoothSpeaker = speaker;
+  }
+
   /**
    * Run tasks, e.g. garbage collection of peers, speaker tasks, etc.
    */
   public void tasks() {
-    mWifiDirectSpeaker.tasks();
+    Log.v(TAG, "Started PeerManager tasks.");
 
-    // We ask to connect and ping every time but the speaker will ignore 
-    // subsequent requests since it has a peer device selected.
-    // TODO(lerner): Don't just constantly ask to connect from here.
+    mBluetoothSpeaker.tasks();
+    
     if (mCurrentPeers.size() > 0) {
-      Log.v(TAG, "Found at least 1 peer, connecting to it.");
       Peer peer = mCurrentPeers.get(0);
-      mWifiDirectSpeaker.selectPeer(peer);
+      Log.v(TAG, "Found at least 1 peer, connecting to it. " + peer);
+      try {
+        mBluetoothSpeaker.connectAndStartExchange(peer);
+        Log.i(TAG, "Completed connect and exchange.");
+      } catch (IOException e) {
+        Log.e(TAG, String.format("Couldn't connect to peer %s ", peer));
+      }
     }
     Log.v(TAG, "Finished with PeerManager tasks.");
   }
