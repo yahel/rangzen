@@ -37,10 +37,14 @@ import android.widget.Button;
 import android.app.Activity;
 import android.content.Intent;
 
-/** This class is an activity that displays a special about page that has a continue button at the bottom. This activity is located before the MapsActivity. */
+/** This class is an activity that displays a special about page that has a continue button at the bottom.
+ * this activity is located before the MapsActivity.
+ */
 public class AboutPage extends Activity {
 
-    /** This changes the text in the info layout's button to be "Continue" and shows the info page before the accept or deny page. */
+    /** This changes the text in the info layout's button to be "Continue" and shows the info page
+     * before the accept or deny page.
+     */
     @Override
     protected void onCreate(Bundle arg0) {
         super.onCreate(arg0);

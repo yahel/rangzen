@@ -1,6 +1,7 @@
 android_library(
   name = 'experimentalUI',
   srcs = [ 
+    'AboutPage.java',
     'DepthPageTransformer.java',
     'IntroductionFragment.java',
     'IntroductionFragmentAdapter.java',
@@ -11,7 +12,6 @@ android_library(
     'SidebarListAdapter.java',
     'SlidingPageIndicator.java',
     'ZoomOutPageTransformer.java',
-    'AboutPage.java',
   ],
   visibility = [ 'PUBLIC' ],
   deps = [
