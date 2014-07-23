@@ -133,9 +133,8 @@ public class SlidingPageIndicator extends FragmentActivity {
         // toast.setGravity(Gravity.CENTER, 0, 0);
         // toast.show();
         Intent intent = new Intent();
-        intent.setClass(this, MapsActivity.class);
+        intent.setClass(this, AboutPage.class);
         startActivity(intent);
-        finish();
     }
 
     // /**

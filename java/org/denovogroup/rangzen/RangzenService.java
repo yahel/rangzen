@@ -354,9 +354,12 @@ public class RangzenService extends Service {
         for (SerializableLocation sl : locations) {
           Log.d(TAG, sl.toString());
         }
-      } catch (IOException | ClassNotFoundException e) {
+      } catch (IOException e) {
         Log.e(TAG, "Not able to store location!");
         e.printStackTrace();
+      } catch (ClassNotFoundException e) {
+          Log.e(TAG, "Not able to store location!");
+          e.printStackTrace();
       }
     }
 

@@ -11,6 +11,7 @@ android_library(
     'SidebarListAdapter.java',
     'SlidingPageIndicator.java',
     'ZoomOutPageTransformer.java',
+    'AboutPage.java',
   ],
   visibility = [ 'PUBLIC' ],
   deps = [

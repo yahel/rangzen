@@ -165,8 +165,9 @@ public class MapsActivity extends FragmentActivity implements
         registerForLocationUpdates();
 
         if (savedInstanceState == null) {
-            mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                    .findFragmentById(R.id.mapHolder);
+            //mapFragment = (SupportMapFragment) getSupportFragmentManager()
+            //        .findFragmentById(R.id.mapHolder);
+        	mapFragment = (SupportMapFragment) SupportMapFragment.newInstance();
             mapFragment.setRetainInstance(true);
             fragmentManager = getSupportFragmentManager();
             fragmentManager.beginTransaction()
