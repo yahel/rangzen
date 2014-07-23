@@ -6,6 +6,9 @@ android_resource(
   deps = [
     '//ui/appcompat_v7_4/libs:android-support-v7-appcompat',
     '//ui/appcompat_v7_4:appcompatRes',
+    '//ui/google-play-services_lib/libs:google-play-services',
+    '//ui/google-play-services_lib:googlePlayServicesRes',
+    '//libs:android-support-v4',
   ],
 )
 

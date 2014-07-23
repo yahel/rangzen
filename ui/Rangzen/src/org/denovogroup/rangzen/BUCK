@@ -1,6 +1,7 @@
 android_library(
   name = 'experimentalUI',
   srcs = [ 
+    'AboutPage.java',
     'DepthPageTransformer.java',
     'IntroductionFragment.java',
     'IntroductionFragmentAdapter.java',
