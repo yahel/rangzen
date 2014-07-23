@@ -1,8 +1,10 @@
 android_library(
   name = 'experimentalBackend',
   srcs = [ 
+           'BluetoothBroadcastReceiver.java',
            'BluetoothLEPeerNetwork.java',
            'BluetoothPeerNetwork.java',
+           'BluetoothSpeaker.java',
            'ContactsGetterStorer.java',
            'Exchange.java',
            'ExperimentClient.java',

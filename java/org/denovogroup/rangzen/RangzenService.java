@@ -31,6 +31,7 @@
 package org.denovogroup.rangzen;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver; 
 import android.content.Context;
 import android.support.v4.content.LocalBroadcastManager;
@@ -91,6 +92,9 @@ public class RangzenService extends Service {
   /** Executes the background thread periodically. */
   private ScheduledExecutorService mScheduleTaskExecutor; 
 
+  /** Handle to app's PeerManager. */
+  private PeerManager mPeerManager;
+
   /** The time at which this instance of the service was started. */
   private Date mStartTime;
 
@@ -149,8 +153,18 @@ public class RangzenService extends Service {
   /** Current state of the experiment. */
   private String experimentState;
 
+  /** The BluetoothSpeaker for the app. */
+  private static BluetoothSpeaker mBluetoothSpeaker;
+
   /** Android Log Tag. */
   private static String TAG = "RangzenService";
+
+  /** Hardcoded addresses of testing devices. */
+  // public static final String nexus7SilverAddress = "60:A4:4C:B7:9C:82"; // Nexus 7 Silver
+  public static final String nexus5Address = "BC:F5:AC:4A:73:9F"; // Adam's Nexus 5
+  // public static final String htcOneAddress = "A0:F4:50:9D:74:2E"; // HTC One
+  // public static final String nexus7BlackAddress = "D8:50:E6:7F:93:40"; // Nexus 7 Black
+  public static final String galaxyS4Address = "78:F7:BE:6A:66:A4"; // Galaxy S4
 
   /**
    * Called whenever the service is requested to start. If the service
@@ -181,12 +195,33 @@ public class RangzenService extends Service {
   @Override
   public void onCreate() {
     Log.i(TAG, "RangzenService created.");
+
     sRangzenServiceInstance = this;
 
     mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
 
     mExperimentClient = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME, 
                                              EXPERIMENT_SERVER_PORT);
+    mPeerManager = PeerManager.getInstance(this);
+    mBluetoothSpeaker = new BluetoothSpeaker(this, mPeerManager);
+    mPeerManager.setBluetoothSpeaker(mBluetoothSpeaker);
+
+    String myAddress = mBluetoothSpeaker.getAddress();
+    if (nexus5Address.equals(myAddress)) {
+      BluetoothDevice device = mBluetoothSpeaker.getDevice(galaxyS4Address);
+      if (device == null) {
+        Log.e(TAG, "Couldn't get device for address " + galaxyS4Address);
+      }
+      mPeerManager.addPeer(new Peer(new BluetoothPeerNetwork(device)));
+      Log.i(TAG, "Added peer for " + device + " to peer manager.");
+    } else if (galaxyS4Address.equals(myAddress)) {
+      BluetoothDevice device = mBluetoothSpeaker.getDevice(nexus5Address);
+      if (device == null) {
+        Log.e(TAG, "Couldn't get device for address " + nexus5Address);
+      }
+      // mPeerManager.addPeer(new Peer(new BluetoothPeerNetwork(device)));
+      Log.i(TAG, "Added peer for " + device + "to peer manager.");
+    }
 
     mStartTime = new Date();
     mBackgroundTaskRunCount = 0;
@@ -212,6 +247,7 @@ public class RangzenService extends Service {
    * Rangzen's background tasks.
    */
   public void backgroundTasks() {
+    Log.v(TAG, "Background Tasks Started");
 
     experimentState = getExperimentState();
     if (experimentState.equals(EXP_STATE_NOT_YET_REGISTERED)) {
@@ -227,8 +263,8 @@ public class RangzenService extends Service {
 
     mBackgroundTaskRunCount++;
 
-    PeerManager.getInstance(getApplicationContext()).tasks(); 
-    
+    mPeerManager.tasks(); 
+
     Log.v(TAG, "Background Tasks Finished");
   }
 
