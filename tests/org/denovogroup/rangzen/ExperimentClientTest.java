@@ -83,6 +83,12 @@ public class ExperimentClientTest {
   private static final String EXAMPLE_ID6 = "66:66:66:66:66:66";
   private static final String EXAMPLE_ID7 = "77:77:77:77:77:77";
 
+  /** Example time values. */
+  private static final long START_TIME_0 = 0;
+  private static final long START_TIME_1 = 1;
+  private static final long END_TIME_1 = 1;
+  private static final long END_TIME_2 = 2;
+
   /** Friends! */
   private String[] friends1  = {"alice", "bob"};
 
@@ -195,9 +201,9 @@ public class ExperimentClientTest {
     SerializableLocation sl1 = new SerializableLocation(location1);
     SerializableLocation sl2 = new SerializableLocation(location2);
     SerializableLocation sl3 = new SerializableLocation(location3);
-    Exchange exchange0 = new Exchange(EXAMPLE_ID4, EXAMPLE_ID5, Exchange.PROTOCOL_BLUETOOTH, sl0, sl1);
-    Exchange exchange1 = new Exchange(EXAMPLE_ID4, EXAMPLE_ID5, Exchange.PROTOCOL_BLUETOOTH, sl3, sl2);
-    Exchange exchange2 = new Exchange(EXAMPLE_ID5, EXAMPLE_ID4, Exchange.PROTOCOL_BLUETOOTH, sl2, sl3);
+    Exchange exchange0 = new Exchange(EXAMPLE_ID4, EXAMPLE_ID5, Exchange.PROTOCOL_BLUETOOTH, START_TIME_0, END_TIME_1, sl0, sl1);
+    Exchange exchange1 = new Exchange(EXAMPLE_ID4, EXAMPLE_ID5, Exchange.PROTOCOL_BLUETOOTH, START_TIME_0, END_TIME_2, sl3, sl2);
+    Exchange exchange2 = new Exchange(EXAMPLE_ID5, EXAMPLE_ID4, Exchange.PROTOCOL_BLUETOOTH, START_TIME_1, END_TIME_2, sl2, sl3);
 
     // Register two new clients.
     client.register(EXAMPLE_ID4, friends1);

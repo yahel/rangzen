@@ -48,6 +48,12 @@ public class Exchange implements Serializable {
   /** Protocol used, e.g. Bluetooth or Wifi Direct. */
   public String protocol;
 
+  /** The time at the start of the exchange. */
+  public long start_time;
+
+  /** The time at the end of the exchange. */
+  public long end_time;
+
   /** Location at the start of the exchange. */
   public SerializableLocation start_location;
 
@@ -63,12 +69,14 @@ public class Exchange implements Serializable {
    * @param start The Location at the start of the exchange.
    * @param end The Location at the end of the exchange.
    */
-  public Exchange(String phoneid, String peer_phone_id, String protocol,
-                  SerializableLocation start_location, SerializableLocation end_location) {
+  public Exchange(String phoneid, String peer_phone_id, String protocol, long start_time,
+      long end_time, SerializableLocation start_location, SerializableLocation end_location) {
                   
     this.phoneid = phoneid;
     this.peer_phone_id = peer_phone_id;
     this.protocol = protocol;
+    this.start_time = start_time;
+    this.end_time = end_time;
     this.start_location = start_location;
     this.end_location = end_location;
   }
@@ -107,7 +115,7 @@ public class Exchange implements Serializable {
    * Return a string representing this exchange.
    */
   public String toString() {
-    return String.format("Exchange | [phoneid=%s, other=%s, protocol=%s start=%s end=%s]",
-                         phoneid, peer_phone_id, protocol, start_location, end_location);
+    return String.format("Exchange | [phoneid=%s, other=%s, protocol=%s start_time=%s end_time=%s start=%s end=%s]",
+                         phoneid, peer_phone_id, protocol, start_time, end_time, start_location, end_location);
   }
 }
