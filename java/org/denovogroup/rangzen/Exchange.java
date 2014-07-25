@@ -107,7 +107,10 @@ public class Exchange implements Serializable {
       boolean IDsEqual = peer_phone_id == null ? 
                          e.peer_phone_id == null : 
                          peer_phone_id.equals(e.peer_phone_id);
-      return startsEqual && endsEqual && IDsEqual;
+      boolean timesEqual = start_time == e.start_time &&
+                           end_time == e.end_time;
+
+      return startsEqual && endsEqual && IDsEqual && timesEqual;
     }
   }
   
