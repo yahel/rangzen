@@ -33,7 +33,7 @@
         android:layout_marginTop="40dp"
         android:gravity="center"
         android:textColor="@android:color/white"
-        android:text="Rangzen is an application created by the Denovo Research Group at UC Berkeley. This is a beta test and it asking permission for:"
+        android:text="Rangzen is an application created by De Novo Group. This is a beta test. We are asking permission to access:"
         android:textSize="17sp" />
 
     <TextView
@@ -43,7 +43,7 @@
         android:layout_marginTop="65dp"
         android:gravity="center"
         android:textColor="@android:color/white"
-        android:text="•    Locations Since Install" />
+        android:text="•    Your Location" />
 
     <TextView
         android:id="@+id/textView1"
@@ -52,7 +52,7 @@
         android:layout_marginTop="5dp"
         android:gravity="center"
         android:textColor="@android:color/white"
-        android:text="•    Facebook Name and Email" />
+        android:text="•    The phone numbers of your contacts." />
 
     <LinearLayout
         android:layout_width="match_parent"

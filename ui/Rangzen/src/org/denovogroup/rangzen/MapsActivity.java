@@ -37,8 +37,10 @@ import java.io.StreamCorruptedException;
 import java.util.List;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
@@ -162,7 +164,6 @@ public class MapsActivity extends FragmentActivity implements
         mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
         mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_NONE);
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        registerForLocationUpdates();
 
         if (savedInstanceState == null) {
             //mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -362,6 +363,54 @@ public class MapsActivity extends FragmentActivity implements
     }
 
     /**
+     *  sOptOut creates a Dialog Interface that asks if they are sure they want to opt out.
+     */
+    public void sOptOut(View v) {
+        DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                switch (which){
+                    case DialogInterface.BUTTON_POSITIVE:
+                        //Yes button clicked
+                        hasCentered = false; 
+                        SharedPreferences settings = getSharedPreferences(
+                            SlidingPageIndicator.PREFS_NAME, 0);
+                        SharedPreferences.Editor editor = settings.edit();
+
+                        editor.putBoolean("hasLoggedIn", false);
+                        editor.commit();
+
+                        editor.putBoolean("transparent", false);
+                        editor.commit();
+
+                        Log.i(TAG, "Experiment state is now EXP_STATE_NOT_YET_REGISTERED.");
+                        mStore.put(RangzenService.EXPERIMENT_STATE_KEY, 
+                                   RangzenService.EXP_STATE_OPTED_OUT);
+
+                        // Stop Rangzen Service.
+                        Log.i(TAG, "User Opted Out");
+                        Intent rangzenServiceIntent = new Intent(getApplicationContext(), RangzenService.class);
+                        stopService(rangzenServiceIntent);
+
+                        Intent intent = new Intent(getApplicationContext(), SlidingPageIndicator.class);
+                        startActivity(intent);
+                        finish();
+                            
+                        break;                                  
+                    case DialogInterface.BUTTON_NEGATIVE:
+                        //No button clicked
+                        break;
+                }
+            }
+        };
+    
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Are you sure?").setNegativeButton("No", dialogClickListener).setPositiveButton("Yes", dialogClickListener).show();
+    }
+
+
+
+    /**
      * Called when Rangzen is first visible and this connects to the google
      * services.
      */
@@ -493,6 +542,18 @@ public class MapsActivity extends FragmentActivity implements
     protected void onPause() {
         map.setMyLocationEnabled(false);
         super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();     
+        setUpMapIfNeeded();
+        if (map != null) {
+            map.setMyLocationEnabled(true);
+        } else {
+            Toast.makeText(this, "map was null in onResume", Toast.LENGTH_SHORT).show();
+        }
+        registerForLocationUpdates();
     }
 
     /** A handle to the Android location manager. */
