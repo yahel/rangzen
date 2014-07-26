@@ -71,30 +71,39 @@ import android.location.Location;
         emulateSdk=18, 
         resourceDir="../../res/org/denovogroup/rangzen/res")
 @RunWith(RobolectricTestRunner.class)
-public class LocationStoreTest {
+public class ExchangeStoreTest {
   /** The instance of MessageStore we're using for tests. */
-  private LocationStore store;
+  private ExchangeStore store;
 
   /** The app instance we're using to pass to MessageStore. */
   private MainActivity activity;
 
-  /** Some locations we store/retrieve. */
+  /** An exchange we store/retrieve. */
+  private Exchange ex;
+
+  /** Some locations we store/retrieve in the exchange. */
   private Location loc1;
   private Location loc2;
   private SerializableLocation serialLoc1;
   private SerializableLocation serialLoc2;
 
   /** The values we have in the locations. */
-  private double lat1 = 12.3;
-  private double lat2 = 23.4;
+  private static final double lat1 = 12.3;
+  private static final double lat2 = 23.4;
 
-  private String PROVIDER1 = "Provider1";
-  private String PROVIDER2 = "Provider2";
+  private static final String PROVIDER1 = "Provider1";
+  private static final String PROVIDER2 = "Provider2";
+
+  private static final String PHONE_ID = "123";
+  private static final String PEERPHONE_ID = "456";
+  private static final String PROTOCOL = "Bluetooth";
+  private static final long START_TIME = 7; 
+  private static final long END_TIME = 8; 
 
   @Before
   public void setUp() {
     activity = Robolectric.buildActivity(MainActivity.class).create().get();
-    store = new LocationStore(activity, StorageBase.ENCRYPTION_NONE);
+    store = new ExchangeStore(activity, StorageBase.ENCRYPTION_NONE);
 
     loc1 = new Location(PROVIDER1);
     loc2 = new Location(PROVIDER2);
@@ -102,30 +111,24 @@ public class LocationStoreTest {
     loc2.setLatitude(lat2);
     serialLoc1 = new SerializableLocation(loc1);
     serialLoc2 = new SerializableLocation(loc2);
+
+    ex = new Exchange(PHONE_ID, PEERPHONE_ID, PROTOCOL, START_TIME, END_TIME, serialLoc1, serialLoc2);
   }
 
   /**
-   * Tests that we can store locations and get them all back.
+   * Tests that we can store an exchange and get it back.
    */
   @Test
-  public void storeLocations() throws StreamCorruptedException, OptionalDataException, 
+  public void storeExchanges() throws StreamCorruptedException, OptionalDataException, 
          IOException, ClassNotFoundException {
-    assertEquals(0, store.getAllLocations().size());
-    assertTrue(store.addLocation(serialLoc1));
-    assertEquals(1, store.getAllLocations().size());
-    assertTrue(store.addLocation(serialLoc2));
-    assertEquals(2, store.getAllLocations().size());
+    assertEquals(0, store.getAllExchanges().size());
 
-    List<SerializableLocation> locations = store.getAllLocations();
-    for (SerializableLocation location : locations) {
-      if (PROVIDER1.equals(location.provider)) {
-        assertEquals(lat1, location.latitude, 0.1);
-      } else if (PROVIDER2.equals(location.provider)) {
-        assertEquals(lat2, location.latitude, 0.1);
-      } else {
-        assertFalse("Provider isn't PROVIDER1 or PROVIDER2", true);
-      }
+    assertTrue(store.addExchange(ex));
+    assertEquals(1, store.getAllExchanges().size());
+
+    List<Exchange> exchanges = store.getAllExchanges();
+    for (Exchange exchange : exchanges) {
+      assertEquals(ex, exchange);
     }
-
   }
 }
