@@ -126,7 +126,7 @@ public class SerializableLocation implements Serializable {
    * Return a string representing this location.
    */
   public String toString() {
-    return String.format("SerializableLocation[%s %f, %f acc=%f alt=%f vel=%f]", 
-                         provider, latitude, longitude, accuracy, altitude, speed);
+    return String.format("SerializableLocation[%s %f, %f acc(%b)=%f alt(%b)=%f bear(%b)=%f speed(%b)=%f time=%d]", 
+                         provider, latitude, longitude, hasAccuracy, accuracy, hasAltitude, altitude, hasBearing, bearing, hasSpeed, speed, time);
   }
 }
