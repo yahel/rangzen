@@ -116,10 +116,6 @@ public class SlidingPageIndicator extends FragmentActivity {
         indicator.setUnselectedColor(0xFF888888);
         indicator.setStrokeWidth(4 * density);
         indicator.setLineWidth(30 * density);
-
-        Log.i(TAG, "Starting Rangzen Service.");
-        Intent rangzenServiceIntent = new Intent(this, RangzenService.class);
-        startService(rangzenServiceIntent);
     }
 
     /**

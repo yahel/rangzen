@@ -47,7 +47,6 @@ public class SerializableLocation implements Serializable {
   public float accuracy;
   public double altitude;
   public float bearing;
-  public long elapsedRealTimeNanos;
   public String provider;
   public float speed;
   public long time;
@@ -66,7 +65,6 @@ public class SerializableLocation implements Serializable {
     this.accuracy = location.getAccuracy();
     this.altitude = location.getAltitude();
     this.bearing = location.getBearing();
-    this.elapsedRealTimeNanos = location.getElapsedRealtimeNanos();
     this.provider = location.getProvider();
     this.speed = location.getSpeed();
     this.time = location.getTime();
@@ -99,7 +97,6 @@ public class SerializableLocation implements Serializable {
              approxEqual(accuracy, sl.accuracy) &&
              approxEqual(altitude, sl.altitude) &&
              approxEqual(bearing, sl.bearing) &&
-             approxEqual(elapsedRealTimeNanos, sl.elapsedRealTimeNanos) &&
              provider.equals(sl.provider) && 
              approxEqual(speed, sl.speed) &&
              this.time == sl.time &&
@@ -129,7 +126,7 @@ public class SerializableLocation implements Serializable {
    * Return a string representing this location.
    */
   public String toString() {
-    return String.format("SerializableLocation[%s %f, %f acc=%f alt=%f vel=%f]", 
-                         provider, latitude, longitude, accuracy, altitude, speed);
+    return String.format("SerializableLocation[%s %f, %f acc(%b)=%f alt(%b)=%f bear(%b)=%f speed(%b)=%f time=%d]", 
+                         provider, latitude, longitude, hasAccuracy, accuracy, hasAltitude, altitude, hasBearing, bearing, hasSpeed, speed, time);
   }
 }

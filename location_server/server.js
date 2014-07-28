@@ -114,7 +114,7 @@ function UpdateLocations(req, res) {
     return;
   }
  
-  async.each(req.body.locations, function(value, callback) {
+  async.eachSeries(req.body.locations, function(value, callback) {
     if (!('time' in value && 'latitude' in value && 'longitude' in value)) {
       console.log("UpdateLocations skipping malformed value: " + JSON.stringify(value));
       callback();

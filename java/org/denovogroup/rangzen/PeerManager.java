@@ -268,9 +268,8 @@ public class PeerManager {
 
     mBluetoothSpeaker.tasks();
     
-    if (mCurrentPeers.size() > 0) {
-      Peer peer = mCurrentPeers.get(0);
-      Log.v(TAG, "Found at least 1 peer, connecting to it. " + peer);
+    for (Peer peer : mCurrentPeers) {
+      Log.v(TAG, "Connecting to " + peer);
       try {
         mBluetoothSpeaker.connectAndStartExchange(peer);
         Log.i(TAG, "Completed connect and exchange.");
@@ -280,5 +279,4 @@ public class PeerManager {
     }
     Log.v(TAG, "Finished with PeerManager tasks.");
   }
-  
 }

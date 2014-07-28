@@ -116,6 +116,8 @@ public class LocationStoreTest {
     assertTrue(store.addLocation(serialLoc2));
     assertEquals(2, store.getAllLocations().size());
 
+    assertEquals(store.MIN_SEQUENCE_NUMBER + 1, store.getMostRecentSequenceNumber());
+
     List<SerializableLocation> locations = store.getAllLocations();
     for (SerializableLocation location : locations) {
       if (PROVIDER1.equals(location.provider)) {
@@ -127,5 +129,12 @@ public class LocationStoreTest {
       }
     }
 
+    locations = store.getLocations(store.MIN_SEQUENCE_NUMBER, store.MIN_SEQUENCE_NUMBER);
+    assertEquals(1, locations.size());
+    assertEquals(lat1, locations.get(0).latitude, 0.1);
+
+    locations = store.getLocations(store.MIN_SEQUENCE_NUMBER + 1, store.MIN_SEQUENCE_NUMBER + 1);
+    assertEquals(1, locations.size());
+    assertEquals(lat2, locations.get(0).latitude, 0.1);
   }
 }

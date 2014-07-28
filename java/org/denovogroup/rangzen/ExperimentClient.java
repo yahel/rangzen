@@ -32,13 +32,13 @@ package org.denovogroup.rangzen;
 
 import com.github.kevinsawicki.http.HttpRequest;
 import com.github.kevinsawicki.http.HttpRequest.HttpRequestException;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
 import android.os.AsyncTask;
 import android.util.Log;
 
+import java.net.SocketTimeoutException;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -52,6 +52,9 @@ import java.util.concurrent.ExecutionException;
 public class ExperimentClient extends AsyncTask<String, Integer, String> {
   /** Included in Android Log messages. */
   private final static String TAG = "ExperimentClient";
+
+  /** Read and connect timeout for HTTP requests to experiment server, in ms. */
+  private final static int TIMEOUT = 5000;
 
   /** URL-ending for registering a new phone. */
   private static final String REGISTER_PHONE_RESOURCE = "register_phone";
@@ -174,7 +177,13 @@ public class ExperimentClient extends AsyncTask<String, Integer, String> {
     }
 
     try {
-      return gson.fromJson(get(), SimpleResponse.class).OK();
+      SimpleResponse response = gson.fromJson(get(), SimpleResponse.class);
+      if (response == null) {
+        return false;
+      } else {
+        return response.OK();
+      }
+
     } catch (JsonSyntaxException e) {
       Log.e(TAG, "Server returned malformed JSON.");
       return false;
@@ -429,6 +438,45 @@ public class ExperimentClient extends AsyncTask<String, Integer, String> {
   }
 
   /**
+   * Call after getNearbyPhones() to retrieve the answer given by the server.
+   *
+   * @return An array of phoneid strings, or null if an error occurred.
+   */
+  public String[] getNearbyPhonesResult() {
+    try {
+      if (getStatus() == AsyncTask.Status.PENDING) {
+        Log.wtf(TAG, "Asked for nearby phone result without initiating call.");
+        return null;
+      }
+      String response = get();
+      if (response != null) {
+        GetNearbyPhonesResponse phonesResponse;
+        phonesResponse = gson.fromJson(response, GetNearbyPhonesResponse.class);
+        if (phonesResponse != null && phonesResponse.OK()) {
+          Log.d(TAG, "Server returned phones, here they are: ");
+          for (String phone : phonesResponse.getPhones()) {
+            Log.d(TAG, phone);
+          }
+          return phonesResponse.getPhones();
+        } else {
+          Log.e(TAG, "Server answered 'failed'.");
+          return null; 
+        }
+      } else {
+        Log.e(TAG, "Error while getting nearby phones (malformed response?), returning null.");
+        return null; 
+      }
+
+    } catch (InterruptedException e) {
+      Log.e(TAG, "getNearbyPhonesResult() had interrupted exception in get(): " + e);
+      return null;
+    } catch (ExecutionException e) {
+      Log.e(TAG, "getNearbyPhonesResult() had executeion exception in get(): " + e);
+      return null;
+    }
+  }
+
+  /**
    * Request that the client ask the server to delete all its data.
    * Used for testing idempotency.
    */
@@ -449,14 +497,21 @@ public class ExperimentClient extends AsyncTask<String, Integer, String> {
     String payload = methodAndPayload[1];
     String url = String.format("%s:%d/%s", host, port, method);
     try {
+      Log.i(TAG, "Sending request to " + url);
       HttpRequest request =  HttpRequest.post(url)
+                                        .connectTimeout(TIMEOUT)
+                                        .readTimeout(TIMEOUT)
                                         .acceptJson()
                                         .contentType(HttpRequest.CONTENT_TYPE_JSON)
                                         .send(payload);
+      Log.i(TAG, "Sending done.");
       StringBuilder responseBody = new StringBuilder();
+      Log.i(TAG, "Receiving response...");
       request.receive(responseBody);
+      Log.i(TAG, "Receiving done.");
       return responseBody.toString();
-    } catch (HttpRequestException exception) {
+    } catch (HttpRequestException e) {
+      Log.e(TAG, "Exception while making request: " + e);
       return null;
     }
   }

@@ -47,6 +47,7 @@ import android.os.IBinder;
 import java.io.IOException;
 import java.io.OptionalDataException;
 import java.io.StreamCorruptedException;
+import java.net.SocketTimeoutException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
@@ -86,6 +87,9 @@ public class RangzenService extends Service {
   /** The running instance of RangzenService. */
   protected static RangzenService sRangzenServiceInstance;
 
+  /** Last time we sent our locations to the server. */
+  private Date lastLocationUpdate;
+
   /** For app-local broadcast and broadcast reception. */
   private LocalBroadcastManager mLocalBroadcastManager;
 
@@ -110,23 +114,22 @@ public class RangzenService extends Service {
   /** Handle to Rangzen key-value storage provider. */
   private StorageBase mStore;
 
-  /** Client for contacting experimental server. */
-  private ExperimentClient mExperimentClient;
-
   /** Handle to Rangzen contacts getter/storer. */
   private ContactsGetterStorer mContactsGetterStorer;
 
   /** Display intro screen = service does nothing. */
   public static final String EXP_STATE_START = "START";
+  /** Opted-in and registered with server, but not yet determined ON/PAUSED. */
+  public static final String EXP_STATE_REGISTERED = "REGISTERED";
   /** Opted-in = but not yet registered with server. */
   public static final String EXP_STATE_NOT_YET_REGISTERED = "NOT_REGISTERED";
   /** Registered = GPS/BT on. */
   public static final String EXP_STATE_ON = "ON";
   /** GPS is off; service waits for GPS to turn back on. */
   public static final String EXP_STATE_PAUSED_NO_GPS = "PAUSED_NO_GPS";
-  /** Bluetooth is off; service records location =  */
+  /** Bluetooth is off; service records location, waits for BT to turn back on.  */
   public static final String EXP_STATE_PAUSED_NO_BLUETOOTH = "PAUSED_NO_BLUETOOTH";
-  /** User opted out after opting in. Display intro screen. waits for BT to turn back on. */
+  /** User opted out after opting in. Display intro screen. */
   public static final String EXP_STATE_OPTED_OUT = "OPTED_OUT";
   /** The key under which the experiment state is stored in the StorageBase. */
   public static final String EXPERIMENT_STATE_KEY = "EXPERIMENT_STATE_KEY";
@@ -144,6 +147,8 @@ public class RangzenService extends Service {
   /** Contacts weren't stored even after the ContactsGetterStorer tried. */
   private static final String REGISTRATION_FAILED_NULL_CONTACTS = "Null contacts after retrieval";
   /** Phone ID was null. */
+  private static final String REGISTRATION_FAILED_TIMEOUT = "Timeout during HTTP";
+  /** Phone ID was null. */
   private static final String REGISTRATION_FAILED_NULL_PHONE_ID = "Null phone id";
   /** Success in registration. */
   private static final String REGISTRATION_SUCCESS = "Success";
@@ -159,12 +164,8 @@ public class RangzenService extends Service {
   /** Android Log Tag. */
   private static String TAG = "RangzenService";
 
-  /** Hardcoded addresses of testing devices. */
-  // public static final String nexus7SilverAddress = "60:A4:4C:B7:9C:82"; // Nexus 7 Silver
-  public static final String nexus5Address = "BC:F5:AC:4A:73:9F"; // Adam's Nexus 5
-  // public static final String htcOneAddress = "A0:F4:50:9D:74:2E"; // HTC One
-  // public static final String nexus7BlackAddress = "D8:50:E6:7F:93:40"; // Nexus 7 Black
-  public static final String galaxyS4Address = "78:F7:BE:6A:66:A4"; // Galaxy S4
+  /** Distance in km of phones we want to know about from the server. */
+  private static final float NEARBY_DISTANCE = (float) 0.25;
 
   /**
    * Called whenever the service is requested to start. If the service
@@ -200,28 +201,9 @@ public class RangzenService extends Service {
 
     mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
 
-    mExperimentClient = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME, 
-                                             EXPERIMENT_SERVER_PORT);
     mPeerManager = PeerManager.getInstance(this);
     mBluetoothSpeaker = new BluetoothSpeaker(this, mPeerManager);
     mPeerManager.setBluetoothSpeaker(mBluetoothSpeaker);
-
-    String myAddress = mBluetoothSpeaker.getAddress();
-    if (nexus5Address.equals(myAddress)) {
-      BluetoothDevice device = mBluetoothSpeaker.getDevice(galaxyS4Address);
-      if (device == null) {
-        Log.e(TAG, "Couldn't get device for address " + galaxyS4Address);
-      }
-      mPeerManager.addPeer(new Peer(new BluetoothPeerNetwork(device)));
-      Log.i(TAG, "Added peer for " + device + " to peer manager.");
-    } else if (galaxyS4Address.equals(myAddress)) {
-      BluetoothDevice device = mBluetoothSpeaker.getDevice(nexus5Address);
-      if (device == null) {
-        Log.e(TAG, "Couldn't get device for address " + nexus5Address);
-      }
-      // mPeerManager.addPeer(new Peer(new BluetoothPeerNetwork(device)));
-      Log.i(TAG, "Added peer for " + device + "to peer manager.");
-    }
 
     mStartTime = new Date();
     mBackgroundTaskRunCount = 0;
@@ -235,7 +217,7 @@ public class RangzenService extends Service {
 
     // Schedule the background task thread to run occasionally.
     mScheduleTaskExecutor = Executors.newScheduledThreadPool(1);
-    mScheduleTaskExecutor.scheduleWithFixedDelay(new Runnable() {
+    mScheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
       public void run() {
         backgroundTasks();
       }
@@ -249,23 +231,153 @@ public class RangzenService extends Service {
   public void backgroundTasks() {
     Log.v(TAG, "Background Tasks Started");
 
-    experimentState = getExperimentState();
-    if (experimentState.equals(EXP_STATE_NOT_YET_REGISTERED)) {
-      String status = mStore.get(REGISTRATION_FAILURE_REASON_KEY);
-      if (status == null) {
-        String newStatus = registerWithExperimentServer();
-        mStore.put(REGISTRATION_FAILURE_REASON_KEY, newStatus);
-        if (newStatus == REGISTRATION_SUCCESS) {
-          mStore.put(EXPERIMENT_STATE_KEY, EXP_STATE_ON);
-        }
-      }
+    attemptRegistrationIfNecessary();
+    if (isOptedInAndRegistered()) {
+      updateLiveExperimentState();
     }
+
+    Log.d(TAG, "Current experiment state: " + getExperimentState());
 
     mBackgroundTaskRunCount++;
 
-    mPeerManager.tasks(); 
-
+    PeerManager.getInstance(getApplicationContext()).tasks(); 
+    
     Log.v(TAG, "Background Tasks Finished");
+  }
+
+  /**
+   * Check whether we're pre-registration and haven't previously failed in an
+   * unrecoverable way. If so, try to register with the server by calling
+   * registerWithExperimentServer().
+   */
+  private void attemptRegistrationIfNecessary() {
+    if (isNotYetRegistered() && !hadUnrecoverableRegistrationFailure()) {
+      // TODO(lerner): Exponential backoff instead of spamming.
+
+      // Attempt registration and store the resulting status.
+      // If it's a success, set experiment state to REGISTERED.
+      putRegistrationFailureStatus(registerWithExperimentServer());
+      if (REGISTRATION_SUCCESS.equals(getRegistrationFailureStatus())) {
+        putExperimentState(EXP_STATE_REGISTERED);
+      }
+    }
+  }
+
+  /**
+   * Store the status of the last registration attempt.
+   *
+   * @param status The status of the registration attempt that is to be stored.
+   */
+  private void putRegistrationFailureStatus(String status) {
+    mStore.put(REGISTRATION_FAILURE_REASON_KEY, status);
+  }
+
+  /**
+   * Get the status of the last registration attempt, or null if no registration
+   * attempt has been previously made.
+   *
+   * @return The status of the last registration attempt, or null if no registration
+   * attempts have been recorded previously.
+   */
+  private String getRegistrationFailureStatus() {
+    return mStore.get(REGISTRATION_FAILURE_REASON_KEY);
+  }
+
+  /**
+   * Check whether we're in the NOT_YET_REGISTERED state.
+   *
+   * @return True if we're in the NOT_YET_REGISTERED state, false otherwise.
+   */
+  private boolean isNotYetRegistered() {
+    return EXP_STATE_NOT_YET_REGISTERED.equals(getExperimentState());
+  }
+
+  /**
+   * Check whether we're previously has an unrecoverable registration failure.
+   *
+   * @return True if we've had a previous unrecoverable registration failure,
+   * false otherwise.
+   */
+  private boolean hadUnrecoverableRegistrationFailure() {
+    String registrationStatus = mStore.get(REGISTRATION_FAILURE_REASON_KEY);
+    return !(REGISTRATION_FAILED_SERVER_NOT_OK.equals(registrationStatus) || 
+           registrationStatus == null);
+  } 
+
+  /**
+   * Check whether the current experiment state is ON.
+   *
+   * @return True if the experiment is ON, false otherwise.
+   */
+  private boolean isExperimentOn() {
+    experimentState = getExperimentState();
+    return experimentState.equals(EXP_STATE_ON);
+  }
+  
+  /**
+   * Check whether we've previously registered successfully with the server
+   * and that the user has opted in (and not opted out).
+   *
+   * @return True if the user has opted in (and not out) and we've successfully
+   * registered with the server.
+   */
+  private boolean isOptedInAndRegistered() {
+    experimentState = getExperimentState();
+    return experimentState.equals(EXP_STATE_ON) || 
+           experimentState.equals(EXP_STATE_PAUSED_NO_BLUETOOTH) ||
+           experimentState.equals(EXP_STATE_PAUSED_NO_GPS);
+  }
+
+  /**
+   * Set the experiment state to ON, unless required services like location
+   * providers (GPS) or network (Bluetooth) are not available, in whcih case
+   * the experiment state is set to PAUSED_NO_<SERVICE> where <SERVICE> is the
+   * highest priority service which is disabled. (Location is higher priority
+   * than network.
+   */
+  private void updateLiveExperimentState() {
+    // If we're in START, OPTED_OUT or NOT_YET_REGISTERED, this method does
+    // nothing. It only toggles between ON/PAUSED states.
+    String experimentState = getExperimentState();
+    if (experimentState.equals(EXP_STATE_START) || 
+        experimentState.equals(EXP_STATE_OPTED_OUT) ||
+        experimentState.equals(EXP_STATE_NOT_YET_REGISTERED)) {
+      return;
+    }
+    if (isGPSOn() && isBluetoothOn()) {
+      mStore.put(EXPERIMENT_STATE_KEY, EXP_STATE_ON);
+    } else if (!isGPSOn()) {
+      mStore.put(EXPERIMENT_STATE_KEY, EXP_STATE_PAUSED_NO_GPS);
+    } else if (!isBluetoothOn()) {
+      mStore.put(EXPERIMENT_STATE_KEY, EXP_STATE_PAUSED_NO_BLUETOOTH);
+    }
+  }
+
+  /**
+   * Return true if the GPS_PROVIDER is available, false otherwise.
+   *
+   * @return Whether the GPS location provider is available.
+   */
+  private boolean isGPSOn() {
+    if (mLocationManager == null) {
+      return false;
+    } else {
+      return mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+    }
+  }
+
+  /**
+   * Return true if Bluetooth is turned on, false otherwise.
+   *
+   * @return Whether Bluetooth is enabled.
+   */
+  private boolean isBluetoothOn() {
+    BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+    if (adapter == null) {
+      return false;
+    } else {
+      return adapter.isEnabled();
+    }
   }
 
   /**
@@ -292,7 +404,15 @@ public class RangzenService extends Service {
     } else {
       return state;
     }
+  }
 
+  /**
+   * Store the current state of the experiment in the storage base. 
+   *
+   * @param state The experiment state value to set.
+   */
+  public void putExperimentState(String state) {
+    mStore.put(EXPERIMENT_STATE_KEY, state);
   }
 
   /**
@@ -310,7 +430,7 @@ public class RangzenService extends Service {
 
     Set<String> contacts = mContactsGetterStorer.getObfuscatedPhoneNumbers();
     if (contacts == null) {
-      Log.i(TAG, "Contacts are null; retrieving and storing them.");
+      Log.d(TAG, "Contacts are null; retrieving and storing them.");
       mContactsGetterStorer.retrieveAndStoreContacts();
     }
 
@@ -324,13 +444,16 @@ public class RangzenService extends Service {
 
     String phoneid = getPhoneID();
     if (phoneid == null) {
+      Log.e(TAG, "Coudln't get phone ID, aborting registration.");
       return REGISTRATION_FAILED_NULL_PHONE_ID;
     } 
 
-    mExperimentClient.register(phoneid, contacts.toArray(new String[0])); 
-    if (mExperimentClient.registrationWasSuccessful()) {
+    ExperimentClient client = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME,
+                                                   EXPERIMENT_SERVER_PORT);
+    client.register(phoneid, contacts.toArray(new String[0])); 
+    if (client.registrationWasSuccessful()) {
       Log.i(TAG, String.format("id: %s registered successfully with %d friends.",
-                               phoneid, contacts.size()));
+            phoneid, contacts.size()));
       return REGISTRATION_SUCCESS;
     } else {
       Log.e(TAG, "Registration failed, server answer was not OK!");
@@ -351,9 +474,7 @@ public class RangzenService extends Service {
     BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
     Log.v(TAG, "Got default adapter, it's" + adapter);
     if (adapter != null) {
-      Log.i(TAG, "Getting adapter address");
       String address = adapter.getAddress();
-      Log.i(TAG, "Got adapter address");
       return adapter.getAddress();
     } else {
       Log.e(TAG, "Device doesn't support Bluetooth, can't get address for phone ID.");
@@ -376,37 +497,62 @@ public class RangzenService extends Service {
      Log.i(TAG, "Registered for location every " + LOCATION_UPDATE_INTERVAL + "ms");
   }
 
+  /**
+   * Callback for location updates. Stores locations retrieved in the location store.
+   * Then, asks for nearby peers and stores them in the peer manager.
+   */
   private LocationListener mLocationListener = new LocationListener() {
     @Override
     public void onLocationChanged(Location location) {
+      // Store the new location.
       Log.d(TAG, "Got location: " + location);
       SerializableLocation serializableLocation = new SerializableLocation(location);
       mLocationStore.addLocation(serializableLocation);
 
-      List<SerializableLocation> locations;
-      try {
-        // TODO(lerner): Report to the server if we're failing at storing locations?
-        locations = mLocationStore.getAllLocations();
-        for (SerializableLocation sl : locations) {
-          Log.d(TAG, sl.toString());
+      // Send the new location to the server.
+      SerializableLocation[] locations = {serializableLocation};
+
+      ExperimentClient client = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME,
+                                                     EXPERIMENT_SERVER_PORT);
+      client.updateLocations(getPhoneID(), locations);
+      if (client.updateLocationsWasSuccessful()) {
+        Log.d(TAG, "Uploaded location " + serializableLocation);
+      } else {
+        Log.e(TAG, "Failed to upload location.");
+      }
+
+      // Get nearby phones and add them as peers in the peer manager.
+      if (isExperimentOn()) { 
+        ExperimentClient getPhonesClient;
+        getPhonesClient = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME, EXPERIMENT_SERVER_PORT);
+        getPhonesClient.getNearbyPhones(getPhoneID(), NEARBY_DISTANCE);
+        String[] addresses = getPhonesClient.getNearbyPhonesResult();
+        if (addresses != null) {
+          List<Peer> peers = new ArrayList<Peer>();
+          mPeerManager.forgetAllPeers();
+          BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+          for (String address : addresses) {
+            BluetoothDevice device = adapter.getRemoteDevice(address);
+            Peer peer = mPeerManager.getCanonicalPeer(new Peer(new BluetoothPeerNetwork(device)));
+            peers.add(peer);
+          }
+          mPeerManager.addPeers(peers);
+        } else {
+          Log.e(TAG, "Nearby phones was null - something went wrong asking the server for them.");
         }
-      } catch (IOException e) {
-        Log.e(TAG, "Not able to store location!");
-        e.printStackTrace();
-      } catch (ClassNotFoundException e) {
-          Log.e(TAG, "Not able to store location!");
-          e.printStackTrace();
       }
     }
 
     @Override
     public void onProviderDisabled(String provider) {
       Log.d(TAG, "Provider disabled: " + provider);
+      updateLiveExperimentState();
     }
 
     @Override
     public void onProviderEnabled(String provider) {
       Log.d(TAG, "Provider enabled: " + provider);
+      updateLiveExperimentState();
 
     }
 

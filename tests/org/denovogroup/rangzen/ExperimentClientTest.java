@@ -45,6 +45,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Robolectric.clickOn;
@@ -113,6 +114,17 @@ public class ExperimentClientTest {
     ExperimentClient.SimpleResponse simpleResponse;
     simpleResponse = gson.fromJson(response, ExperimentClient.SimpleResponse.class);
     assertTrue(simpleResponse.OK());
+  }
+
+  /**
+   * Tests that timeouts work.
+   */
+  @Test
+  public void testTimeouts()  throws InterruptedException, ExecutionException {
+    client = new ExperimentClient("BAD", 5555);
+    client.resetServer();
+    String response = client.get();
+    assertNull(response);
   }
 
   /**
