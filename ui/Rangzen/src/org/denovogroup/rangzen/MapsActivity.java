@@ -186,8 +186,14 @@ public class MapsActivity extends FragmentActivity implements
     private void centerMap() {
         Toast.makeText(this, "onConnected", Toast.LENGTH_SHORT).show();
         Location location = locationClient.getLastLocation();
-        LatLng latLng = new LatLng(location.getLatitude(),
-                location.getLongitude());
+        LatLng latLng;
+        if (location == null) {
+          latLng = new LatLng(0,0);
+        } else {
+          latLng = new LatLng(location.getLatitude(), location.getLongitude());
+          
+        }
+
         CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng,
                 15);
         setUpMapIfNeeded();
