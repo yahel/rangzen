@@ -250,12 +250,17 @@ public class BluetoothSpeaker {
   /**
    * Equivalent to calling connectAndStartExchange with the MAC address
    * of the given peer.
+   *
+   * @param peer A peer, which must be a Bluetooth based peer, with whom we are
+   * asked to have an exchange.
+   * @throws IOException
    */
-  public void connectAndStartExchange(Peer peer) throws IOException {
+  public Exchange connectAndStartExchange(Peer peer) throws IOException {
     if (peer.getNetwork().getNetworkType() == PeerNetwork.BLUETOOTH_TYPE) {
-      connectAndStartExchange(peer.getNetwork().getBluetoothDevice());
+      return connectAndStartExchange(peer.getNetwork().getBluetoothDevice());
     } else {
       Log.e(TAG, String.format("Can't connect to peer %s - not a BT Peer", peer));
+      return null;
     }
   }
 
@@ -268,12 +273,12 @@ public class BluetoothSpeaker {
    * @param address The Bluetooth MAC of the device to connect to.
    * @throws IOException
    */
-  public void connectAndStartExchange(String address) throws IOException {
+  public Exchange connectAndStartExchange(String address) throws IOException {
     Log.v(TAG, "Connecting to address " + address + "; converting to device");
     if (BluetoothAdapter.checkBluetoothAddress(address)) {
       BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
       Log.v(TAG, "Calling connect on device " + device);
-      connectAndStartExchange(device);
+      return connectAndStartExchange(device);
     } else {
       Log.e(TAG, "Invalid address " + address + " in connectToPeerDevice.");
       throw new IllegalArgumentException("Illegal address: " + address);
@@ -287,10 +292,10 @@ public class BluetoothSpeaker {
    * @param device The device to connect to.
    * @throws IOException 
    */
-  private void connectAndStartExchange(BluetoothDevice device) throws IOException {
+  private Exchange connectAndStartExchange(BluetoothDevice device) throws IOException {
     Log.i(TAG, "Attempting to connect to " + device);
     if (device == null) {
-      return;
+      return null;
     }
     BluetoothSocket socket;
     UUID remoteUUID = getUUIDFromMACAddress(device.getAddress());
@@ -302,7 +307,7 @@ public class BluetoothSpeaker {
     socket.connect();
     Log.i(TAG, "Connect returned! We are connected to " + device);
     Log.d(TAG, "connect()ing socket is connected? " + socket.isConnected());
-    startExchangeWithSocket(socket);
+    return startExchangeWithSocket(socket);
   }
 
   /**
@@ -311,7 +316,7 @@ public class BluetoothSpeaker {
    *
    * @param socket The socket over which to have the communication.
    */
-  private void startExchangeWithSocket(BluetoothSocket socket) throws IOException {
+  private Exchange startExchangeWithSocket(BluetoothSocket socket) throws IOException {
     byte[] received;
     OutputStream output = socket.getOutputStream();
     InputStream input = socket.getInputStream();
@@ -331,6 +336,7 @@ public class BluetoothSpeaker {
         Log.i(TAG, "Done reading, payload and received were equal.");
       } else {
         Log.e(TAG, "Done reading, payload and received were DIFFERENT.");
+        throw new IOException("Payload and received bytes were different!");
       }
 
       Log.i(TAG, "Sending final message.");
@@ -342,8 +348,18 @@ public class BluetoothSpeaker {
       Log.i(TAG, String.format("Had exchange (I spoke first) with %s from %s to %s (%d ms elapsed).", 
                                socket.getRemoteDevice(), startTime, endTime, 
                                endTime.getTime() - startTime.getTime()));
+      // TODO(lerner): Add the locations into this exchange before it's stored
+      // at the server.
+      return new Exchange(getAddress(), 
+                          socket.getRemoteDevice().getAddress(),
+                          Exchange.PROTOCOL_BLUETOOTH, 
+                          startTime.getTime(),
+                          endTime.getTime(),
+                          null,
+                          null);
     } else {
       Log.e(TAG, "We connected() but the socket isn't connected.");
+      return null;
     }
   }
 

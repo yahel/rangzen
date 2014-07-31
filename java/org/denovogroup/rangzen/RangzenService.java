@@ -164,7 +164,10 @@ public class RangzenService extends Service {
   /** Android Log Tag. */
   private static String TAG = "RangzenService";
 
-  /** Distance in km of phones we want to know about from the server. */
+  /** 
+   * Distance in km of phones we want to know about from the server.
+   * TODO(lerner): Decide on an appropriate value for this.
+   */
   private static final float NEARBY_DISTANCE = (float) 0.25;
 
   /**
@@ -311,7 +314,7 @@ public class RangzenService extends Service {
    */
   private boolean isExperimentOn() {
     experimentState = getExperimentState();
-    return experimentState.equals(EXP_STATE_ON);
+    return EXP_STATE_ON.equals(experimentState);
   }
   
   /**
@@ -323,7 +326,8 @@ public class RangzenService extends Service {
    */
   private boolean isOptedInAndRegistered() {
     experimentState = getExperimentState();
-    return experimentState.equals(EXP_STATE_ON) || 
+    return experimentState.equals(EXP_STATE_REGISTERED) || 
+           experimentState.equals(EXP_STATE_ON) || 
            experimentState.equals(EXP_STATE_PAUSED_NO_BLUETOOTH) ||
            experimentState.equals(EXP_STATE_PAUSED_NO_GPS);
   }
@@ -523,24 +527,34 @@ public class RangzenService extends Service {
 
       // Get nearby phones and add them as peers in the peer manager.
       if (isExperimentOn()) { 
+        Log.d(TAG, "Experiment is on, getting nearby phones from server.");
         ExperimentClient getPhonesClient;
         getPhonesClient = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME, EXPERIMENT_SERVER_PORT);
         getPhonesClient.getNearbyPhones(getPhoneID(), NEARBY_DISTANCE);
         String[] addresses = getPhonesClient.getNearbyPhonesResult();
         if (addresses != null) {
+          if (addresses.length == 0) {
+            Log.d(TAG, "Addresses is: []");
+          }
+          for (String address : addresses) {
+            Log.d(TAG, "Got address " + address);
+          }
           List<Peer> peers = new ArrayList<Peer>();
-          mPeerManager.forgetAllPeers();
           BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
           for (String address : addresses) {
             BluetoothDevice device = adapter.getRemoteDevice(address);
             Peer peer = mPeerManager.getCanonicalPeer(new Peer(new BluetoothPeerNetwork(device)));
             peers.add(peer);
+            Log.d(TAG, "Adding peer to PeerManager: " + peer);
           }
           mPeerManager.addPeers(peers);
         } else {
           Log.e(TAG, "Nearby phones was null - something went wrong asking the server for them.");
         }
+      } else {
+        Log.d(TAG, "Experiment is not on.");
       }
+
     }
 
     @Override
