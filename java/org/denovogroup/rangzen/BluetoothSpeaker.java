@@ -295,6 +295,7 @@ public class BluetoothSpeaker {
   private Exchange connectAndStartExchange(BluetoothDevice device) throws IOException {
     Log.i(TAG, "Attempting to connect to " + device);
     if (device == null) {
+      Log.e(TAG, "Device is null in connectAndStartExchange, can't have exchange.");
       return null;
     }
     BluetoothSocket socket;

@@ -55,17 +55,17 @@ public class ExchangeStore {
   private static final String SEQUENCE_KEY = "RangzenExchangeSequence";
 
   /** Value returned to indicate that no exchanges have been stored. */
-  private static final int NO_SEQUENCE_STORED = -1;
+  public static final int NO_SEQUENCE_STORED = -1;
 
   /** Lowest (first) sequence number used to store a exchange. */
-  private static final int MIN_SEQUENCE_NUMBER = 1;
+  public static final int MIN_SEQUENCE_NUMBER = 1;
 
   /**
    * Determines the most recently used (maximum) sequence number.
    *
    * @return The next available sequence number.
    */
-  private int getMostRecentSequenceNumber() {
+  public int getMostRecentSequenceNumber() {
     int DEFAULT_INT = NO_SEQUENCE_STORED; 
     return store.getInt(SEQUENCE_KEY, DEFAULT_INT);
   }
@@ -158,5 +158,27 @@ public class ExchangeStore {
       }
       return exchanges;
     }
+  }
+
+  /**
+   * Get a list of exchanges stored on this device between the given indexes (inclusive).
+   * Throws an IllegalArgumentException if either index value is out of bounds
+   * or end is less than start.
+   *
+   * @return A list of exchanges this device has been recorded to be at.
+   */
+  public List<Exchange> getExchanges(int start, int end) throws StreamCorruptedException,
+      OptionalDataException, IOException, ClassNotFoundException {
+    int lastSequenceNumber = getMostRecentSequenceNumber();
+    if (start < MIN_SEQUENCE_NUMBER || end < MIN_SEQUENCE_NUMBER ||
+        start > lastSequenceNumber || end > lastSequenceNumber || end < start) {
+      throw new IllegalArgumentException("Indexes [" + start + "," + end + "] out of bounds.");
+    }
+
+    ArrayList<Exchange> exchanges = new ArrayList<Exchange>();
+    for (int i = start; i <= end; i++) {
+      exchanges.add((Exchange) store.getObject(getExchangeKey(i)));
+    }
+    return exchanges;
   }
 }

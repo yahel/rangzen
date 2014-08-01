@@ -113,6 +113,9 @@ public class RangzenService extends Service implements
   /** Handle to Rangzen location storage provider. */
   private LocationStore mLocationStore;
 
+  /** Handle to Rangzen exchange storage provider. */
+  private ExchangeStore mExchangeStore;
+
   /** Handle to Rangzen key-value storage provider. */
   private StorageBase mStore;
 
@@ -173,6 +176,8 @@ public class RangzenService extends Service implements
    */
   private static final float NEARBY_DISTANCE = (float) 0.25;
 
+  private static final String HIGHEST_EXCHANGE_UPLOADED_KEY = "HIGHEST_EXCHANGE_KEY";
+
   /**
    * Called whenever the service is requested to start. If the service
    * is already running, this does /not/ create a new instance of the service.
@@ -206,15 +211,17 @@ public class RangzenService extends Service implements
     sRangzenServiceInstance = this;
 
     mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
+    mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
+    mExchangeStore = new ExchangeStore(this, StorageBase.ENCRYPTION_DEFAULT);
 
     mPeerManager = PeerManager.getInstance(this);
+    mPeerManager.setLocationStore(mLocationStore);
+    mPeerManager.setExchangeStore(mExchangeStore);
     mBluetoothSpeaker = new BluetoothSpeaker(this, mPeerManager);
     mPeerManager.setBluetoothSpeaker(mBluetoothSpeaker);
 
     mStartTime = new Date();
     mBackgroundTaskRunCount = 0;
-
-    mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
 
     mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
 
@@ -258,6 +265,12 @@ public class RangzenService extends Service implements
       e.printStackTrace();
       Log.e(TAG, "Uploading all unsent locations resulted in an exception: " + e);
     }
+    try {
+      uploadAllUnsentExchanges();
+    } catch (IOException | ClassNotFoundException e) {
+      e.printStackTrace();
+      Log.e(TAG, "Uploading all unsent exchanges resulted in an exception: " + e);
+    }
     
     Log.v(TAG, "Background Tasks Finished");
   }
@@ -297,6 +310,48 @@ public class RangzenService extends Service implements
     } else {
       Log.e(TAG, String.format("Failed to upload locations %d-%d", start, end));
     } 
+  }
+
+  /** 
+   * Attempt to upload all exchanges between the highest uploaded already and the most
+   * recent sequence number.
+   *
+   * @throws ClassNotFoundException
+   * @throws IOException
+   * @throws OptionalDataException
+   * @throws StreamCorruptedException
+   */
+  private void uploadAllUnsentExchanges() throws StreamCorruptedException,
+      OptionalDataException, IOException, ClassNotFoundException {
+    int latestExchange = mExchangeStore.getMostRecentSequenceNumber();
+    int highestSentExchange = mStore.getInt(HIGHEST_EXCHANGE_UPLOADED_KEY, 
+                                            ExchangeStore.MIN_SEQUENCE_NUMBER - 1);
+    // Do nothing if no exchanges are stored or all exchanges have been uploaded.
+    if (latestExchange == ExchangeStore.NO_SEQUENCE_STORED || 
+        highestSentExchange == latestExchange) {
+      return;
+    }
+
+    int start = highestSentExchange + 1;
+    int end = latestExchange;
+
+    // TODO(lerner): The server should support uploading multiple exchanges.
+    // At that point we switch this over to using that API.
+    // List<Exchange> exchangesToSend = mExchangeStore.getExchanges(start, end);
+    // Exchange[] exchanges = exchangesToSend.toArray(new Exchange[0]);
+
+    for (int sequence = start; sequence <= end; sequence++) {
+      Exchange exchange = mExchangeStore.getExchanges(sequence, sequence).get(0);
+      ExperimentClient client = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME,
+          EXPERIMENT_SERVER_PORT);
+      client.updateExchange(exchange);
+      if (client.updateExchangeWasSuccessful()) {
+        Log.d(TAG, String.format("Uploaded exchange %d", sequence));
+        mStore.putInt(HIGHEST_EXCHANGE_UPLOADED_KEY, sequence);
+      } else {
+        Log.e(TAG, String.format("Failed to upload exchange %d", sequence));
+      } 
+    }
   }
 
   /**

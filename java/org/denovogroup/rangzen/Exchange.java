@@ -71,7 +71,6 @@ public class Exchange implements Serializable {
    */
   public Exchange(String phoneid, String peer_phone_id, String protocol, long start_time,
       long end_time, SerializableLocation start_location, SerializableLocation end_location) {
-                  
     this.phoneid = phoneid;
     this.peer_phone_id = peer_phone_id;
     this.protocol = protocol;

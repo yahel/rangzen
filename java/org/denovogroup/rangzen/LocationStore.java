@@ -176,4 +176,22 @@ public class LocationStore {
     }
     return locations;
   }
+
+  /**
+   * Gets the most recent location stored.
+   *
+   * @return The most recent location stored or null if none could be retrieved.
+   */
+  public SerializableLocation getLatestLocation() {
+    try {
+      int lastSequenceNumber = getMostRecentSequenceNumber();
+      if (lastSequenceNumber == NO_SEQUENCE_STORED) {
+        return null;
+      }
+
+      return (SerializableLocation) store.getObject(getLocationKey(lastSequenceNumber));
+    } catch (IOException | ClassNotFoundException e) {
+      return null;
+    }
+  }
 }

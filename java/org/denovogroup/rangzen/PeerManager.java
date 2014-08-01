@@ -40,6 +40,8 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.io.IOException;
+import java.io.OptionalDataException;
+import java.io.StreamCorruptedException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -70,6 +72,12 @@ public class PeerManager {
 
   /** Handle to the app's BluetoothSpeaker. */
   private BluetoothSpeaker mBluetoothSpeaker;
+
+  /** Handle to the app's LocationStore. */
+  private LocationStore mLocationStore;
+
+  /** Handle to the app's ExchangeStore. */
+  private ExchangeStore mExchangeStore;
 
   /** Remembers the last time we successfully had an exchange with a peer. */
   private Map<String, Date> exchangeTimes = new HashMap<String, Date>();
@@ -281,6 +289,24 @@ public class PeerManager {
   }
 
   /**
+   * Sets the location store to use.
+   *
+   * @param locationStore The location store to use.
+   */
+  /* package */ void setLocationStore(LocationStore locationStore) {
+    this.mLocationStore = locationStore;
+  }
+
+  /**
+   * Sets the exchange store to use.
+   *
+   * @param exchangeStore The exchange store to use.
+   */
+  /* package */ void setExchangeStore(ExchangeStore exchangeStore) {
+    this.mExchangeStore = exchangeStore;
+  }
+
+  /**
    * Remember the time that this exchange occurred in a local map, in order to
    * prevent contacting the same peer repeatedly in a short time.
    *
@@ -350,6 +376,7 @@ public class PeerManager {
       if (!recentlyExchangedWithPeer(peer)) {
         Log.v(TAG, "Attempting to have an exchange with " + peer);
         try {
+          SerializableLocation startLocation = mLocationStore.getLatestLocation();
           Exchange exchange = mBluetoothSpeaker.connectAndStartExchange(peer);
           if (exchange == null) {
             Log.e(TAG, "Couldn't have exchange with peer " + peer);
@@ -357,16 +384,20 @@ public class PeerManager {
             Log.i(TAG, "Completed connect and exchange with peer " + peer);
             Log.i(TAG, "The exchange: " + exchange);
             recordExchangeTime(peer, new Date(exchange.end_time));
-            // TODO(lerner): Populate this exchange with locations.
-            // TODO(lerner): Store this exchange in the ExchangeStore.
-            // TODO(lerner): Send this exchange to the server.
+
+            SerializableLocation endLocation = mLocationStore.getLatestLocation();
+            exchange.start_location = startLocation;
+            exchange.end_location = endLocation;
+
+            mExchangeStore.addExchange(exchange);
           }
 
         } catch (IOException e) {
-          Log.e(TAG, String.format("Couldn't have exchange with peer %s ", peer));
+          Log.e(TAG, String.format("Couldn't have exchange with peer %s: %s", peer, e));
         }
       }
     }
+    
     garbageCollectPeers();
     
     Log.v(TAG, "Finished with PeerManager tasks.");
