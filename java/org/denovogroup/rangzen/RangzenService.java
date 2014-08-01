@@ -40,6 +40,9 @@ import android.app.Service;
 import android.os.Bundle;
 import android.os.IBinder;
 
+import java.io.IOException;
+import java.io.OptionalDataException;
+import java.io.StreamCorruptedException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
@@ -133,12 +136,10 @@ public class RangzenService extends Service implements
   /** The key under which the experiment state is stored in the StorageBase. */
   public static final String EXPERIMENT_STATE_KEY = "EXPERIMENT_STATE_KEY";
 
-  /** 
-   * If registration fails, we store the way it failed under this key.
-   * 
-   * TODO(lerner): Add status codes for failure reasons.
-   * TODO(lerner): Retry differently given each status code.
-  */
+  /** The key under which the higher numbered location had has been transmitted is stored. */
+  public static final String HIGHEST_LOCATION_UPLOADED_KEY = "HIGHEST_LOCATION";
+
+  /** If registration fails, we store the way it failed under this key. */
   public static final String REGISTRATION_FAILURE_REASON_KEY = "REGISRATION_FAILURE_REASON_KEY";
 
   /** Error code indicating a NoSuchAlgorithmException was rasied by the Contacts getter. */
@@ -250,8 +251,52 @@ public class RangzenService extends Service implements
     mBackgroundTaskRunCount++;
 
     PeerManager.getInstance(getApplicationContext()).tasks(); 
+
+    try {
+      uploadAllUnsentLocations();
+    } catch (IOException | ClassNotFoundException e) {
+      e.printStackTrace();
+      Log.e(TAG, "Uploading all unsent locations resulted in an exception: " + e);
+    }
     
     Log.v(TAG, "Background Tasks Finished");
+  }
+
+  /** 
+   * Attempt to upload all locations between the highest uploaded already and the most
+   * recent sequence number.
+   *
+   * @throws ClassNotFoundException
+   * @throws IOException
+   * @throws OptionalDataException
+   * @throws StreamCorruptedException
+   */
+  private void uploadAllUnsentLocations() throws StreamCorruptedException,
+      OptionalDataException, IOException, ClassNotFoundException {
+    int latestLocation = mLocationStore.getMostRecentSequenceNumber();
+    int highestSentLocation = mStore.getInt(HIGHEST_LOCATION_UPLOADED_KEY, 
+                                            LocationStore.MIN_SEQUENCE_NUMBER - 1);
+    // Do nothing if no locations are stored or all locations have been uploaded.
+    if (latestLocation == LocationStore.NO_SEQUENCE_STORED || 
+        highestSentLocation == latestLocation) {
+      return;
+    }
+
+    int start = highestSentLocation + 1;
+    int end = latestLocation;
+
+    List<SerializableLocation> locationsToSend = mLocationStore.getLocations(start, end);
+    SerializableLocation[] locations = locationsToSend.toArray(new SerializableLocation[0]);
+
+    ExperimentClient client = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME,
+        EXPERIMENT_SERVER_PORT);
+    client.updateLocations(getPhoneID(), locations);
+    if (client.updateLocationsWasSuccessful()) {
+      Log.d(TAG, String.format("Uploaded locations %d-%d", start, end));
+      mStore.putInt(HIGHEST_LOCATION_UPLOADED_KEY, end);
+    } else {
+      Log.e(TAG, String.format("Failed to upload locations %d-%d", start, end));
+    } 
   }
 
   /**
@@ -508,16 +553,11 @@ public class RangzenService extends Service implements
       SerializableLocation serializableLocation = new SerializableLocation(location);
       mLocationStore.addLocation(serializableLocation);
 
-      // Send the new location to the server.
-      SerializableLocation[] locations = {serializableLocation};
-
-      ExperimentClient client = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME,
-                                                     EXPERIMENT_SERVER_PORT);
-      client.updateLocations(getPhoneID(), locations);
-      if (client.updateLocationsWasSuccessful()) {
-        Log.d(TAG, "Uploaded location " + serializableLocation);
-      } else {
-        Log.e(TAG, "Failed to upload location.");
+      try {
+        uploadAllUnsentLocations();
+      } catch (IOException | ClassNotFoundException e) {
+        e.printStackTrace();
+        Log.e(TAG, "Uploading all unsent locations resulted in an exception: " + e);
       }
 
       // Get nearby phones and add them as peers in the peer manager.
