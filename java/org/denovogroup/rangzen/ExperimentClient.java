@@ -47,7 +47,7 @@ import java.util.concurrent.ExecutionException;
  *
  * TODO(lerner): Add utility methods which block, perform the request, then return
  * the results of the request in an easy form.
- * TODO(lerner): Add utility methods which parse the output of the server.
+ * TODO(lerner): Add updateExchanges (plural).
  */
 public class ExperimentClient extends AsyncTask<String, Integer, String> {
   /** Included in Android Log messages. */

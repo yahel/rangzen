@@ -663,10 +663,6 @@ public class MapsActivity extends FragmentActivity implements
             }
             prev = current;
             current = null;
-
-            SerializableLocation serializableLocation = new SerializableLocation(
-                    location);
-            mLocationStore.addLocation(serializableLocation);
         }
 
         @Override

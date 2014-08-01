@@ -31,6 +31,7 @@
 package org.denovogroup.rangzen;
 
 import android.app.Service;
+import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver; 
 import android.content.Context;
 import android.content.Intent;
@@ -39,9 +40,13 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.io.IOException;
+import java.io.OptionalDataException;
+import java.io.StreamCorruptedException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * This module exposes an API for the application to find out the current 
@@ -67,6 +72,28 @@ public class PeerManager {
 
   /** Handle to the app's BluetoothSpeaker. */
   private BluetoothSpeaker mBluetoothSpeaker;
+
+  /** Handle to the app's LocationStore. */
+  private LocationStore mLocationStore;
+
+  /** Handle to the app's ExchangeStore. */
+  private ExchangeStore mExchangeStore;
+
+  /** Remembers the last time we successfully had an exchange with a peer. */
+  private Map<String, Date> exchangeTimes = new HashMap<String, Date>();
+
+  /** 
+   * The length of time (in milliseconds) we consider peers valid. 
+   * TODO(lerner): Decide on an appropriate value for this.
+   */
+  public static final long PEER_TIMEOUT = 2 * 60 * 1000;
+
+  /** 
+   * The length of time we wait before talking to the same peer again, in ms.
+   * TODO(lerner): Decide on an appropriate value for this.
+   */
+  private static final long MS_BETWEEN_EXCHANGES = 15 * 60 * 1000;
+
 
   /** Displayed in Android Monitor logs. */
   private static String TAG = "RangzenPeerManager";
@@ -97,11 +124,6 @@ public class PeerManager {
     }
     return sPeerManager;
   }
-
-  /** 
-   * The length of time (in milliseconds) we consider peers valid.
-   */
-  public static final long PEER_TIMEOUT = 300 * 1000;
 
   /**
    * This method garbage runs the peer garbage collector on all peers that
@@ -196,6 +218,7 @@ public class PeerManager {
    * peers.
    */
   private synchronized void garbageCollectPeer(Peer peer) {
+    Log.d(TAG, "Garbage collected peer " + peer);
     mCurrentPeers.remove(peer);
   }
 
@@ -256,8 +279,89 @@ public class PeerManager {
     }
   }
 
+  /**
+   * Tell the PeerManager about the app's BluetoothSpeaker.
+   *
+   * @param speaker The app's instance of BluetoothSpeaker.
+   */
   public void setBluetoothSpeaker(BluetoothSpeaker speaker) {
     mBluetoothSpeaker = speaker;
+  }
+
+  /**
+   * Sets the location store to use.
+   *
+   * @param locationStore The location store to use.
+   */
+  /* package */ void setLocationStore(LocationStore locationStore) {
+    this.mLocationStore = locationStore;
+  }
+
+  /**
+   * Sets the exchange store to use.
+   *
+   * @param exchangeStore The exchange store to use.
+   */
+  /* package */ void setExchangeStore(ExchangeStore exchangeStore) {
+    this.mExchangeStore = exchangeStore;
+  }
+
+  /**
+   * Remember the time that this exchange occurred in a local map, in order to
+   * prevent contacting the same peer repeatedly in a short time.
+   *
+   * @param peer The remote peer about whom we are remembering an exchange.
+   * @param exchangetime The time at which we had an exchange with the peer.
+   */
+  private void recordExchangeTime(Peer peer, Date exchangeTime) {
+    BluetoothDevice device = peer.getNetwork().getBluetoothDevice();
+    if (device == null) {
+      Log.e(TAG, "Recording exchange time of non-bluetooth peer! Can't do it.");
+      return;
+    } else {
+      exchangeTimes.put(device.getAddress(), exchangeTime);
+    }
+  }
+
+  /**
+   * Return a date representing the last time we spoke to this peer. If we
+   * don't remember ever speaking to the peer, the epoch (beginning of time).
+   * Values of last exchange times are not persisted - they're only stored as
+   * instance variables, so these times are reliable only within the same Rangzen
+   * process.
+   *
+   *
+   * @param peer The peer about which we are inquiring.
+   * @return The Date at which the last known successful exchange with the peer
+   * occurred, or the epoch if none is known.
+   */
+  private Date getLastExchangeTime(Peer peer) {
+    BluetoothDevice device = peer.getNetwork().getBluetoothDevice();
+    if (device == null) {
+      Log.e(TAG, "Getting last exchange time of non-bluetooth peer! Can't do it!");
+      return null;
+    } else {
+      Date when = exchangeTimes.get(device.getAddress());
+      if (when == null) {
+        return new Date(0);
+      } else {
+        return when;
+      }
+    }
+  }
+
+  /**
+   * Check whether we've had an exchange with the given peer within the last 
+   * MS_BETWEEN_EXCHANGES ms. Time since exchange isn't persisted, so this might
+   * answer false incorrectly if Rangzen has been stopped and started.
+   *
+   * @return True if we've had an exchange with the peer within the threshold,
+   * false otherwise.
+   */
+  private boolean recentlyExchangedWithPeer(Peer peer) {
+    long now = (new Date()).getTime();
+    long then = getLastExchangeTime(peer).getTime();
+    return (now - then) < MS_BETWEEN_EXCHANGES;
   }
 
   /**
@@ -269,14 +373,33 @@ public class PeerManager {
     mBluetoothSpeaker.tasks();
     
     for (Peer peer : mCurrentPeers) {
-      Log.v(TAG, "Connecting to " + peer);
-      try {
-        mBluetoothSpeaker.connectAndStartExchange(peer);
-        Log.i(TAG, "Completed connect and exchange.");
-      } catch (IOException e) {
-        Log.e(TAG, String.format("Couldn't connect to peer %s ", peer));
+      if (!recentlyExchangedWithPeer(peer)) {
+        Log.v(TAG, "Attempting to have an exchange with " + peer);
+        try {
+          SerializableLocation startLocation = mLocationStore.getLatestLocation();
+          Exchange exchange = mBluetoothSpeaker.connectAndStartExchange(peer);
+          if (exchange == null) {
+            Log.e(TAG, "Couldn't have exchange with peer " + peer);
+          } else {
+            Log.i(TAG, "Completed connect and exchange with peer " + peer);
+            Log.i(TAG, "The exchange: " + exchange);
+            recordExchangeTime(peer, new Date(exchange.end_time));
+
+            SerializableLocation endLocation = mLocationStore.getLatestLocation();
+            exchange.start_location = startLocation;
+            exchange.end_location = endLocation;
+
+            mExchangeStore.addExchange(exchange);
+          }
+
+        } catch (IOException e) {
+          Log.e(TAG, String.format("Couldn't have exchange with peer %s: %s", peer, e));
+        }
       }
     }
+    
+    garbageCollectPeers();
+    
     Log.v(TAG, "Finished with PeerManager tasks.");
   }
 }

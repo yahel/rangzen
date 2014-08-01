@@ -32,14 +32,10 @@ package org.denovogroup.rangzen;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver; 
-import android.content.Context;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.content.Intent;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.app.Service;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -47,7 +43,6 @@ import android.os.IBinder;
 import java.io.IOException;
 import java.io.OptionalDataException;
 import java.io.StreamCorruptedException;
-import java.net.SocketTimeoutException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,26 +52,30 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.Date;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesClient;
+import com.google.android.gms.location.LocationClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+
 /**
  * Core service of the Rangzen app. Started at startup, remains alive
  * indefinitely to perform the background tasks of Rangzen.
  */
-public class RangzenService extends Service {
+public class RangzenService extends Service implements 
+        GooglePlayServicesClient.ConnectionCallbacks,
+        GooglePlayServicesClient.OnConnectionFailedListener {
   /** Host of the experiment server. */
   public static final String EXPERIMENT_SERVER_HOSTNAME = "http://s.rangzen.io";
 
   /** Listening port of the experiment server. */
   public static final int EXPERIMENT_SERVER_PORT = 1337;
 
-  /** 
-   * String designating the provider we want to use (GPS) for location. 
-   * We need the accuracy GPS provides - network based location is accurate to
-   * within like a mile, according to the docs.
-   */
-  private static final String LOCATION_GPS_PROVIDER = LocationManager.GPS_PROVIDER;
-
   /** Time between location updates in milliseconds - 1 minute. */
   private static final long LOCATION_UPDATE_INTERVAL = 1000 * 60 * 1;
+
+  /** Minimum interval in milliseconds we want to receive location fixes. */
+  private static final long LOCATION_FASTEST_INTERVAL = 1000 * 30 * 1;
 
   /**
    * Minimum moved distance between location updates. We want a new location
@@ -105,11 +104,17 @@ public class RangzenService extends Service {
   /** The number of times that backgroundTasks() has been called. */
   private int mBackgroundTaskRunCount;
 
-  /** A handle to the Android location manager. */
-  private LocationManager mLocationManager;
+  /** A request specifying our desires for location updates. */
+  private LocationRequest mLocationRequest;
+
+  /** Client to the Google Play location API. */
+  private LocationClient mLocationClient;
 
   /** Handle to Rangzen location storage provider. */
   private LocationStore mLocationStore;
+
+  /** Handle to Rangzen exchange storage provider. */
+  private ExchangeStore mExchangeStore;
 
   /** Handle to Rangzen key-value storage provider. */
   private StorageBase mStore;
@@ -126,7 +131,7 @@ public class RangzenService extends Service {
   /** Registered = GPS/BT on. */
   public static final String EXP_STATE_ON = "ON";
   /** GPS is off; service waits for GPS to turn back on. */
-  public static final String EXP_STATE_PAUSED_NO_GPS = "PAUSED_NO_GPS";
+  public static final String EXP_STATE_PAUSED_NO_LOCATION = "PAUSED_NO_LOCATION";
   /** Bluetooth is off; service records location, waits for BT to turn back on.  */
   public static final String EXP_STATE_PAUSED_NO_BLUETOOTH = "PAUSED_NO_BLUETOOTH";
   /** User opted out after opting in. Display intro screen. */
@@ -134,12 +139,10 @@ public class RangzenService extends Service {
   /** The key under which the experiment state is stored in the StorageBase. */
   public static final String EXPERIMENT_STATE_KEY = "EXPERIMENT_STATE_KEY";
 
-  /** 
-   * If registration fails, we store the way it failed under this key.
-   * 
-   * TODO(lerner): Add status codes for failure reasons.
-   * TODO(lerner): Retry differently given each status code.
-  */
+  /** The key under which the higher numbered location had has been transmitted is stored. */
+  public static final String HIGHEST_LOCATION_UPLOADED_KEY = "HIGHEST_LOCATION";
+
+  /** If registration fails, we store the way it failed under this key. */
   public static final String REGISTRATION_FAILURE_REASON_KEY = "REGISRATION_FAILURE_REASON_KEY";
 
   /** Error code indicating a NoSuchAlgorithmException was rasied by the Contacts getter. */
@@ -158,14 +161,22 @@ public class RangzenService extends Service {
   /** Current state of the experiment. */
   private String experimentState;
 
+  /** True if location services are currently available, false otherwise. */
+  private boolean mPlayServicesConnected = false;
+
   /** The BluetoothSpeaker for the app. */
   private static BluetoothSpeaker mBluetoothSpeaker;
 
   /** Android Log Tag. */
   private static String TAG = "RangzenService";
 
-  /** Distance in km of phones we want to know about from the server. */
+  /** 
+   * Distance in km of phones we want to know about from the server.
+   * TODO(lerner): Decide on an appropriate value for this.
+   */
   private static final float NEARBY_DISTANCE = (float) 0.25;
+
+  private static final String HIGHEST_EXCHANGE_UPLOADED_KEY = "HIGHEST_EXCHANGE_KEY";
 
   /**
    * Called whenever the service is requested to start. If the service
@@ -200,20 +211,26 @@ public class RangzenService extends Service {
     sRangzenServiceInstance = this;
 
     mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
+    mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
+    mExchangeStore = new ExchangeStore(this, StorageBase.ENCRYPTION_DEFAULT);
 
     mPeerManager = PeerManager.getInstance(this);
+    mPeerManager.setLocationStore(mLocationStore);
+    mPeerManager.setExchangeStore(mExchangeStore);
     mBluetoothSpeaker = new BluetoothSpeaker(this, mPeerManager);
     mPeerManager.setBluetoothSpeaker(mBluetoothSpeaker);
 
     mStartTime = new Date();
     mBackgroundTaskRunCount = 0;
 
-    mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
-
     mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
 
-    mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-    registerForLocationUpdates();
+    mLocationRequest = LocationRequest.create();
+    mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+    mLocationRequest.setInterval(LOCATION_UPDATE_INTERVAL);
+    mLocationRequest.setFastestInterval(LOCATION_FASTEST_INTERVAL);
+    mLocationClient = new LocationClient(this, this, this);
+    mLocationClient.connect();
 
     // Schedule the background task thread to run occasionally.
     mScheduleTaskExecutor = Executors.newScheduledThreadPool(1);
@@ -241,8 +258,100 @@ public class RangzenService extends Service {
     mBackgroundTaskRunCount++;
 
     PeerManager.getInstance(getApplicationContext()).tasks(); 
+
+    try {
+      uploadAllUnsentLocations();
+    } catch (IOException | ClassNotFoundException e) {
+      e.printStackTrace();
+      Log.e(TAG, "Uploading all unsent locations resulted in an exception: " + e);
+    }
+    try {
+      uploadAllUnsentExchanges();
+    } catch (IOException | ClassNotFoundException e) {
+      e.printStackTrace();
+      Log.e(TAG, "Uploading all unsent exchanges resulted in an exception: " + e);
+    }
     
     Log.v(TAG, "Background Tasks Finished");
+  }
+
+  /** 
+   * Attempt to upload all locations between the highest uploaded already and the most
+   * recent sequence number.
+   *
+   * @throws ClassNotFoundException
+   * @throws IOException
+   * @throws OptionalDataException
+   * @throws StreamCorruptedException
+   */
+  private void uploadAllUnsentLocations() throws StreamCorruptedException,
+      OptionalDataException, IOException, ClassNotFoundException {
+    int latestLocation = mLocationStore.getMostRecentSequenceNumber();
+    int highestSentLocation = mStore.getInt(HIGHEST_LOCATION_UPLOADED_KEY, 
+                                            LocationStore.MIN_SEQUENCE_NUMBER - 1);
+    // Do nothing if no locations are stored or all locations have been uploaded.
+    if (latestLocation == LocationStore.NO_SEQUENCE_STORED || 
+        highestSentLocation == latestLocation) {
+      return;
+    }
+
+    int start = highestSentLocation + 1;
+    int end = latestLocation;
+
+    List<SerializableLocation> locationsToSend = mLocationStore.getLocations(start, end);
+    SerializableLocation[] locations = locationsToSend.toArray(new SerializableLocation[0]);
+
+    ExperimentClient client = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME,
+        EXPERIMENT_SERVER_PORT);
+    client.updateLocations(getPhoneID(), locations);
+    if (client.updateLocationsWasSuccessful()) {
+      Log.d(TAG, String.format("Uploaded locations %d-%d", start, end));
+      mStore.putInt(HIGHEST_LOCATION_UPLOADED_KEY, end);
+    } else {
+      Log.e(TAG, String.format("Failed to upload locations %d-%d", start, end));
+    } 
+  }
+
+  /** 
+   * Attempt to upload all exchanges between the highest uploaded already and the most
+   * recent sequence number.
+   *
+   * @throws ClassNotFoundException
+   * @throws IOException
+   * @throws OptionalDataException
+   * @throws StreamCorruptedException
+   */
+  private void uploadAllUnsentExchanges() throws StreamCorruptedException,
+      OptionalDataException, IOException, ClassNotFoundException {
+    int latestExchange = mExchangeStore.getMostRecentSequenceNumber();
+    int highestSentExchange = mStore.getInt(HIGHEST_EXCHANGE_UPLOADED_KEY, 
+                                            ExchangeStore.MIN_SEQUENCE_NUMBER - 1);
+    // Do nothing if no exchanges are stored or all exchanges have been uploaded.
+    if (latestExchange == ExchangeStore.NO_SEQUENCE_STORED || 
+        highestSentExchange == latestExchange) {
+      return;
+    }
+
+    int start = highestSentExchange + 1;
+    int end = latestExchange;
+
+    // TODO(lerner): The server should support uploading multiple exchanges.
+    // At that point we switch this over to using that API.
+    // List<Exchange> exchangesToSend = mExchangeStore.getExchanges(start, end);
+    // Exchange[] exchanges = exchangesToSend.toArray(new Exchange[0]);
+
+    for (int sequence = start; sequence <= end; sequence++) {
+      Exchange exchange = mExchangeStore.getExchanges(sequence, sequence).get(0);
+      ExperimentClient client = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME,
+          EXPERIMENT_SERVER_PORT);
+      client.updateExchange(exchange);
+      if (client.updateExchangeWasSuccessful()) {
+        Log.d(TAG, String.format("Uploaded exchange %d", sequence));
+        mStore.putInt(HIGHEST_EXCHANGE_UPLOADED_KEY, sequence);
+      } else {
+        Log.e(TAG, String.format("Failed to upload exchange %d", sequence));
+      } 
+    }
   }
 
   /**
@@ -311,7 +420,7 @@ public class RangzenService extends Service {
    */
   private boolean isExperimentOn() {
     experimentState = getExperimentState();
-    return experimentState.equals(EXP_STATE_ON);
+    return EXP_STATE_ON.equals(experimentState);
   }
   
   /**
@@ -323,9 +432,10 @@ public class RangzenService extends Service {
    */
   private boolean isOptedInAndRegistered() {
     experimentState = getExperimentState();
-    return experimentState.equals(EXP_STATE_ON) || 
+    return experimentState.equals(EXP_STATE_REGISTERED) || 
+           experimentState.equals(EXP_STATE_ON) || 
            experimentState.equals(EXP_STATE_PAUSED_NO_BLUETOOTH) ||
-           experimentState.equals(EXP_STATE_PAUSED_NO_GPS);
+           experimentState.equals(EXP_STATE_PAUSED_NO_LOCATION);
   }
 
   /**
@@ -344,10 +454,10 @@ public class RangzenService extends Service {
         experimentState.equals(EXP_STATE_NOT_YET_REGISTERED)) {
       return;
     }
-    if (isGPSOn() && isBluetoothOn()) {
+    if (isPlayServicesConnected() && isBluetoothOn()) {
       mStore.put(EXPERIMENT_STATE_KEY, EXP_STATE_ON);
-    } else if (!isGPSOn()) {
-      mStore.put(EXPERIMENT_STATE_KEY, EXP_STATE_PAUSED_NO_GPS);
+    } else if (!isPlayServicesConnected()) {
+      mStore.put(EXPERIMENT_STATE_KEY, EXP_STATE_PAUSED_NO_LOCATION);
     } else if (!isBluetoothOn()) {
       mStore.put(EXPERIMENT_STATE_KEY, EXP_STATE_PAUSED_NO_BLUETOOTH);
     }
@@ -358,12 +468,8 @@ public class RangzenService extends Service {
    *
    * @return Whether the GPS location provider is available.
    */
-  private boolean isGPSOn() {
-    if (mLocationManager == null) {
-      return false;
-    } else {
-      return mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-    }
+  private boolean isPlayServicesConnected() {
+    return mPlayServicesConnected;
   }
 
   /**
@@ -486,15 +592,8 @@ public class RangzenService extends Service {
    * Register to receive regular updates of the phone's location.
    */
   private void registerForLocationUpdates() {
-     if (mLocationManager == null) { 
-       Log.e(TAG, "Can't register for location updates; location manager is null.");
-       return;
-     }
-     mLocationManager.requestLocationUpdates(LOCATION_GPS_PROVIDER,
-                                             LOCATION_UPDATE_INTERVAL,
-                                             LOCATION_UPDATE_DISTANCE_MINIMUM,
-                                             mLocationListener);
-     Log.i(TAG, "Registered for location every " + LOCATION_UPDATE_INTERVAL + "ms");
+    mLocationClient.requestLocationUpdates(mLocationRequest, mLocationListener);
+    Log.i(TAG, "Registered for location every " + LOCATION_UPDATE_INTERVAL + "ms");
   }
 
   /**
@@ -509,60 +608,44 @@ public class RangzenService extends Service {
       SerializableLocation serializableLocation = new SerializableLocation(location);
       mLocationStore.addLocation(serializableLocation);
 
-      // Send the new location to the server.
-      SerializableLocation[] locations = {serializableLocation};
-
-      ExperimentClient client = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME,
-                                                     EXPERIMENT_SERVER_PORT);
-      client.updateLocations(getPhoneID(), locations);
-      if (client.updateLocationsWasSuccessful()) {
-        Log.d(TAG, "Uploaded location " + serializableLocation);
-      } else {
-        Log.e(TAG, "Failed to upload location.");
+      try {
+        uploadAllUnsentLocations();
+      } catch (IOException | ClassNotFoundException e) {
+        e.printStackTrace();
+        Log.e(TAG, "Uploading all unsent locations resulted in an exception: " + e);
       }
 
       // Get nearby phones and add them as peers in the peer manager.
       if (isExperimentOn()) { 
+        Log.d(TAG, "Experiment is on, getting nearby phones from server.");
         ExperimentClient getPhonesClient;
         getPhonesClient = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME, EXPERIMENT_SERVER_PORT);
         getPhonesClient.getNearbyPhones(getPhoneID(), NEARBY_DISTANCE);
         String[] addresses = getPhonesClient.getNearbyPhonesResult();
         if (addresses != null) {
+          if (addresses.length == 0) {
+            Log.d(TAG, "Addresses is: []");
+          }
+          for (String address : addresses) {
+            Log.d(TAG, "Got address " + address);
+          }
           List<Peer> peers = new ArrayList<Peer>();
-          mPeerManager.forgetAllPeers();
           BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
           for (String address : addresses) {
             BluetoothDevice device = adapter.getRemoteDevice(address);
             Peer peer = mPeerManager.getCanonicalPeer(new Peer(new BluetoothPeerNetwork(device)));
             peers.add(peer);
+            Log.d(TAG, "Adding peer to PeerManager: " + peer);
           }
           mPeerManager.addPeers(peers);
         } else {
           Log.e(TAG, "Nearby phones was null - something went wrong asking the server for them.");
         }
+      } else {
+        Log.d(TAG, "Experiment is not on.");
       }
     }
-
-    @Override
-    public void onProviderDisabled(String provider) {
-      Log.d(TAG, "Provider disabled: " + provider);
-      updateLiveExperimentState();
-    }
-
-    @Override
-    public void onProviderEnabled(String provider) {
-      Log.d(TAG, "Provider enabled: " + provider);
-      updateLiveExperimentState();
-
-    }
-
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-      Log.d(TAG, "Provider " + provider + " status changed to status " + status);
-    }
-
   };
-
   
   /**
    * Get the time at which this instance of the service was started.
@@ -571,6 +654,36 @@ public class RangzenService extends Service {
    */
   public Date getServiceStartTime() {
     return mStartTime;
+  }
+
+  /**
+   * Called by Location Services when the request to connect the client
+   * finishes successfully. At this point, you can request the current
+   * location or start periodic updates
+   */
+  @Override
+  public void onConnected(Bundle dataBundle) {
+    Log.d(TAG, "Google play services connected.");
+    mPlayServicesConnected = true;
+    registerForLocationUpdates();
+  }
+
+  /**
+   * Called when the connection to the Google Play Services fails.
+   */
+  @Override
+  public void onConnectionFailed(ConnectionResult connectionResult) {
+    mPlayServicesConnected = false;
+    Log.e(TAG, "Google player services connection failed.");
+  }
+
+  /**
+   * Called when Google Play Services disconnects.
+   */
+  @Override
+  public void onDisconnected() {
+    mPlayServicesConnected = false;
+    Log.e(TAG, "Google player services disconnected.");
   }
 
   /**
