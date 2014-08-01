@@ -9,6 +9,7 @@ android_library(
     'MapsActivity.java',
     'Opener.java',
     'PostFrag.java',
+    'RangeSeekBar.java',
     'SidebarListAdapter.java',
     'SlidingPageIndicator.java',
     'ZoomOutPageTransformer.java',

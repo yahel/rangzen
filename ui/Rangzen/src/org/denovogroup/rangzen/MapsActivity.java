@@ -34,6 +34,7 @@ package org.denovogroup.rangzen;
 import java.io.IOException;
 import java.io.OptionalDataException;
 import java.io.StreamCorruptedException;
+import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Activity;
@@ -52,6 +53,7 @@ import android.graphics.drawable.StateListDrawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
@@ -62,7 +64,10 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -74,6 +79,9 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 /**
@@ -100,6 +108,7 @@ public class MapsActivity extends FragmentActivity implements
      * be centered gain while the activity is up.
      */
     private static boolean hasCentered = false;
+
     /**
      * The map object itself that is inside of the SupportMapFragment.
      */
@@ -125,27 +134,37 @@ public class MapsActivity extends FragmentActivity implements
      */
     private StorageBase mStore;
 
-    /**
-     * Used in OnLocationChanged to indicate that a first location has not yet
-     * been stored so make the current location into the first location.
-     */
-    private int flag;
-    /**
-     * Used in OnLocationChanged to save the previous location in order to
-     * connect a small Polyline between the previous and the current points.
-     */
-    private LatLng prev;
+    /** Used to determine if the slider is on or off. */
+    private static boolean isSliderOn = false;
     /**
      * Stores a references to the about icon in order to bring it to the front
      * of the FrameLayout.
      */
     private ImageButton about;
 
+    /** RangeBar slider that will determine how many points will be shown. */
+    private RangeSeekBar polyLineRange;
+
     /**
      * Define a request code to send to Google Play services This code is
      * returned in Activity.onActivityResult
      */
     private final static int CONNECTION_FAILURE_RESOLUTION_REQUEST = 9000;
+
+    /**
+     * Polyline ArrayList in order to hold all polyline options as the next one
+     * is built.
+     */
+    private static ArrayList<Polyline> array = new ArrayList<Polyline>();
+
+    /** Size of the current polyline. */
+    private int sizePoly = 0;
+
+    /** Number of running Async Tasks. */
+    private static int numAsync = 0;
+
+    /** List of exchanges for this current map. */
+    private ArrayList<Marker> markers = new ArrayList<Marker>();
 
     /**
      * Sets up the initial FragmentManager and if there is no savedInstanceState
@@ -157,26 +176,102 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.master);
         locationClient = new LocationClient(this, this, this);
         createAboutIcon();
-        mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
-        mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_NONE);
-        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        createSliderIcon();
 
         if (savedInstanceState == null) {
-            //mapFragment = (SupportMapFragment) getSupportFragmentManager()
-            //        .findFragmentById(R.id.mapHolder);
+            mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
+            mLocationStore = new LocationStore(this,
+                    StorageBase.ENCRYPTION_NONE);
+            mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
             mapFragment = (SupportMapFragment) SupportMapFragment.newInstance();
             mapFragment.setRetainInstance(true);
+            map = mapFragment.getMap();
             fragmentManager = getSupportFragmentManager();
             fragmentManager.beginTransaction()
                     .replace(R.id.mapHolder, mapFragment).commit();
             createTransparentFragment();
         }
-        drawPoints();
+        createSlider();
+    }
 
+    /** A mimic method of create About icon, this creates the slider icon. */
+    private void createSliderIcon() {
+        ImageButton button = (ImageButton) findViewById(R.id.button22);
+        button.bringToFront();
+
+        Bitmap icon = BitmapFactory.decodeResource(getResources(),
+                R.drawable.slider);
+        Bitmap icon2 = BitmapFactory.decodeResource(getResources(),
+                R.drawable.sliderpressed);
+        int width = (int) getPixels(75);
+        int height = (int) getPixels(75);
+
+        Bitmap resized = Bitmap.createScaledBitmap(icon, width, height, true);
+        Bitmap pressed = Bitmap.createScaledBitmap(icon2, width, height, true);
+
+        BitmapDrawable res = new BitmapDrawable(resized);
+        BitmapDrawable pre = new BitmapDrawable(pressed);
+
+        StateListDrawable states = new StateListDrawable();
+        states.addState(new int[] { android.R.attr.state_pressed }, pre);
+        states.addState(new int[] { android.R.attr.state_focused }, pre);
+        states.addState(new int[] {}, res);
+
+        button.setBackgroundDrawable(states);
+        // button.setBackgroundDrawable(res);
+    }
+
+    /**
+     * This the is the slider button OnClickListener, it turns the slider
+     * invisible and visible.
+     * 
+     * @param v
+     *            The image button itself.
+     */
+    public void sSliderButton(View v) {
+        LinearLayout slider = (LinearLayout) findViewById(R.id.slider);
+        if (!isSliderOn || slider.getVisibility() == View.INVISIBLE) {
+            showSlider();
+            isSliderOn = true;
+        } else {
+            slider.setVisibility(View.INVISIBLE);
+            isSliderOn = false;
+        }
+    }
+
+    /**
+     * Initialize the slider and its on click listener with a min and max range
+     * (taken care of edge cases with no locations stored).
+     */
+    private void createSlider() {
+        int size = 0;
+        mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
+        size = mLocationStore.getMostRecentSequenceNumber();
+        polyLineRange = new RangeSeekBar(1, size, this);
+        polyLineRange
+                .setOnRangeSeekBarChangeListener(new RangeSeekBar.OnRangeSeekBarChangeListener() {
+
+                    @Override
+                    public void onRangeSeekBarValuesChanged(RangeSeekBar bar,
+                            Integer minValue, Integer maxValue) {
+                        if (maxValue != -1 && maxValue != minValue
+                                && minValue < maxValue && minValue != -1) {
+                            drawPoints(minValue, maxValue);
+                        }
+                    }
+                });
+
+        LinearLayout slider = (LinearLayout) findViewById(R.id.slider);
+        slider.addView(polyLineRange);
+    }
+
+    /** This will create the slider in the linear layout in master. */
+    private void showSlider() {
+        LinearLayout slider = (LinearLayout) findViewById(R.id.slider);
+        slider.setVisibility(View.VISIBLE);
     }
 
     /**
@@ -184,27 +279,22 @@ public class MapsActivity extends FragmentActivity implements
      * destroyed in order for the method to be called again.
      */
     private void centerMap() {
-        Toast.makeText(this, "onConnected", Toast.LENGTH_SHORT).show();
         Location location = locationClient.getLastLocation();
         LatLng latLng;
         if (location == null) {
-          latLng = new LatLng(0,0);
+            latLng = new LatLng(0, 0);
         } else {
-          latLng = new LatLng(location.getLatitude(), location.getLongitude());
-          
+            latLng = new LatLng(location.getLatitude(), location.getLongitude());
+
         }
 
         CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng,
                 15);
         setUpMapIfNeeded();
         if (map != null) {
-            // int haveCentered = storageBase.getInt("haveCenteredMap", 0);
-            // Toast.makeText(this, "value of centeredMap = " + haveCentered,
-            // Toast.LENGTH_SHORT).show();
             if (!hasCentered) {
                 map.animateCamera(cameraUpdate);
                 hasCentered = true;
-                // storageBase.putInt("haveCenteredMap", 1);
             }
             map.setMyLocationEnabled(true);
             map.setBuildingsEnabled(true);
@@ -299,15 +389,14 @@ public class MapsActivity extends FragmentActivity implements
         editor.commit();
 
         Log.i(TAG, "Experiment state is now EXP_STATE_NOT_YET_REGISTERED.");
-        mStore.put(RangzenService.EXPERIMENT_STATE_KEY, 
-                   RangzenService.EXP_STATE_NOT_YET_REGISTERED);
+        mStore.put(RangzenService.EXPERIMENT_STATE_KEY,
+                RangzenService.EXP_STATE_NOT_YET_REGISTERED);
 
         // Spawn Rangzen Service.
         Log.i(TAG, "Permission granted - Starting Rangzen Service.");
         Intent rangzenServiceIntent = new Intent(this, RangzenService.class);
         startService(rangzenServiceIntent);
     }
-
 
     /**
      * OnClickListener for the about icon, this handles the creation of a new
@@ -325,12 +414,9 @@ public class MapsActivity extends FragmentActivity implements
         fragmentManager = getSupportFragmentManager();
         FragmentTransaction ft = fragmentManager.beginTransaction();
         ft.add(R.id.infoHolder, info);
-        // ft.hide(mapFragment);
         ft.addToBackStack("info");
+        // findViewById(R.id.button22).setVisibility(View.INVISIBLE);
         ft.commit();
-        // action.show();
-        // action.setTitle("About Rangzen");
-        // action.setIcon(R.drawable.ic_action_back);
     }
 
     /**
@@ -369,52 +455,54 @@ public class MapsActivity extends FragmentActivity implements
     }
 
     /**
-     *  sOptOut creates a Dialog Interface that asks if they are sure they want to opt out.
+     * sOptOut creates a Dialog Interface that asks if they are sure they want
+     * to opt out.
      */
     public void sOptOut(View v) {
         DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                switch (which){
-                    case DialogInterface.BUTTON_POSITIVE:
-                        //Yes button clicked
-                        hasCentered = false; 
-                        SharedPreferences settings = getSharedPreferences(
+                switch (which) {
+                case DialogInterface.BUTTON_POSITIVE:
+                    // Yes button clicked
+                    hasCentered = false;
+                    SharedPreferences settings = getSharedPreferences(
                             SlidingPageIndicator.PREFS_NAME, 0);
-                        SharedPreferences.Editor editor = settings.edit();
+                    SharedPreferences.Editor editor = settings.edit();
 
-                        editor.putBoolean("hasLoggedIn", false);
-                        editor.commit();
+                    editor.putBoolean("hasLoggedIn", false);
+                    editor.commit();
 
-                        editor.putBoolean("transparent", false);
-                        editor.commit();
+                    editor.putBoolean("transparent", false);
+                    editor.commit();
 
-                        Log.i(TAG, "Experiment state is now EXP_STATE_NOT_YET_REGISTERED.");
-                        mStore.put(RangzenService.EXPERIMENT_STATE_KEY, 
-                                   RangzenService.EXP_STATE_OPTED_OUT);
+                    Log.i(TAG,
+                            "Experiment state is now EXP_STATE_NOT_YET_REGISTERED.");
+                    mStore.put(RangzenService.EXPERIMENT_STATE_KEY,
+                            RangzenService.EXP_STATE_OPTED_OUT);
 
-                        // Stop Rangzen Service.
-                        Log.i(TAG, "User Opted Out");
-                        Intent rangzenServiceIntent = new Intent(getApplicationContext(), RangzenService.class);
-                        stopService(rangzenServiceIntent);
+                    // Stop Rangzen Service.
+                    Intent rangzenServiceIntent = new Intent(
+                            getApplicationContext(), RangzenService.class);
+                    stopService(rangzenServiceIntent);
 
-                        Intent intent = new Intent(getApplicationContext(), SlidingPageIndicator.class);
-                        startActivity(intent);
-                        finish();
-                            
-                        break;                                  
-                    case DialogInterface.BUTTON_NEGATIVE:
-                        //No button clicked
-                        break;
+                    Intent intent = new Intent(getApplicationContext(),
+                            SlidingPageIndicator.class);
+                    startActivity(intent);
+                    finish();
+
+                    break;
+                case DialogInterface.BUTTON_NEGATIVE:
+                    break;
                 }
             }
         };
-    
+
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("Are you sure?").setNegativeButton("No", dialogClickListener).setPositiveButton("Yes", dialogClickListener).show();
+        builder.setMessage("Are you sure?")
+                .setNegativeButton("No", dialogClickListener)
+                .setPositiveButton("Yes", dialogClickListener).show();
     }
-
-
 
     /**
      * Called when Rangzen is first visible and this connects to the google
@@ -472,7 +560,6 @@ public class MapsActivity extends FragmentActivity implements
                 .isGooglePlayServicesAvailable(this);
         // If Google Play services is available
         if (ConnectionResult.SUCCESS == resultCode) {
-            Log.d("Location Updates", "Google Play services is available.");
             return true;
         } else {
             // Get the error dialog from Google Play services
@@ -499,7 +586,10 @@ public class MapsActivity extends FragmentActivity implements
      */
     @Override
     public void onConnected(Bundle dataBundle) {
-        centerMap();
+        if (!hasCentered) {
+            drawPoints(-1, -1);
+            centerMap();
+        }
     }
 
     /** Define a DialogFragment that displays the error dialog */
@@ -552,12 +642,13 @@ public class MapsActivity extends FragmentActivity implements
 
     @Override
     protected void onResume() {
-        super.onResume();     
+        super.onResume();
         setUpMapIfNeeded();
         if (map != null) {
             map.setMyLocationEnabled(true);
         } else {
-            Toast.makeText(this, "map was null in onResume", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "map was null in onResume", Toast.LENGTH_SHORT)
+                    .show();
         }
         registerForLocationUpdates();
     }
@@ -573,7 +664,7 @@ public class MapsActivity extends FragmentActivity implements
     private static final String LOCATION_GPS_PROVIDER = LocationManager.PASSIVE_PROVIDER;
 
     /** Time between location updates in milliseconds - 1 minute. */
-    private static final long LOCATION_UPDATE_INTERVAL = 1000 * 60 * 1;
+    private static final long LOCATION_UPDATE_INTERVAL = 5000 * 60 * 1;
 
     /**
      * Minimum moved distance between location updates. We want a new location
@@ -599,45 +690,17 @@ public class MapsActivity extends FragmentActivity implements
 
     /**
      * Called from OnCreate in order to only draw the previous points once.
+     * 
+     * @param maxValue
+     *            The max value to draw points to.
+     * @param minValue
+     *            The min value of the points to include on the map.
      */
-    private void drawPoints() {
-        int size = -1;
-        setUpMapIfNeeded();
-        // Log.e(TAG, "starting the for loop to get locations - no polyline");
-        List<SerializableLocation> locations;
-        try {
-            locations = mLocationStore.getAllLocations();
-            size = locations.size();
-            LatLng prevLL = null;
-            for (SerializableLocation current : locations) {
-                LatLng currentLL = new LatLng(current.latitude,
-                        current.longitude);
-                if (prevLL == null) {
-                    prevLL = currentLL;
-                }
-                if (distanceAllows(prevLL, currentLL)) {
-                    map.addPolyline((new PolylineOptions())
-                            .add(prevLL, currentLL).width(6).color(Color.BLUE)
-                            .visible(true));
-                }
-                prevLL = currentLL;
-            }
-        } catch (StreamCorruptedException e) {
-            Log.e(TAG, "Not able to make polyLine on onResume!");
-            e.printStackTrace();
-        } catch (OptionalDataException e) {
-            Log.e(TAG, "Not able to make polyLine on onResume!");
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            Log.e(TAG, "Not able to make polyLine on onResume!");
-            e.printStackTrace();
-        } catch (IOException e) {
-            Log.e(TAG, "Not able to make polyLine on onResume!");
-            e.printStackTrace();
-        }
-        // Log.e(TAG, "finished loop, no polyline");
-        Toast.makeText(this, "number of locations stored " + size,
-                Toast.LENGTH_SHORT).show();
+    private void drawPoints(Integer minValue, Integer maxValue) {
+        numAsync++;
+        ProgressBar pb = (ProgressBar) findViewById(R.id.progress);
+        pb.setVisibility(View.VISIBLE);
+        new DrawPointsThread().execute(minValue, maxValue);
     }
 
     /**
@@ -647,22 +710,6 @@ public class MapsActivity extends FragmentActivity implements
     private LocationListener mLocationListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {
-            LatLng current = new LatLng(location.getLatitude(),
-                    location.getLongitude());
-
-            if (flag == 0) // when the first update comes, we have no previous
-                           // points,hence this
-            {
-                prev = current;
-                flag = 1;
-            }
-            setUpMapIfNeeded();
-            if (distanceAllows(prev, current)) {
-                map.addPolyline((new PolylineOptions()).add(prev, current)
-                        .width(6).color(Color.BLUE).visible(true));
-            }
-            prev = current;
-            current = null;
         }
 
         @Override
@@ -751,4 +798,111 @@ public class MapsActivity extends FragmentActivity implements
         }
     }
 
+    public class DrawPointsThread extends AsyncTask<Integer, Integer, Integer> {
+
+        private ArrayList<Polyline> polylines = new ArrayList<Polyline>();
+        private ArrayList<PolylineOptions> options = new ArrayList<PolylineOptions>();
+        private PolylineOptions polyline;
+        private List<Exchange> ownExchanges;
+        private ArrayList<Marker> ownMarkers = new ArrayList<Marker>();
+        private int size = -1;
+        private long lowerTimeBound;
+        private long upperTimeBound;
+
+        @Override
+        protected Integer doInBackground(Integer... integers) {
+
+            polyline = new PolylineOptions();
+            setUpMapIfNeeded();
+            List<SerializableLocation> locations;
+            try {
+                if (integers[0] == -1 && integers[1] == -1) {
+                    locations = mLocationStore.getAllLocations();
+                } else {
+                    locations = mLocationStore.getLocations(integers[0],
+                            integers[1]);
+                }
+                size = locations.size();
+                LatLng prevLL = null;
+                if (map != null) {
+                    for (int i = 0; i < size; i++) {
+                        SerializableLocation current = locations.get(i);
+                        if (i == 0) {
+                            lowerTimeBound = current.time;
+                        }
+                        if (i == size) {
+                            upperTimeBound = current.time;
+                        }
+                        LatLng currentLL = new LatLng(current.latitude,
+                                current.longitude);
+                        if (prevLL == null) {
+                            prevLL = currentLL;
+                        }
+                        if (distanceAllows(prevLL, currentLL)) {
+                            if (sizePoly > 50) {
+                                options.add(polyline);
+                                polyline = new PolylineOptions();
+                                sizePoly = 0;
+                            }
+                            polyline.add(prevLL, currentLL).width(4)
+                                    .color(Color.BLUE).visible(true);
+                            sizePoly++;
+                        }
+                        prevLL = currentLL;
+                    }
+                }
+                // Catch remaining points under max allowed in one poly.
+                if (sizePoly > 0) {
+                    options.add(polyline);
+                    polyline = new PolylineOptions();
+                    sizePoly = 0;
+                }
+                ExchangeStore exchangeStore = new ExchangeStore(
+                        getApplicationContext(), StorageBase.ENCRYPTION_DEFAULT);
+                ownExchanges = exchangeStore.getAllExchanges();
+
+            } catch (ClassNotFoundException | IOException e) {
+                Log.e(TAG, "Not able to make polyLine on Async!");
+                e.printStackTrace();
+            }
+            return 1;
+        }
+
+        @Override
+        protected void onPostExecute(Integer result) {
+            super.onPostExecute(result);
+            if (numAsync == 1) {
+                polylines = new ArrayList<Polyline>();
+                for (PolylineOptions poly : options) {
+                    polylines.add(map.addPolyline(poly));
+                }
+                for (Exchange exchange : ownExchanges) {
+                    if (exchange.start_time > lowerTimeBound
+                            && exchange.start_time < upperTimeBound) {
+                        MarkerOptions marker = new MarkerOptions();
+                        LatLng exStart = new LatLng(
+                                exchange.start_location.latitude,
+                                exchange.start_location.longitude);
+                        marker.position(exStart);
+                        ownMarkers.add(map.addMarker(marker));
+                    }
+                }
+                for (Polyline poly : array) {
+                    poly.remove();
+                }
+                for (Marker marker : markers) {
+                    marker.remove();
+                }
+                array = polylines;
+                markers = ownMarkers;
+            }
+            Toast.makeText(getApplicationContext(),
+                    "number of points being shown = " + size,
+                    Toast.LENGTH_SHORT).show();
+            //TODO (Jesus) Finish the Async race... condition.
+            numAsync -= 1;
+            ProgressBar pb = (ProgressBar) findViewById(R.id.progress);
+            pb.setVisibility(View.INVISIBLE);
+        }
+    }
 }

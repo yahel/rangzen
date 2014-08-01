@@ -616,6 +616,7 @@ public class RangzenService extends Service implements
       }
 
       // Get nearby phones and add them as peers in the peer manager.
+      Log.d("MapsActivity", "is experiment on? " + isExperimentOn());
       if (isExperimentOn()) { 
         Log.d(TAG, "Experiment is on, getting nearby phones from server.");
         ExperimentClient getPhonesClient;

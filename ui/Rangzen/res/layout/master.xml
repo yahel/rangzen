@@ -19,6 +19,20 @@
         android:orientation="vertical" />
 
     <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:paddingBottom="70dp"
+        android:paddingLeft="10dp" >
+
+        <ImageButton
+            android:id="@+id/button22"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="sSliderButton" />
+    </RelativeLayout>
+
+    <RelativeLayout
         android:id="@+id/RelativeLayout1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -35,6 +49,23 @@
             android:clickable="true"
             android:onClick="s" />
     </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="horizontal"
+        android:paddingBottom="115dp" >
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/progress"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center"
+        android:visibility="invisible" />
 
     <LinearLayout
         android:id="@+id/infoHolder"
