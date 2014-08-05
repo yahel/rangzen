@@ -34,9 +34,12 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.app.Service;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 
@@ -75,7 +78,7 @@ public class RangzenService extends Service implements
   private static final long LOCATION_UPDATE_INTERVAL = 1000 * 60 * 1;
 
   /** Minimum interval in milliseconds we want to receive location fixes. */
-  private static final long LOCATION_FASTEST_INTERVAL = 1000 * 30 * 1;
+  private static final long LOCATION_FASTEST_INTERVAL = 1000 * 60 * 1;
 
   /**
    * Minimum moved distance between location updates. We want a new location
@@ -158,6 +161,14 @@ public class RangzenService extends Service implements
   /** Got contacts and phoneid, but contacting the server failed, or it answered "failed". */
   private static final String REGISTRATION_FAILED_SERVER_NOT_OK = "Server response not OK";
 
+
+  /** 
+   * Whether we've updated nearby phones since our last location upload. 
+   * Starts true since we should wait until our first upload to check for nearby
+   * phones.
+   */
+  private boolean haveRecentNearbyPhones = true;
+
   /** Current state of the experiment. */
   private String experimentState;
 
@@ -176,7 +187,11 @@ public class RangzenService extends Service implements
    */
   private static final float NEARBY_DISTANCE = (float) 0.25;
 
+  /** Key for storing the number of the highest exchange sequence number we've uploaded. */
   private static final String HIGHEST_EXCHANGE_UPLOADED_KEY = "HIGHEST_EXCHANGE_KEY";
+
+  /** Maximum number of locations or exchanges to upload at once. */
+  private static final int UPLOAD_BATCH_SIZE = 100;
 
   /**
    * Called whenever the service is requested to start. If the service
@@ -234,6 +249,7 @@ public class RangzenService extends Service implements
 
     // Schedule the background task thread to run occasionally.
     mScheduleTaskExecutor = Executors.newScheduledThreadPool(1);
+    // TODO(lerner): Decide if 1 second is an appropriate time interval for the tasks.
     mScheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
       public void run() {
         backgroundTasks();
@@ -251,41 +267,47 @@ public class RangzenService extends Service implements
     attemptRegistrationIfNecessary();
     if (isOptedInAndRegistered()) {
       updateLiveExperimentState();
-    }
 
-    Log.d(TAG, "Current experiment state: " + getExperimentState());
+      try {
+        uploadUnsentLocations();
+      } catch (IOException | ClassNotFoundException e) {
+        e.printStackTrace();
+        Log.e(TAG, "Uploading all unsent locations resulted in an exception: " + e);
+      }
+      try {
+        uploadUnsentExchanges();
+      } catch (IOException | ClassNotFoundException e) {
+        e.printStackTrace();
+        Log.e(TAG, "Uploading all unsent exchanges resulted in an exception: " + e);
+      }
 
-    mBackgroundTaskRunCount++;
-
-    PeerManager.getInstance(getApplicationContext()).tasks(); 
-
-    try {
-      uploadAllUnsentLocations();
-    } catch (IOException | ClassNotFoundException e) {
-      e.printStackTrace();
-      Log.e(TAG, "Uploading all unsent locations resulted in an exception: " + e);
-    }
-    try {
-      uploadAllUnsentExchanges();
-    } catch (IOException | ClassNotFoundException e) {
-      e.printStackTrace();
-      Log.e(TAG, "Uploading all unsent exchanges resulted in an exception: " + e);
+      if (!haveRecentNearbyPhones) {
+        Log.d(TAG, "Don't have nearby phones since last location update; asking!");
+        getNearbyPhones();
+      }
     }
     
+    PeerManager.getInstance(getApplicationContext()).tasks(); 
+
+    mBackgroundTaskRunCount++;
+    Log.v(TAG, "Current experiment state: " + getExperimentState());
     Log.v(TAG, "Background Tasks Finished");
   }
 
   /** 
-   * Attempt to upload all locations between the highest uploaded already and the most
-   * recent sequence number.
+   * Attempt to upload up to 100 locations that haven't been sent to the server.
    *
    * @throws ClassNotFoundException
    * @throws IOException
    * @throws OptionalDataException
    * @throws StreamCorruptedException
    */
-  private void uploadAllUnsentLocations() throws StreamCorruptedException,
+  private void uploadUnsentLocations() throws StreamCorruptedException,
       OptionalDataException, IOException, ClassNotFoundException {
+    if (!isNetworkAvailable()) {
+      Log.d(TAG, "Not attempting to upload since network not available.");
+      return;
+    }
     int latestLocation = mLocationStore.getMostRecentSequenceNumber();
     int highestSentLocation = mStore.getInt(HIGHEST_LOCATION_UPLOADED_KEY, 
                                             LocationStore.MIN_SEQUENCE_NUMBER - 1);
@@ -296,7 +318,10 @@ public class RangzenService extends Service implements
     }
 
     int start = highestSentLocation + 1;
-    int end = latestLocation;
+    int end = start + UPLOAD_BATCH_SIZE;
+    if (end > latestLocation) {
+      end = latestLocation;
+    }
 
     List<SerializableLocation> locationsToSend = mLocationStore.getLocations(start, end);
     SerializableLocation[] locations = locationsToSend.toArray(new SerializableLocation[0]);
@@ -307,22 +332,26 @@ public class RangzenService extends Service implements
     if (client.updateLocationsWasSuccessful()) {
       Log.d(TAG, String.format("Uploaded locations %d-%d", start, end));
       mStore.putInt(HIGHEST_LOCATION_UPLOADED_KEY, end);
+      haveRecentNearbyPhones = false;
     } else {
       Log.e(TAG, String.format("Failed to upload locations %d-%d", start, end));
     } 
   }
 
   /** 
-   * Attempt to upload all exchanges between the highest uploaded already and the most
-   * recent sequence number.
+   * Attempt to upload up to 100 exchanges that haven't been sent to the server yet.
    *
    * @throws ClassNotFoundException
    * @throws IOException
    * @throws OptionalDataException
    * @throws StreamCorruptedException
    */
-  private void uploadAllUnsentExchanges() throws StreamCorruptedException,
+  private void uploadUnsentExchanges() throws StreamCorruptedException,
       OptionalDataException, IOException, ClassNotFoundException {
+    if (!isNetworkAvailable()) {
+      Log.d(TAG, "Not attempting to upload since network not available.");
+      return;
+    }
     int latestExchange = mExchangeStore.getMostRecentSequenceNumber();
     int highestSentExchange = mStore.getInt(HIGHEST_EXCHANGE_UPLOADED_KEY, 
                                             ExchangeStore.MIN_SEQUENCE_NUMBER - 1);
@@ -333,7 +362,10 @@ public class RangzenService extends Service implements
     }
 
     int start = highestSentExchange + 1;
-    int end = latestExchange;
+    int end = start + UPLOAD_BATCH_SIZE;
+    if (end > latestExchange) {
+      end = latestExchange;
+    }
 
     // TODO(lerner): The server should support uploading multiple exchanges.
     // At that point we switch this over to using that API.
@@ -352,6 +384,18 @@ public class RangzenService extends Service implements
         Log.e(TAG, String.format("Failed to upload exchange %d", sequence));
       } 
     }
+  }
+
+  /**
+   * Check whether any network connection (Wifi/Cell) is available according to the
+   * OS's connectivity service.
+   *
+   * @return True if any network connection seems to be available, false otherwise.
+   */
+  private boolean isNetworkAvailable() {
+    ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+    NetworkInfo activeNetworkInfo = cm.getActiveNetworkInfo();
+    return activeNetworkInfo != null && activeNetworkInfo.isConnected();
   }
 
   /**
@@ -456,10 +500,13 @@ public class RangzenService extends Service implements
     }
     if (isPlayServicesConnected() && isBluetoothOn()) {
       mStore.put(EXPERIMENT_STATE_KEY, EXP_STATE_ON);
+      Log.v(TAG, "Experiment state is now " + EXP_STATE_ON);
     } else if (!isPlayServicesConnected()) {
       mStore.put(EXPERIMENT_STATE_KEY, EXP_STATE_PAUSED_NO_LOCATION);
+      Log.v(TAG, "Experiment state is now " + EXP_STATE_PAUSED_NO_LOCATION);
     } else if (!isBluetoothOn()) {
       mStore.put(EXPERIMENT_STATE_KEY, EXP_STATE_PAUSED_NO_BLUETOOTH);
+      Log.v(TAG, "Experiment state is now " + EXP_STATE_PAUSED_NO_BLUETOOTH);
     }
   }
 
@@ -597,8 +644,38 @@ public class RangzenService extends Service implements
   }
 
   /**
+   * Ask the server for nearby phones, storing them as peers in the peer manager.
+   */
+  private void getNearbyPhones() {
+    Log.d(TAG, "Experiment is on, getting nearby phones from server.");
+    ExperimentClient getPhonesClient;
+    getPhonesClient = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME, EXPERIMENT_SERVER_PORT);
+    getPhonesClient.getNearbyPhones(getPhoneID(), NEARBY_DISTANCE);
+    String[] addresses = getPhonesClient.getNearbyPhonesResult();
+    if (addresses != null) {
+      if (addresses.length == 0) {
+        Log.d(TAG, "Addresses is: []");
+      }
+      for (String address : addresses) {
+        Log.d(TAG, "Got address " + address);
+      }
+      List<Peer> peers = new ArrayList<Peer>();
+      BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+      for (String address : addresses) {
+        BluetoothDevice device = adapter.getRemoteDevice(address);
+        Peer peer = mPeerManager.getCanonicalPeer(new Peer(new BluetoothPeerNetwork(device)));
+        peers.add(peer);
+        Log.d(TAG, "Adding peer to PeerManager: " + peer);
+      }
+      mPeerManager.addPeers(peers);
+    } else {
+      Log.e(TAG, "Nearby phones was null - something went wrong asking the server for them.");
+    }
+    haveRecentNearbyPhones = true;
+  }
+
+  /**
    * Callback for location updates. Stores locations retrieved in the location store.
-   * Then, asks for nearby peers and stores them in the peer manager.
    */
   private LocationListener mLocationListener = new LocationListener() {
     @Override
@@ -607,44 +684,6 @@ public class RangzenService extends Service implements
       Log.d(TAG, "Got location: " + location);
       SerializableLocation serializableLocation = new SerializableLocation(location);
       mLocationStore.addLocation(serializableLocation);
-
-      try {
-        uploadAllUnsentLocations();
-      } catch (IOException | ClassNotFoundException e) {
-        e.printStackTrace();
-        Log.e(TAG, "Uploading all unsent locations resulted in an exception: " + e);
-      }
-
-      // Get nearby phones and add them as peers in the peer manager.
-      Log.d("MapsActivity", "is experiment on? " + isExperimentOn());
-      if (isExperimentOn()) { 
-        Log.d(TAG, "Experiment is on, getting nearby phones from server.");
-        ExperimentClient getPhonesClient;
-        getPhonesClient = new ExperimentClient(EXPERIMENT_SERVER_HOSTNAME, EXPERIMENT_SERVER_PORT);
-        getPhonesClient.getNearbyPhones(getPhoneID(), NEARBY_DISTANCE);
-        String[] addresses = getPhonesClient.getNearbyPhonesResult();
-        if (addresses != null) {
-          if (addresses.length == 0) {
-            Log.d(TAG, "Addresses is: []");
-          }
-          for (String address : addresses) {
-            Log.d(TAG, "Got address " + address);
-          }
-          List<Peer> peers = new ArrayList<Peer>();
-          BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-          for (String address : addresses) {
-            BluetoothDevice device = adapter.getRemoteDevice(address);
-            Peer peer = mPeerManager.getCanonicalPeer(new Peer(new BluetoothPeerNetwork(device)));
-            peers.add(peer);
-            Log.d(TAG, "Adding peer to PeerManager: " + peer);
-          }
-          mPeerManager.addPeers(peers);
-        } else {
-          Log.e(TAG, "Nearby phones was null - something went wrong asking the server for them.");
-        }
-      } else {
-        Log.d(TAG, "Experiment is not on.");
-      }
     }
   };
   
