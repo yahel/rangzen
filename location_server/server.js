@@ -53,15 +53,17 @@ function InitPhone(phone) {
 // Output fields:
 //   status : "ok" or "failed"
 function RegisterPhone(req, res) {
-  if (!('phoneid' in req.body) ||
-      req.body.phoneid in phones) {
+  if (!('phoneid' in req.body)) {
     console.log("RegisterPhone failed: " + JSON.stringify(req.body));
     response = { "status" : "failed" };
     res.send(300, JSON.stringify(response));
     return;
+  } else if (req.body.phoneid in phones) {
+    response = { "status" : "ok" };
+    res.send(200, JSON.stringify(response));
+    return;
   }
   
-
   // Add this phone's registration to the database.
   db.document.create('phones', { 'phoneid' : req.body.phoneid,
                                  'friends' : req.body.friends }).then(function(r) {

@@ -65,7 +65,7 @@ def test_register_phone():
 
   # Try to re-register Bob.
   r = requests.post(url + "register_phone", data=json.dumps(bob), headers=headers)
-  assert r.json()['status'] == 'failed'
+  assert r.json()['status'] == 'ok'
 
 
 def test_get_friends():
