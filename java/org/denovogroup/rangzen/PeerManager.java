@@ -347,7 +347,10 @@ public class PeerManager {
       Log.e(TAG, "Recording exchange attempt time of non-bluetooth peer! Can't do it.");
       return;
     } else {
-      exchangeAttemptTimes.put(device.getAddress(), exchangeTime);
+      Date nextAttempt = new Date(exchangeTime.getDate() +
+                                  (random.nextInt() % MS_BETWEEN_EXCHANGE_ATTEMPTS));
+      exchangeAttemptTimes.put(device.getAddress(), nextAttempt);
+      Log.w(TAG, "Will attempt another exchange with peer " + peer + " no sooner than " + nextAttempt);
     }
   }
 
@@ -379,17 +382,17 @@ public class PeerManager {
   }
 
   /**
-   * Return a date representing the last time we attempted an exchange with this
-   * peer. If we don't remember ever speaking to the peer, returns the epoch
-   * (beginning of time).  Values of last exchange times are not persisted -
-   * they're only stored as instance variables, so these times are reliable only
-   * within the same Rangzen process.
+   * Return a date representing the next time we should attempt an exchange with
+   * this peer. If we don't remember ever speaking to the peer, returns the
+   * epoch (beginning of time).  Values of last exchange times are not persisted
+   * - they're only stored as instance variables, so these times are reliable
+   * only within the same Rangzen process.
    *
    * @param peer The peer about which we are inquiring.
    * @return The Date at which the last known successful exchange with the peer
    * occurred, or the epoch if none is known.
    */
-  private Date getLastExchangeAttemptTime(Peer peer) {
+  private Date getNextExchangeAttemptTime(Peer peer) {
     BluetoothDevice device = peer.getNetwork().getBluetoothDevice();
     if (device == null) {
       Log.e(TAG, "Getting last exchange time of non-bluetooth peer! Can't do it!");
@@ -419,18 +422,17 @@ public class PeerManager {
   }
 
   /**
-   * Check whether we've had an exchange with the given peer within some random
-   * time period (up to MS_BETWEEN_EXCHANGE_ATTEMPTS) Time since exchange
-   * attempt isn't persisted, so this might answer false incorrectly if Rangzen
-   * has been stopped and started.
+   * Check whether we can attempt another exchange with the given peer. Time
+   * for exchange attempts isn't persisted, so this might answer incorrectly if
+   * Rangzen has been stopped and started.
    *
    * @return True if we've attempted an exchange with the peer within the threshold,
    * false otherwise.
    */
   private boolean recentlyAttemptedExchangeWithPeer(Peer peer) {
     long now = (new Date()).getTime();
-    long then = getLastExchangeAttemptTime(peer).getTime();
-    return (now - then) < (random.nextInt() % MS_BETWEEN_EXCHANGES);
+    long then = getNextExchangeAttemptTime(peer).getTime();
+    return (now < then);
   }
 
   /**
