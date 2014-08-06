@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Date;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * This module exposes an API for the application to find out the current 
@@ -82,6 +83,9 @@ public class PeerManager {
   /** Remembers the last time we successfully had an exchange with a peer. */
   private Map<String, Date> exchangeTimes = new HashMap<String, Date>();
 
+  /** Remembers the last time we attempted an exchange with a peer. */
+  private Map<String, Date> exchangeAttemptTimes = new HashMap<String, Date>();
+
   /** 
    * The length of time (in milliseconds) we consider peers valid. 
    * TODO(lerner): Decide on an appropriate value for this.
@@ -94,6 +98,14 @@ public class PeerManager {
    */
   private static final long MS_BETWEEN_EXCHANGES = 15 * 60 * 1000;
 
+  /** 
+   * The max length of time we wait before attempted to exchange with the same peer again, in ms.
+   * TODO(barath): Decide on an appropriate value for this.
+   */
+  private static final long MS_BETWEEN_EXCHANGE_ATTEMPTS = 5 * 60 * 1000;
+
+  /** A Random instance for use in timing exchange attempts. */
+  private static final Random random = new Random();
 
   /** Displayed in Android Monitor logs. */
   private static String TAG = "RangzenPeerManager";
@@ -324,6 +336,22 @@ public class PeerManager {
   }
 
   /**
+   * Remember the time that an exchange was attempted.
+   *
+   * @param peer The remote peer about whom we are remembering an exchange attempt.
+   * @param exchangetime The time at which we had an exchange with the peer.
+   */
+  private void recordExchangeAttemptTime(Peer peer, Date exchangeTime) {
+    BluetoothDevice device = peer.getNetwork().getBluetoothDevice();
+    if (device == null) {
+      Log.e(TAG, "Recording exchange attempt time of non-bluetooth peer! Can't do it.");
+      return;
+    } else {
+      exchangeAttemptTimes.put(device.getAddress(), exchangeTime);
+    }
+  }
+
+  /**
    * Return a date representing the last time we spoke to this peer. If we
    * don't remember ever speaking to the peer, the epoch (beginning of time).
    * Values of last exchange times are not persisted - they're only stored as
@@ -351,6 +379,32 @@ public class PeerManager {
   }
 
   /**
+   * Return a date representing the last time we attempted an exchange with this
+   * peer. If we don't remember ever speaking to the peer, returns the epoch
+   * (beginning of time).  Values of last exchange times are not persisted -
+   * they're only stored as instance variables, so these times are reliable only
+   * within the same Rangzen process.
+   *
+   * @param peer The peer about which we are inquiring.
+   * @return The Date at which the last known successful exchange with the peer
+   * occurred, or the epoch if none is known.
+   */
+  private Date getLastExchangeAttemptTime(Peer peer) {
+    BluetoothDevice device = peer.getNetwork().getBluetoothDevice();
+    if (device == null) {
+      Log.e(TAG, "Getting last exchange time of non-bluetooth peer! Can't do it!");
+      return null;
+    } else {
+      Date when = exchangeAttemptTimes.get(device.getAddress());
+      if (when == null) {
+        return new Date(0);
+      } else {
+        return when;
+      }
+    }
+  }
+
+  /**
    * Check whether we've had an exchange with the given peer within the last 
    * MS_BETWEEN_EXCHANGES ms. Time since exchange isn't persisted, so this might
    * answer false incorrectly if Rangzen has been stopped and started.
@@ -365,6 +419,21 @@ public class PeerManager {
   }
 
   /**
+   * Check whether we've had an exchange with the given peer within some random
+   * time period (up to MS_BETWEEN_EXCHANGE_ATTEMPTS) Time since exchange
+   * attempt isn't persisted, so this might answer false incorrectly if Rangzen
+   * has been stopped and started.
+   *
+   * @return True if we've attempted an exchange with the peer within the threshold,
+   * false otherwise.
+   */
+  private boolean recentlyAttemptedExchangeWithPeer(Peer peer) {
+    long now = (new Date()).getTime();
+    long then = getLastExchangeAttemptTime(peer).getTime();
+    return (now - then) < (random.nextInt() % MS_BETWEEN_EXCHANGES);
+  }
+
+  /**
    * Run tasks, e.g. garbage collection of peers, speaker tasks, etc.
    */
   public void tasks() {
@@ -373,13 +442,14 @@ public class PeerManager {
     mBluetoothSpeaker.tasks();
     
     for (Peer peer : mCurrentPeers) {
-      if (!recentlyExchangedWithPeer(peer)) {
+      if (!recentlyExchangedWithPeer(peer) && !recentlyAttemptedExchangeWithPeer(peer)) {
         Log.v(TAG, "Attempting to have an exchange with " + peer);
         try {
           SerializableLocation startLocation = mLocationStore.getLatestLocation();
           Exchange exchange = mBluetoothSpeaker.connectAndStartExchange(peer);
           if (exchange == null) {
             Log.e(TAG, "Couldn't have exchange with peer " + peer);
+            recordExchangeAttemptTime(peer, new Date());
           } else {
             Log.i(TAG, "Completed connect and exchange with peer " + peer);
             Log.i(TAG, "The exchange: " + exchange);
