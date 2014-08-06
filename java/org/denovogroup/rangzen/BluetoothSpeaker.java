@@ -51,8 +51,8 @@ public class BluetoothSpeaker {
   /** Logging tag, attached to all Android log messages. */
   private static final String TAG = "BluetoothSpeaker";
 
-  /** A maximum packet size for allocating packet receive buffers. */
-  public static final int MAX_PACKET_SIZE = 1024;
+  /** The expected size of peer exchanges. */
+  public static final int EXCHANGE_SIZE = 1024 * 30;
 
   /** Constant int passed to request to enable Bluetooth, required by Android. */
   public static final int REQUEST_ENABLE_BT = 54321;
@@ -88,8 +88,8 @@ public class BluetoothSpeaker {
   public BluetoothSpeaker(Context context, PeerManager peerManager) {
     super();
 
-    mPayload = new byte[MAX_PACKET_SIZE];
-    for (int i=0; i<MAX_PACKET_SIZE; i++) {
+    mPayload = new byte[EXCHANGE_SIZE];
+    for (int i=0; i < EXCHANGE_SIZE; i++) {
       mPayload[i] = (byte) i;
     }
 
@@ -330,7 +330,7 @@ public class BluetoothSpeaker {
       Date firstSendingDoneTime = new Date();
 
       Log.i(TAG, "Listening for echo.");
-      received = readExactlyNumberBytesFromStream(input, MAX_PACKET_SIZE);
+      received = readExactlyNumberBytesFromStream(input, EXCHANGE_SIZE);
 
       Date echoReceivedTime = new Date();
       if (Arrays.equals(mPayload, received)) {
@@ -379,7 +379,7 @@ public class BluetoothSpeaker {
       Date startTime = new Date();
 
       Log.i(TAG, "Listening for first message.");
-      received = readExactlyNumberBytesFromStream(input, MAX_PACKET_SIZE);
+      received = readExactlyNumberBytesFromStream(input, EXCHANGE_SIZE);
       if (Arrays.equals(mPayload, received)) {
         Log.i(TAG, "Done reading, payload and received were equal.");
       } else {
@@ -393,7 +393,7 @@ public class BluetoothSpeaker {
       Date echoSentTime = new Date();
 
       Log.i(TAG, "Receiving second message.");
-      secondReceived = readExactlyNumberBytesFromStream(input, MAX_PACKET_SIZE);
+      secondReceived = readExactlyNumberBytesFromStream(input, EXCHANGE_SIZE);
       if (Arrays.equals(mPayload, received)) {
         Log.i(TAG, "Done reading, payload and received were equal.");
       } else {
