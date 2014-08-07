@@ -528,6 +528,8 @@ public class MapsActivity extends FragmentActivity implements
                             "Experiment state is now EXP_STATE_NOT_YET_REGISTERED.");
                     mStore.put(RangzenService.EXPERIMENT_STATE_KEY,
                             RangzenService.EXP_STATE_OPTED_OUT);
+                    mStore.put(RangzenService.REGISTRATION_FAILURE_REASON_KEY, null);
+                    
 
                     // Stop Rangzen Service.
                     Intent rangzenServiceIntent = new Intent(
@@ -547,7 +549,7 @@ public class MapsActivity extends FragmentActivity implements
         };
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("Are you sure?")
+        builder.setMessage("Are you sure you want to leave the experiment?")
                 .setNegativeButton("No", dialogClickListener)
                 .setPositiveButton("Yes", dialogClickListener).show();
     }

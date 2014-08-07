@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.Date;
 
@@ -97,6 +98,9 @@ public class RangzenService extends Service implements
 
     /** Executes the background thread periodically. */
     private ScheduledExecutorService mScheduleTaskExecutor;
+
+    /** Cancellable scheduling of backgroundTasks. */
+    private ScheduledFuture mBackgroundExecution;
 
     /** Handle to app's PeerManager. */
     private PeerManager mPeerManager;
@@ -267,11 +271,16 @@ public class RangzenService extends Service implements
         mScheduleTaskExecutor = Executors.newScheduledThreadPool(1);
         // TODO(lerner): Decide if 1 second is an appropriate time interval for
         // the tasks.
-        mScheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
+        mBackgroundExecution = mScheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
             public void run() {
                 backgroundTasks();
             }
         }, 0, 1, TimeUnit.SECONDS);
+    }
+
+    public void onDestroy() {
+      mBackgroundExecution.cancel(true);
+      return;
     }
 
     /**
