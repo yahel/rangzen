@@ -31,19 +31,16 @@
 
 package org.denovogroup.rangzen;
 
-import android.content.pm.ActivityInfo;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Point;
-import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.TypedValue;
 import android.view.Display;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -61,6 +58,8 @@ import android.widget.TextView;
  */
 public class IntroductionFragment extends Fragment {
     private RelativeLayout currentRelativeLayout;
+    private FrameLayout currentFrameLayout;
+    private ImageView iv;
     private static final String TAG = "MainFragment";
     // Typeface zwodTypeFace;
 
@@ -68,10 +67,10 @@ public class IntroductionFragment extends Fragment {
      * These were an attempt to speed up the fragment sliding, I don't know if
      * they are necessary at all.
      */
-    BitmapDrawable first;
-    BitmapDrawable second;
-    BitmapDrawable third;
-    BitmapDrawable fourth;
+    Bitmap first;
+    Bitmap second;
+    Bitmap third;
+    Bitmap fourth;
     ImageView firstI;
     ImageView secondI;
     ImageView thirdI;
@@ -83,12 +82,6 @@ public class IntroductionFragment extends Fragment {
      * from the top of the screen.
      */
     private int marginFromTop = 50;
-
-    /**
-     * This is the amount in density pixels that the bottom message of the app
-     * will be from the bottom of the screen.
-     */
-    private int marginFromBottom = 450;
 
     /**
      * This method controls five fragment options, with different cases for
@@ -109,22 +102,24 @@ public class IntroductionFragment extends Fragment {
 
         Bundle b = getArguments();
         int whichScreen = b.getInt("whichScreen");
-        // zwodTypeFace = Typeface.createFromAsset(getActivity().getAssets(),
-                // "fonts/zwod.ttf");
         switch (whichScreen) {
         case 0:
             View view = (View) inflater.inflate(R.layout.firstintro, container,
                     false);
             currentRelativeLayout = (RelativeLayout) view
                     .findViewById(R.id.firstIntro);
+            currentFrameLayout = (FrameLayout) view.findViewById(R.id.firstFrame);
+            iv = (ImageView) view.findViewById(R.id.imageView1);
 
-            if (first == null) {
-                showFullScreenImage(R.drawable.newyorkyyyyy, 1);
-            } else {
-                firstI.setBackgroundDrawable(first);
-            }
+            showFullScreenImage(R.drawable.newyorkyyyyy, 1);
             makeRanzenTextView();
-            makeBottomTextView("Freedom to Change");
+            TextView tv = (TextView) view.findViewById(R.id.textView1);
+            tv.bringToFront();
+            Button cont = (Button) view.findViewById(R.id.contButton1);
+            cont.setText("Continue");
+            cont.setTextColor(Color.WHITE);
+            cont.bringToFront();
+            currentRelativeLayout.bringToFront();
             return view;
 
         case 1:
@@ -132,16 +127,19 @@ public class IntroductionFragment extends Fragment {
                     false);
             currentRelativeLayout = (RelativeLayout) view1
                     .findViewById(R.id.secondIntro);
-
-            if (second == null) {
-                // showFullScreenImage(R.drawable.newyorkyyyyy, 2);
-                showFullScreenImage(R.drawable.hands, 2);
-            } else {
-                secondI.setBackgroundDrawable(second);
-            }
+            currentFrameLayout = (FrameLayout) view1.findViewById(R.id.secondFrame);
+            iv = (ImageView) view1.findViewById(R.id.imageView2);
+            showFullScreenImage(R.drawable.hands, 2);
 
             makeRanzenTextView();
-            makeBottomTextView("Pass other Rangzen users and share messages");
+
+            Button cont1 = (Button) view1.findViewById(R.id.contButton2);
+            cont1.setText("Continue");
+            cont1.setTextColor(Color.WHITE);
+            cont1.bringToFront();
+            TextView tv2 = (TextView) view1.findViewById(R.id.textView2);
+            tv2.bringToFront();
+            currentRelativeLayout.bringToFront();
             return view1;
 
         case 2:
@@ -149,42 +147,27 @@ public class IntroductionFragment extends Fragment {
                     .inflate(R.layout.thirdintro, container, false);
             currentRelativeLayout = (RelativeLayout) view2
                     .findViewById(R.id.thirdIntro);
-
-            if (third == null) {
-                showFullScreenImage(R.drawable.soccer, 3);
-            } else {
-                thirdI.setBackgroundDrawable(second);
-            }
+            currentFrameLayout = (FrameLayout) view2.findViewById(R.id.thirdFrame);
+            iv = (ImageView) view2.findViewById(R.id.imageView3);
+            
+            showFullScreenImage(R.drawable.soccer, 3);
 
             makeRanzenTextView();
-            makeBottomTextView("Help us understand anonymous messaging");
+            Button cont2 = (Button) view2.findViewById(R.id.contButton3);
+            cont2.setText("Continue");
+            cont2.setTextColor(Color.WHITE);
+            cont2.bringToFront();
+
+            TextView tv3 = (TextView) view2.findViewById(R.id.textView3);
+            tv3.bringToFront();
+            currentRelativeLayout.bringToFront();
+
             return view2;
-
-        case 3:
-
-            View view3 = (View) inflater.inflate(R.layout.fourthintro,
-                    container, false);
-            currentRelativeLayout = (RelativeLayout) view3
-                    .findViewById(R.id.fourthIntro);
-            if (third == null) {
-                showFullScreenImage(R.drawable.blue, 3);
-            } else {
-                thirdI.setBackgroundDrawable(second);
-            }
-            makeRanzenTextView();
-            Button cont = (Button) view3.findViewById(R.id.contButton);
-            cont.setText("Continue");
-            cont.setTextColor(Color.WHITE);
-            // cont.setTypeface(zwodTypeFace);
-            cont.bringToFront();
-            return view3;
 
         case 5:
 
             View view5 = (View) inflater.inflate(R.layout.info, container,
                     false);
-            // fl = (FrameLayout) view5.findViewById(R.id.FrameLayout1);
-            // createinfoImage(R.drawable.map);
             return view5;
 
         case 6:
@@ -197,32 +180,6 @@ public class IntroductionFragment extends Fragment {
             return null;
         }
 
-    }
-
-    /**
-     * Makes the textView on the bottom of the introductory fragments.
-     * 
-     * @param string
-     *            The specific message that will be shown.
-     */
-    private void makeBottomTextView(String string) {
-        TextView tv = new TextView(getActivity());
-        // tv.setTypeface(zwodTypeFace);
-        tv.setText(string);
-        tv.setTextSize(20);
-        currentRelativeLayout.addView(tv);
-        tv.setTextColor(Color.WHITE);
-        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT,
-                RelativeLayout.LayoutParams.WRAP_CONTENT);
-        layoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        layoutParams.setMargins(0, (int) getPixels(marginFromBottom), 0, 0); // (L,
-                                                                             // T,
-                                                                             // ?,
-                                                                             // ?)
-        tv.setLayoutParams(layoutParams);
-        tv.setWidth(750);
-        tv.setGravity(Gravity.CENTER);
     }
 
     /**
@@ -243,26 +200,20 @@ public class IntroductionFragment extends Fragment {
 
         Bitmap bd = decodeSampledBitmapFromResource(getResources(), picture,
                 width, height);
-
-        ImageView iv = new ImageView(getActivity());
-        // BitmapDrawable bd = BitmapDrawable(picture, bd);
         BitmapDrawable ob = new BitmapDrawable(bd);
         iv.setBackgroundDrawable(ob);
-        currentRelativeLayout.addView(iv, new LinearLayout.LayoutParams(width,
-                height));
-
         if (position == 1) {
-            first = ob;
+            first = bd;
             firstI = iv;
         } else if (position == 2) {
             secondI = iv;
-            second = ob;
+            second = bd;
         } else if (position == 3) {
             thirdI = iv;
-            third = ob;
+            third = bd;
         } else if (position == 4) {
             fourthI = iv;
-            fourth = ob;
+            fourth = bd;
         }
     }
 
@@ -341,7 +292,7 @@ public class IntroductionFragment extends Fragment {
     private void makeRanzenTextView() {
         TextView tv = new TextView(getActivity());
         // Typeface myTypeface = Typeface.createFromAsset(getActivity()
-        //         .getAssets(), "fonts/zwod.ttf");
+        // .getAssets(), "fonts/zwod.ttf");
         // tv.setTypeface(myTypeface);
         tv.setText("Rangzen");
         tv.setTextColor(Color.WHITE);
@@ -363,7 +314,9 @@ public class IntroductionFragment extends Fragment {
      * textViews. Borrowed from
      * http://stackoverflow.com/questions/2406449/does-setwidthint
      * -pixels-use-dip-or-px
-     * @param dip Density-Independent length
+     * 
+     * @param dip
+     *            Density-Independent length
      */
     private float getPixels(int dip) {
         Resources r = getResources();

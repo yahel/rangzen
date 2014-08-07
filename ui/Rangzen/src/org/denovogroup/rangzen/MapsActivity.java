@@ -59,6 +59,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
@@ -162,6 +163,17 @@ public class MapsActivity extends FragmentActivity implements
     /** Helps with determining what functionality the back button should have. */
     private static boolean aboutShowing = false;
 
+    private Bitmap bitmap1;
+    private Bitmap bitmap2;
+    private Bitmap bitmap3;
+    private Bitmap bitmap4;
+    private Bitmap bitmap5;
+    private Bitmap bitmap1a;
+    private Bitmap bitmap2a;
+    private Bitmap bitmap3a;
+    private Bitmap bitmap4a;
+    private Bitmap bitmap5a;
+
     /**
      * Sets up the initial FragmentManager and if there is no savedInstanceState
      * for this app then new fragments are created for the map interface.
@@ -175,17 +187,18 @@ public class MapsActivity extends FragmentActivity implements
         setContentView(R.layout.master);
         locationClient = new LocationClient(this, this, this);
         createButtonImage(R.id.ib, R.drawable.abouticon19,
-                R.drawable.pressedinfo, false);
+                R.drawable.pressedinfo, false, 1);
         createButtonImage(R.id.button22, R.drawable.slider,
-                R.drawable.sliderpressed, false);
+                R.drawable.sliderpressed, false, 2);
         createButtonImage(R.id.refresh, R.drawable.refresh,
-                R.drawable.refreshpressed, false);
+                R.drawable.refreshpressed, false, 3);
         createButtonImage(R.id.leftArrow, R.drawable.rightarrow,
-                R.drawable.rightarrowpressed, true);
+                R.drawable.rightarrowpressed, true, 4);
         createButtonImage(R.id.rightArrow, R.drawable.rightarrow,
-                R.drawable.rightarrowpressed, false);
+                R.drawable.rightarrowpressed, false, 5);
 
         if (savedInstanceState == null) {
+
             mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
             mLocationStore = new LocationStore(this,
                     StorageBase.ENCRYPTION_NONE);
@@ -207,7 +220,7 @@ public class MapsActivity extends FragmentActivity implements
      * "master.xml".
      */
     private void createButtonImage(int buttonId, int notPressedImage,
-            int pressedImage, boolean invert) {
+            int pressedImage, boolean invert, int count) {
         ImageButton button = (ImageButton) findViewById(buttonId);
         button.bringToFront();
 
@@ -215,33 +228,48 @@ public class MapsActivity extends FragmentActivity implements
                 notPressedImage);
         Bitmap icon2 = BitmapFactory.decodeResource(getResources(),
                 pressedImage);
-        int width = (int) getPixels(85);
-        int height = (int) getPixels(85);
-
-        Bitmap resized = Bitmap.createScaledBitmap(icon, width, height, true);
-        Bitmap pressed = Bitmap.createScaledBitmap(icon2, width, height, true);
 
         if (invert) {
             Matrix matrix = new Matrix();
             matrix.postRotate(180);
-            resized = Bitmap.createBitmap(resized, 0, 0, resized.getWidth(),
-                    resized.getHeight(), matrix, true);
+            icon = Bitmap.createBitmap(icon, 0, 0, icon.getWidth(),
+                    icon.getHeight(), matrix, true);
 
             Matrix matrix2 = new Matrix();
             matrix2.postRotate(180);
-            pressed = Bitmap.createBitmap(pressed, 0, 0, pressed.getWidth(),
-                    pressed.getHeight(), matrix2, true);
+            icon2 = Bitmap.createBitmap(icon2, 0, 0, icon2.getWidth(),
+                    icon2.getHeight(), matrix2, true);
         }
 
-        BitmapDrawable res = new BitmapDrawable(resized);
-        BitmapDrawable pre = new BitmapDrawable(pressed);
-
         StateListDrawable states = new StateListDrawable();
-        states.addState(new int[] { android.R.attr.state_pressed }, pre);
-        states.addState(new int[] { android.R.attr.state_focused }, pre);
-        states.addState(new int[] {}, res);
+        states.addState(new int[] { android.R.attr.state_pressed },
+                new BitmapDrawable(icon2));
+        states.addState(new int[] { android.R.attr.state_focused },
+                new BitmapDrawable(icon2));
+        states.addState(new int[] {}, new BitmapDrawable(icon));
 
         button.setBackgroundDrawable(states);
+
+        if (count == 1) {
+            bitmap1 = icon;
+            bitmap1a = icon2;
+        }
+        if (count == 2) {
+            bitmap2 = icon;
+            bitmap2a = icon2;
+        }
+        if (count == 3) {
+            bitmap3 = icon;
+            bitmap3a = icon2;
+        }
+        if (count == 4) {
+            bitmap4 = icon;
+            bitmap4a = icon2;
+        }
+        if (count == 5) {
+            bitmap5 = icon;
+            bitmap5a = icon2;
+        }
     }
 
     /**
@@ -269,11 +297,13 @@ public class MapsActivity extends FragmentActivity implements
      *            The refresh button itself.
      */
     public void sRefresh(View v) {
-        drawPoints(-1, -1, 0);
         mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
         int size = mLocationStore.getMostRecentSequenceNumber();
-        polyLineRange.setSelectedMaxValue(size);
-        polyLineRange.setSelectedMinValue(0);
+        if (size != 0) {
+            drawPoints(-1, -1, 0);
+            polyLineRange.setNormalizedMaxValue(size);
+            polyLineRange.setNormalizedMinValue(0);
+        }
     }
 
     /**
@@ -289,8 +319,9 @@ public class MapsActivity extends FragmentActivity implements
         mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
         int size = mLocationStore.getMostRecentSequenceNumber();
         double change = (double) size * .1;
-        if (min > change) {
-            drawPoints((Integer.valueOf((int) (min - change))), polyLineRange.getSelectedMaxValue(), -1);
+        if (min > change && min - change <= 0) {
+            drawPoints((Integer.valueOf((int) (min - change))),
+                    polyLineRange.getSelectedMaxValue(), -1);
             double doubly2 = ((double) min - change) / (double) size;
             polyLineRange.setNormalizedMinValue(doubly2);
         }
@@ -310,8 +341,9 @@ public class MapsActivity extends FragmentActivity implements
         int size = mLocationStore.getMostRecentSequenceNumber();
         double change = (double) size * .1;
         Log.d(TAG, "value of change = " + String.valueOf(change));
-        if (max + change < size) {
-            drawPoints(polyLineRange.getSelectedMinValue(), (Integer.valueOf((int) (max + change))), -1);
+        if (max + change < size
+                && (Integer.valueOf((int) (max + change)) > min && min != 0)) {
+            drawPoints(min, (Integer.valueOf((int) (max + change))), -1);
             double doubly2 = ((double) max + change) / (double) size;
             polyLineRange.setNormalizedMaxValue(doubly2);
         }
@@ -371,22 +403,6 @@ public class MapsActivity extends FragmentActivity implements
     }
 
     /**
-     * Method that finds the actual amount of pixels necessary for shifts of
-     * textViews. Borrowed from
-     * http://stackoverflow.com/questions/2406449/does-setwidthint
-     * -pixels-use-dip-or-px
-     * 
-     * @param dip
-     *            Density-Independent length
-     */
-    private float getPixels(int dip) {
-        Resources r = getResources();
-        float px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dip,
-                r.getDisplayMetrics());
-        return px;
-    }
-
-    /**
      * The onClickListener of the Deny button on the transparent page. Used to
      * restart the introduction slides if they do not accept.
      * 
@@ -429,6 +445,7 @@ public class MapsActivity extends FragmentActivity implements
         editor.commit();
 
         Log.i(TAG, "Experiment state is now EXP_STATE_NOT_YET_REGISTERED.");
+        mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
         mStore.put(RangzenService.EXPERIMENT_STATE_KEY,
                 RangzenService.EXP_STATE_NOT_YET_REGISTERED);
 
@@ -465,15 +482,17 @@ public class MapsActivity extends FragmentActivity implements
      */
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
         if (aboutShowing) {
+            super.onBackPressed();
             findViewById(R.id.infoHolder).setClickable(false);
             aboutShowing = false;
         } else {
+            recycleBitmaps();
             Intent setIntent = new Intent(Intent.ACTION_MAIN);
             setIntent.addCategory(Intent.CATEGORY_HOME);
-            setIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            hasCentered = false;
             startActivity(setIntent);
+            finish();
         }
     }
 
@@ -526,6 +545,8 @@ public class MapsActivity extends FragmentActivity implements
 
                     Log.i(TAG,
                             "Experiment state is now EXP_STATE_NOT_YET_REGISTERED.");
+                    mStore = new StorageBase(getApplicationContext(),
+                            StorageBase.ENCRYPTION_DEFAULT);
                     mStore.put(RangzenService.EXPERIMENT_STATE_KEY,
                             RangzenService.EXP_STATE_OPTED_OUT);
                     mStore.put(RangzenService.REGISTRATION_FAILURE_REASON_KEY, null);
@@ -573,8 +594,38 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     protected void onStop() {
         // Disconnecting the client invalidates it.
+        Log.d(TAG, "onStop was called");
         locationClient.disconnect();
+        recycleBitmaps();
         super.onStop();
+    }
+
+    /** Kill all the bitmaps. */
+    public void recycleBitmaps() {
+        if (bitmap1 != null && bitmap3 != null && bitmap5 != null
+                && bitmap2a != null) {
+            bitmap1.recycle();
+            bitmap1a.recycle();
+            bitmap2.recycle();
+            bitmap2a.recycle();
+            bitmap3.recycle();
+            bitmap3a.recycle();
+            bitmap4.recycle();
+            bitmap4a.recycle();
+            bitmap5.recycle();
+            bitmap5a.recycle();
+
+            bitmap1 = null;
+            bitmap1a = null;
+            bitmap2 = null;
+            bitmap2a = null;
+            bitmap3 = null;
+            bitmap3a = null;
+            bitmap4 = null;
+            bitmap4a = null;
+            bitmap5 = null;
+            bitmap5a = null;
+        }
     }
 
     /**
@@ -687,6 +738,7 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     protected void onPause() {
         map.setMyLocationEnabled(false);
+        recycleBitmaps();
         super.onPause();
     }
 
@@ -962,7 +1014,7 @@ public class MapsActivity extends FragmentActivity implements
                 }
             }
             Toast.makeText(getApplicationContext(),
-                    "number of points being shown = " + size,
+                    "Number of points being shown = " + size,
                     Toast.LENGTH_SHORT).show();
             // TODO (Jesus) Finish the Async race... condition.
             numAsync -= 1;

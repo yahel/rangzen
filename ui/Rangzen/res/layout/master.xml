@@ -27,8 +27,8 @@
 
         <ImageButton
             android:id="@+id/button22"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:onClick="sSliderButton" />
     </RelativeLayout>
 
@@ -43,8 +43,8 @@
 
         <ImageButton
             android:id="@+id/ib"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="@android:color/transparent"
             android:clickable="true"
             android:onClick="s" />
@@ -61,8 +61,8 @@
 
         <ImageButton
             android:id="@+id/refresh"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="@android:color/transparent"
             android:clickable="true"
             android:onClick="sRefresh" />
@@ -79,8 +79,8 @@
 
         <ImageButton
             android:id="@+id/leftArrow"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_gravity="left"
             android:background="@android:color/transparent"
             android:clickable="true"
@@ -89,8 +89,8 @@
 
         <ImageButton
             android:id="@+id/rightArrow"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_gravity="right"
             android:background="@android:color/transparent"
             android:clickable="true"

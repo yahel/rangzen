@@ -35,6 +35,9 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.ViewPager;
+import android.util.Log;
+import android.view.View;
 
 import com.viewpagerindicator.IconPagerAdapter;
 
@@ -45,12 +48,19 @@ import com.viewpagerindicator.IconPagerAdapter;
  */
 class IntroductionFragmentAdapter extends FragmentPagerAdapter implements
         IconPagerAdapter {
-
+    
     /** Number of slides in the introduction. */
-    private int mCount = 4;
+    private int mCount = 3;
 
     public IntroductionFragmentAdapter(FragmentManager fm) {
         super(fm);
+    }
+    
+    @Override
+    public void destroyItem(View collection, int position, Object o) {
+        View view = (View)o;
+        ((ViewPager) collection).removeView(view);
+        view = null;
     }
 
     /**
@@ -67,7 +77,6 @@ class IntroductionFragmentAdapter extends FragmentPagerAdapter implements
         Fragment fragment = new IntroductionFragment();
         fragment.setArguments(b);
         return fragment;
-        // return TestFragment.newInstance(CONTENT[position % CONTENT.length]);
     }
 
     @Override

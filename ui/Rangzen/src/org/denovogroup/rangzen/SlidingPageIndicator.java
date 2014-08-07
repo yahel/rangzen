@@ -36,12 +36,17 @@ import org.denovogroup.rangzen.StorageBase;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
+import android.view.ActionMode;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 
 import com.viewpagerindicator.LinePageIndicator;
 import com.viewpagerindicator.PageIndicator;
@@ -109,7 +114,7 @@ public class SlidingPageIndicator extends FragmentActivity {
         mIndicator = indicator;
         indicator.setViewPager(mPager);
         mPager.setPageTransformer(true, new DepthPageTransformer());
-        mPager.setOffscreenPageLimit(3);
+        mPager.setOffscreenPageLimit(2);
 
         final float density = getResources().getDisplayMetrics().density;
         indicator.setSelectedColor(0xFFFFFFFF);
@@ -128,27 +133,28 @@ public class SlidingPageIndicator extends FragmentActivity {
      *            The Linear Layout that holds the Facebook LoginButton
      */
     public void linLayoutButton(View v) {
-        // Toast toast = Toast.makeText(this, "No internet connection detected",
-        // Toast.LENGTH_SHORT);
-        // toast.setGravity(Gravity.CENTER, 0, 0);
-        // toast.show();
+        ImageView iv1 = (ImageView) findViewById(R.id.imageView1);
+        ImageView iv2 = (ImageView) findViewById(R.id.imageView2);
+        ImageView iv3 = (ImageView) findViewById(R.id.imageView3);
+        BitmapDrawable bd1 = (BitmapDrawable) iv1.getBackground();
+        BitmapDrawable bd2 = (BitmapDrawable) iv2.getBackground();
+        BitmapDrawable bd3 = (BitmapDrawable) iv3.getBackground();
+        Bitmap b1 = bd1.getBitmap();
+        Bitmap b2 = bd2.getBitmap();
+        Bitmap b3 = bd3.getBitmap();
+        b1.recycle();
+        b2.recycle();
+        b3.recycle();
+        Log.d("MapsActivity", "is recycled = " + b1.isRecycled());
+        Log.d("MapsActivity", "is recycled = " + b2.isRecycled());
+        Log.d("MapsActivity", "is recycled = " + b3.isRecycled());
+        b1 = null;
+        b2 = null;
+        b3 = null;
         Intent intent = new Intent();
         intent.setClass(this, AboutPage.class);
         startActivity(intent);
     }
-
-    // /**
-    // * This method checks to see if the device has internet access.
-    // */
-    // public boolean isOnline() {
-    // ConnectivityManager cm = (ConnectivityManager)
-    // getSystemService(Context.CONNECTIVITY_SERVICE);
-    // NetworkInfo netInfo = cm.getActiveNetworkInfo();
-    // if (netInfo != null && netInfo.isConnectedOrConnecting()) {
-    // return true;
-    // }
-    // return false;
-    // }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
