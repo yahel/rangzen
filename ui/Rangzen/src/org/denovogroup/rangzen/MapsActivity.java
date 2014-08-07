@@ -32,8 +32,6 @@
 package org.denovogroup.rangzen;
 
 import java.io.IOException;
-import java.io.OptionalDataException;
-import java.io.StreamCorruptedException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,6 +46,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.location.Location;
@@ -64,7 +63,6 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -136,11 +134,6 @@ public class MapsActivity extends FragmentActivity implements
 
     /** Used to determine if the slider is on or off. */
     private static boolean isSliderOn = false;
-    /**
-     * Stores a references to the about icon in order to bring it to the front
-     * of the FrameLayout.
-     */
-    private ImageButton about;
 
     /** RangeBar slider that will determine how many points will be shown. */
     private RangeSeekBar polyLineRange;
@@ -166,6 +159,9 @@ public class MapsActivity extends FragmentActivity implements
     /** List of exchanges for this current map. */
     private ArrayList<Marker> markers = new ArrayList<Marker>();
 
+    /** Helps with determining what functionality the back button should have. */
+    private static boolean aboutShowing = false;
+
     /**
      * Sets up the initial FragmentManager and if there is no savedInstanceState
      * for this app then new fragments are created for the map interface.
@@ -178,8 +174,16 @@ public class MapsActivity extends FragmentActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.master);
         locationClient = new LocationClient(this, this, this);
-        createAboutIcon();
-        createSliderIcon();
+        createButtonImage(R.id.ib, R.drawable.abouticon19,
+                R.drawable.pressedinfo, false);
+        createButtonImage(R.id.button22, R.drawable.slider,
+                R.drawable.sliderpressed, false);
+        createButtonImage(R.id.refresh, R.drawable.refresh,
+                R.drawable.refreshpressed, false);
+        createButtonImage(R.id.leftArrow, R.drawable.rightarrow,
+                R.drawable.rightarrowpressed, true);
+        createButtonImage(R.id.rightArrow, R.drawable.rightarrow,
+                R.drawable.rightarrowpressed, false);
 
         if (savedInstanceState == null) {
             mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
@@ -197,20 +201,37 @@ public class MapsActivity extends FragmentActivity implements
         createSlider();
     }
 
-    /** A mimic method of create About icon, this creates the slider icon. */
-    private void createSliderIcon() {
-        ImageButton button = (ImageButton) findViewById(R.id.button22);
+    /**
+     * Creates a clickable about icon on the google maps interface. This icon
+     * needs to be scaled down and the icon itself is created in the xml file,
+     * "master.xml".
+     */
+    private void createButtonImage(int buttonId, int notPressedImage,
+            int pressedImage, boolean invert) {
+        ImageButton button = (ImageButton) findViewById(buttonId);
         button.bringToFront();
 
         Bitmap icon = BitmapFactory.decodeResource(getResources(),
-                R.drawable.slider);
+                notPressedImage);
         Bitmap icon2 = BitmapFactory.decodeResource(getResources(),
-                R.drawable.sliderpressed);
-        int width = (int) getPixels(75);
-        int height = (int) getPixels(75);
+                pressedImage);
+        int width = (int) getPixels(85);
+        int height = (int) getPixels(85);
 
         Bitmap resized = Bitmap.createScaledBitmap(icon, width, height, true);
         Bitmap pressed = Bitmap.createScaledBitmap(icon2, width, height, true);
+
+        if (invert) {
+            Matrix matrix = new Matrix();
+            matrix.postRotate(180);
+            resized = Bitmap.createBitmap(resized, 0, 0, resized.getWidth(),
+                    resized.getHeight(), matrix, true);
+
+            Matrix matrix2 = new Matrix();
+            matrix2.postRotate(180);
+            pressed = Bitmap.createBitmap(pressed, 0, 0, pressed.getWidth(),
+                    pressed.getHeight(), matrix2, true);
+        }
 
         BitmapDrawable res = new BitmapDrawable(resized);
         BitmapDrawable pre = new BitmapDrawable(pressed);
@@ -221,7 +242,6 @@ public class MapsActivity extends FragmentActivity implements
         states.addState(new int[] {}, res);
 
         button.setBackgroundDrawable(states);
-        // button.setBackgroundDrawable(res);
     }
 
     /**
@@ -234,11 +254,66 @@ public class MapsActivity extends FragmentActivity implements
     public void sSliderButton(View v) {
         LinearLayout slider = (LinearLayout) findViewById(R.id.slider);
         if (!isSliderOn || slider.getVisibility() == View.INVISIBLE) {
-            showSlider();
+            slider.setVisibility(View.VISIBLE);
             isSliderOn = true;
         } else {
             slider.setVisibility(View.INVISIBLE);
             isSliderOn = false;
+        }
+    }
+
+    /**
+     * Redraw all of the points that the phone contains.
+     * 
+     * @param v
+     *            The refresh button itself.
+     */
+    public void sRefresh(View v) {
+        drawPoints(-1, -1, 0);
+        mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
+        int size = mLocationStore.getMostRecentSequenceNumber();
+        polyLineRange.setSelectedMaxValue(size);
+        polyLineRange.setSelectedMinValue(0);
+    }
+
+    /**
+     * The left arrow that will show with the slider to show the next x many
+     * points in the past not yet being shown.
+     * 
+     * @param v
+     *            The left arrow button.
+     */
+    public void sLeftArrow(View v) {
+        int min = polyLineRange.getSelectedMinValue();
+        int max = polyLineRange.getSelectedMaxValue();
+        mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
+        int size = mLocationStore.getMostRecentSequenceNumber();
+        double change = (double) size * .1;
+        if (min > change) {
+            drawPoints((Integer.valueOf((int) (min - change))), polyLineRange.getSelectedMaxValue(), -1);
+            double doubly2 = ((double) min - change) / (double) size;
+            polyLineRange.setNormalizedMinValue(doubly2);
+        }
+    }
+
+    /**
+     * The right arrow that will show with the slider to show the next x many
+     * points in the future not yet being shown.
+     * 
+     * @param v
+     *            The right arrow button.
+     */
+    public void sRightArrow(View v) {
+        int max = polyLineRange.getSelectedMaxValue();
+        int min = polyLineRange.getSelectedMinValue();
+        mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
+        int size = mLocationStore.getMostRecentSequenceNumber();
+        double change = (double) size * .1;
+        Log.d(TAG, "value of change = " + String.valueOf(change));
+        if (max + change < size) {
+            drawPoints(polyLineRange.getSelectedMinValue(), (Integer.valueOf((int) (max + change))), -1);
+            double doubly2 = ((double) max + change) / (double) size;
+            polyLineRange.setNormalizedMaxValue(doubly2);
         }
     }
 
@@ -259,19 +334,13 @@ public class MapsActivity extends FragmentActivity implements
                             Integer minValue, Integer maxValue) {
                         if (maxValue != -1 && maxValue != minValue
                                 && minValue < maxValue && minValue != -1) {
-                            drawPoints(minValue, maxValue);
+                            drawPoints(minValue, maxValue, 0);
                         }
                     }
                 });
 
         LinearLayout slider = (LinearLayout) findViewById(R.id.slider);
         slider.addView(polyLineRange);
-    }
-
-    /** This will create the slider in the linear layout in master. */
-    private void showSlider() {
-        LinearLayout slider = (LinearLayout) findViewById(R.id.slider);
-        slider.setVisibility(View.VISIBLE);
     }
 
     /**
@@ -299,35 +368,6 @@ public class MapsActivity extends FragmentActivity implements
             map.setMyLocationEnabled(true);
             map.setBuildingsEnabled(true);
         }
-    }
-
-    /**
-     * Creates the clickable about icon on the google maps interface. This icon
-     * needs to be scaled down and the icon itself is created in the xml file,
-     * "master.xml"
-     */
-    private void createAboutIcon() {
-        about = (ImageButton) findViewById(R.id.ib);
-        Bitmap icon = BitmapFactory.decodeResource(getResources(),
-                R.drawable.abouticon19);
-        Bitmap icon2 = BitmapFactory.decodeResource(getResources(),
-                R.drawable.pressedinfo);
-        int width = (int) getPixels(75);
-        int height = (int) getPixels(75);
-
-        Bitmap resized = Bitmap.createScaledBitmap(icon, width, height, true);
-        Bitmap pressed = Bitmap.createScaledBitmap(icon2, width, height, true);
-
-        BitmapDrawable res = new BitmapDrawable(resized);
-        BitmapDrawable pre = new BitmapDrawable(pressed);
-
-        StateListDrawable states = new StateListDrawable();
-        states.addState(new int[] { android.R.attr.state_pressed }, pre);
-        states.addState(new int[] { android.R.attr.state_focused }, pre);
-        states.addState(new int[] {}, res);
-
-        about.setBackgroundDrawable(states);
-        about.bringToFront();
     }
 
     /**
@@ -415,7 +455,7 @@ public class MapsActivity extends FragmentActivity implements
         FragmentTransaction ft = fragmentManager.beginTransaction();
         ft.add(R.id.infoHolder, info);
         ft.addToBackStack("info");
-        // findViewById(R.id.button22).setVisibility(View.INVISIBLE);
+        aboutShowing = true;
         ft.commit();
     }
 
@@ -426,7 +466,15 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        findViewById(R.id.infoHolder).setClickable(false);
+        if (aboutShowing) {
+            findViewById(R.id.infoHolder).setClickable(false);
+            aboutShowing = false;
+        } else {
+            Intent setIntent = new Intent(Intent.ACTION_MAIN);
+            setIntent.addCategory(Intent.CATEGORY_HOME);
+            setIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(setIntent);
+        }
     }
 
     /**
@@ -587,7 +635,7 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onConnected(Bundle dataBundle) {
         if (!hasCentered) {
-            drawPoints(-1, -1);
+            drawPoints(-1, -1, 0);
             centerMap();
         }
     }
@@ -696,11 +744,11 @@ public class MapsActivity extends FragmentActivity implements
      * @param minValue
      *            The min value of the points to include on the map.
      */
-    private void drawPoints(Integer minValue, Integer maxValue) {
+    private void drawPoints(Integer minValue, Integer maxValue, Integer isArrow) {
         numAsync++;
         ProgressBar pb = (ProgressBar) findViewById(R.id.progress);
         pb.setVisibility(View.VISIBLE);
-        new DrawPointsThread().execute(minValue, maxValue);
+        new DrawPointsThread().execute(minValue, maxValue, isArrow);
     }
 
     /**
@@ -808,6 +856,7 @@ public class MapsActivity extends FragmentActivity implements
         private int size = -1;
         private long lowerTimeBound;
         private long upperTimeBound;
+        private boolean isArrow = false;
 
         @Override
         protected Integer doInBackground(Integer... integers) {
@@ -815,7 +864,11 @@ public class MapsActivity extends FragmentActivity implements
             polyline = new PolylineOptions();
             setUpMapIfNeeded();
             List<SerializableLocation> locations;
+            LatLng prevLL = null;
             try {
+                if (integers[2] == -1) {
+                    isArrow = true;
+                }
                 if (integers[0] == -1 && integers[1] == -1) {
                     locations = mLocationStore.getAllLocations();
                 } else {
@@ -823,14 +876,13 @@ public class MapsActivity extends FragmentActivity implements
                             integers[1]);
                 }
                 size = locations.size();
-                LatLng prevLL = null;
                 if (map != null) {
                     for (int i = 0; i < size; i++) {
                         SerializableLocation current = locations.get(i);
                         if (i == 0) {
                             lowerTimeBound = current.time;
                         }
-                        if (i == size) {
+                        if (i == size - 1) {
                             upperTimeBound = current.time;
                         }
                         LatLng currentLL = new LatLng(current.latitude,
@@ -860,6 +912,7 @@ public class MapsActivity extends FragmentActivity implements
                 ExchangeStore exchangeStore = new ExchangeStore(
                         getApplicationContext(), StorageBase.ENCRYPTION_DEFAULT);
                 ownExchanges = exchangeStore.getAllExchanges();
+                Log.d(TAG, "size " + ownExchanges.size());
 
             } catch (ClassNotFoundException | IOException e) {
                 Log.e(TAG, "Not able to make polyLine on Async!");
@@ -873,12 +926,13 @@ public class MapsActivity extends FragmentActivity implements
             super.onPostExecute(result);
             if (numAsync == 1) {
                 polylines = new ArrayList<Polyline>();
+                ownMarkers = new ArrayList<Marker>();
                 for (PolylineOptions poly : options) {
                     polylines.add(map.addPolyline(poly));
                 }
                 for (Exchange exchange : ownExchanges) {
                     if (exchange.start_time > lowerTimeBound
-                            && exchange.start_time < upperTimeBound) {
+                            && exchange.end_time < upperTimeBound) {
                         MarkerOptions marker = new MarkerOptions();
                         LatLng exStart = new LatLng(
                                 exchange.start_location.latitude,
@@ -887,19 +941,28 @@ public class MapsActivity extends FragmentActivity implements
                         ownMarkers.add(map.addMarker(marker));
                     }
                 }
-                for (Polyline poly : array) {
-                    poly.remove();
+                if (!isArrow) {
+                    for (Polyline poly : array) {
+                        poly.remove();
+                    }
+                    for (Marker marker : markers) {
+                        marker.remove();
+                    }
+                    array = polylines;
+                    markers = ownMarkers;
+                } else {
+                    for (Polyline polyline : polylines) {
+                        array.add(polyline);
+                    }
+                    for (Marker marker : ownMarkers) {
+                        markers.add(marker);
+                    }
                 }
-                for (Marker marker : markers) {
-                    marker.remove();
-                }
-                array = polylines;
-                markers = ownMarkers;
             }
             Toast.makeText(getApplicationContext(),
                     "number of points being shown = " + size,
                     Toast.LENGTH_SHORT).show();
-            //TODO (Jesus) Finish the Async race... condition.
+            // TODO (Jesus) Finish the Async race... condition.
             numAsync -= 1;
             ProgressBar pb = (ProgressBar) findViewById(R.id.progress);
             pb.setVisibility(View.INVISIBLE);

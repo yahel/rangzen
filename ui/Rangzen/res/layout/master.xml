@@ -50,13 +50,51 @@
             android:onClick="s" />
     </RelativeLayout>
 
+    <RelativeLayout
+        android:id="@+id/refreshHolder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|right"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="60dp"
+        android:orientation="vertical" >
+
+        <ImageButton
+            android:id="@+id/refresh"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:clickable="true"
+            android:onClick="sRefresh" />
+    </RelativeLayout>
+
     <LinearLayout
         android:id="@+id/slider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:orientation="horizontal"
-        android:paddingBottom="115dp" >
+        android:paddingBottom="115dp"
+        android:visibility="invisible" >
+
+        <ImageButton
+            android:id="@+id/leftArrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:background="@android:color/transparent"
+            android:clickable="true"
+            android:minWidth="30dp"
+            android:onClick="sLeftArrow" />
+
+        <ImageButton
+            android:id="@+id/rightArrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:background="@android:color/transparent"
+            android:clickable="true"
+            android:onClick="sRightArrow" />
     </LinearLayout>
 
     <ProgressBar
