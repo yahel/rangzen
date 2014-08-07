@@ -596,7 +596,7 @@ public class MapsActivity extends FragmentActivity implements
         // Disconnecting the client invalidates it.
         Log.d(TAG, "onStop was called");
         locationClient.disconnect();
-        recycleBitmaps();
+        //recycleBitmaps();
         super.onStop();
     }
 
@@ -738,7 +738,6 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     protected void onPause() {
         map.setMyLocationEnabled(false);
-        recycleBitmaps();
         super.onPause();
     }
 
