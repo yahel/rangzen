@@ -36,7 +36,7 @@
             android:gravity="center"
             android:paddingLeft="20dp"
             android:paddingRight="20dp"
-            android:text="Pass other Rangzen users and share messages"
+            android:text="Pass Other Rangzen Users and Share Messages"
             android:textColor="@android:color/white"
             android:textSize="20sp" />
     </RelativeLayout>
