@@ -1,0 +1,6 @@
+android_resource(
+  name = 'showcaseRes',
+  res = 'res',
+  package = 'com.github.amlcurran.showcaseview',
+  visibility = [ 'PUBLIC' ],
+)

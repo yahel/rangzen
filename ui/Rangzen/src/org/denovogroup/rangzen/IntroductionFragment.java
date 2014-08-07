@@ -157,7 +157,7 @@ public class IntroductionFragment extends Fragment {
             }
 
             makeRanzenTextView();
-            makeBottomTextView("Be completely anonymous");
+            makeBottomTextView("Help us understand anonymous messaging");
             return view2;
 
         case 3:

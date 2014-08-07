@@ -541,12 +541,12 @@ public class RangeSeekBar extends ImageView {
      *            The Number value to normalize.
      * @return The normalized double.
      */
-    private int valueToNormalized(Integer value) {
+    public double valueToNormalized(Integer value) {
         if (0 == absoluteMaxValue - absoluteMinValue) {
             // prevent division by zero, simply return 0.
             return 0;
         }
-        return (int) (value.doubleValue() - absoluteMinValue)
+        return (value - absoluteMinValue)
                 / (absoluteMaxValue - absoluteMinValue);
     }
 

@@ -33,7 +33,7 @@
         android:layout_marginTop="40dp"
         android:gravity="center"
         android:textColor="@android:color/white"
-        android:text="Rangzen is an application created by De Novo Group. This is a beta test. We are asking permission to access:"
+        android:text="Rangzen is an application created by the De Novo Group, University of Washington and UC Berkeley. This is a beta test. We are asking permission to access:"
         android:textSize="17sp" />
 
     <TextView
