@@ -31,6 +31,8 @@
 
 package org.denovogroup.rangzen;
 
+import org.denovogroup.rangzen.IntroductionFragment.FragmentType;
+
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -71,9 +73,17 @@ class IntroductionFragmentAdapter extends FragmentPagerAdapter implements
      */
     @Override
     public Fragment getItem(int position) {
+        Enum type = null;
+        if (position == 0) {
+            type = FragmentType.FIRSTINTRO;
+        } else if (position == 1) {
+            type = FragmentType.SECONDINTRO;
+        } else {
+            type = FragmentType.THIRDINTRO;
+        }
         position = position % mCount;
         Bundle b = new Bundle();
-        b.putInt("whichScreen", position);
+        b.putSerializable("whichScreen", type);
         Fragment fragment = new IntroductionFragment();
         fragment.setArguments(b);
         return fragment;

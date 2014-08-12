@@ -34,4 +34,10 @@
         android:layout_gravity="bottom"
         android:layout_marginBottom="95dp" />
 
+    <LinearLayout
+        android:orientation="horizontal"
+        android:id="@+id/firstAbout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
 </FrameLayout>

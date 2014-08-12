@@ -31,6 +31,7 @@
 
 package org.denovogroup.rangzen;
 
+import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -63,20 +64,9 @@ public class IntroductionFragment extends Fragment {
     private static final String TAG = "MainFragment";
     // Typeface zwodTypeFace;
 
-    /**
-     * These were an attempt to speed up the fragment sliding, I don't know if
-     * they are necessary at all.
-     */
-    Bitmap first;
-    Bitmap second;
-    Bitmap third;
-    Bitmap fourth;
-    ImageView firstI;
-    ImageView secondI;
-    ImageView thirdI;
-    ImageView fourthI;
-    FrameLayout fl;
-
+    enum FragmentType {
+        FIRSTINTRO, SECONDINTRO, THIRDINTRO, FIRSTABOUT, SECONDABOUT, TRANSPARENT
+    }
     /**
      * This is the amount in density pixels that the title of the app will be
      * from the top of the screen.
@@ -101,9 +91,9 @@ public class IntroductionFragment extends Fragment {
             Bundle savedInstanceState) {
 
         Bundle b = getArguments();
-        int whichScreen = b.getInt("whichScreen");
+        FragmentType whichScreen = (FragmentType) b.getSerializable("whichScreen");
         switch (whichScreen) {
-        case 0:
+        case FIRSTINTRO:
             View view = (View) inflater.inflate(R.layout.firstintro, container,
                     false);
             currentRelativeLayout = (RelativeLayout) view
@@ -111,7 +101,7 @@ public class IntroductionFragment extends Fragment {
             currentFrameLayout = (FrameLayout) view.findViewById(R.id.firstFrame);
             iv = (ImageView) view.findViewById(R.id.imageView1);
 
-            showFullScreenImage(R.drawable.newyorkyyyyy, 1);
+            showFullScreenImage(R.drawable.newyorkyyyyy);
             makeRanzenTextView();
             TextView tv = (TextView) view.findViewById(R.id.textView1);
             tv.bringToFront();
@@ -122,14 +112,14 @@ public class IntroductionFragment extends Fragment {
             currentRelativeLayout.bringToFront();
             return view;
 
-        case 1:
+        case SECONDINTRO:
             View view1 = inflater.inflate(R.layout.secondintro, container,
                     false);
             currentRelativeLayout = (RelativeLayout) view1
                     .findViewById(R.id.secondIntro);
             currentFrameLayout = (FrameLayout) view1.findViewById(R.id.secondFrame);
             iv = (ImageView) view1.findViewById(R.id.imageView2);
-            showFullScreenImage(R.drawable.hands, 2);
+            showFullScreenImage(R.drawable.hands);
 
             makeRanzenTextView();
 
@@ -142,7 +132,7 @@ public class IntroductionFragment extends Fragment {
             currentRelativeLayout.bringToFront();
             return view1;
 
-        case 2:
+        case THIRDINTRO:
             View view2 = inflater
                     .inflate(R.layout.thirdintro, container, false);
             currentRelativeLayout = (RelativeLayout) view2
@@ -150,7 +140,7 @@ public class IntroductionFragment extends Fragment {
             currentFrameLayout = (FrameLayout) view2.findViewById(R.id.thirdFrame);
             iv = (ImageView) view2.findViewById(R.id.imageView3);
             
-            showFullScreenImage(R.drawable.soccer, 3);
+            showFullScreenImage(R.drawable.soccer);
 
             makeRanzenTextView();
             Button cont2 = (Button) view2.findViewById(R.id.contButton3);
@@ -163,14 +153,29 @@ public class IntroductionFragment extends Fragment {
             currentRelativeLayout.bringToFront();
 
             return view2;
+            
+        case FIRSTABOUT:
+            View view3 = inflater.inflate(R.layout.modifiedabout, container, false);
+            Button button = (Button) view3.findViewById(R.id.continueBeforeMaps);
+            button.setText("Continue");
+            button.setOnClickListener(new View.OnClickListener() { 
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent();
+                    intent.setClass(v.getContext(), MapsActivity.class);
+                    startActivity(intent);
+                    getActivity().finish();
+                }
+            });
+            return view3;
 
-        case 5:
+        case SECONDABOUT:
 
             View view5 = (View) inflater.inflate(R.layout.info, container,
                     false);
             return view5;
 
-        case 6:
+        case TRANSPARENT:
 
             View view6 = (View) inflater.inflate(R.layout.permissions,
                     container, false);
@@ -191,7 +196,7 @@ public class IntroductionFragment extends Fragment {
      * @param position
      *            Which slide is currently asking to display the image.
      */
-    private void showFullScreenImage(int picture, int position) {
+    private void showFullScreenImage(int picture) {
         Display display = getActivity().getWindowManager().getDefaultDisplay();
         Point size = new Point();
         display.getSize(size);
@@ -202,19 +207,6 @@ public class IntroductionFragment extends Fragment {
                 width, height);
         BitmapDrawable ob = new BitmapDrawable(bd);
         iv.setBackgroundDrawable(ob);
-        if (position == 1) {
-            first = bd;
-            firstI = iv;
-        } else if (position == 2) {
-            secondI = iv;
-            second = bd;
-        } else if (position == 3) {
-            thirdI = iv;
-            third = bd;
-        } else if (position == 4) {
-            fourthI = iv;
-            fourth = bd;
-        }
     }
 
     /**
