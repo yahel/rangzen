@@ -944,11 +944,13 @@ public class MapsActivity extends FragmentActivity implements
         private long lowerTimeBound;
         private long upperTimeBound;
         private boolean isArrow = false;
+        private LocationStore mLocationStore = new LocationStore(getApplicationContext(), StorageBase.ENCRYPTION_DEFAULT);
 
         @Override
         protected Integer doInBackground(Integer... integers) {
 
             polyline = new PolylineOptions();
+            
             setUpMapIfNeeded();
             List<SerializableLocation> locations;
             LatLng prevLL = null;
