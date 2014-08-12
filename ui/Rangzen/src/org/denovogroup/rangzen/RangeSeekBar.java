@@ -1,5 +1,7 @@
 package org.denovogroup.rangzen;
 
+import java.math.BigDecimal;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -30,7 +32,7 @@ import android.widget.ImageView;
  *            The Number type of the range values. One of Long, Double, Integer,
  *            Float, Short, Byte or BigDecimal.
  */
-public class RangeSeekBar extends ImageView {
+public class RangeSeekBar<T extends Number> extends ImageView {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Bitmap thumbImage = BitmapFactory.decodeResource(
             getResources(), R.drawable.seek_thumb_normal);
@@ -41,14 +43,14 @@ public class RangeSeekBar extends ImageView {
     private final float thumbHalfHeight = 0.5f * thumbImage.getHeight();
     private final float lineHeight = 0.3f * thumbHalfHeight;
     private final float padding = thumbHalfWidth;
-    private final Integer absoluteMinValue, absoluteMaxValue;
-    // private final NumberType numberType;
-    // private final double absoluteMinValuePrim, absoluteMaxValuePrim;
+    private final T absoluteMinValue, absoluteMaxValue;
+    private final NumberType numberType;
+    private final double absoluteMinValuePrim, absoluteMaxValuePrim;
     private double normalizedMinValue = 0d;
     private double normalizedMaxValue = 1d;
     private Thumb pressedThumb = null;
     private boolean notifyWhileDragging = false;
-    private OnRangeSeekBarChangeListener listener;
+    private OnRangeSeekBarChangeListener<T> listener;
 
     /**
      * Default color of a {@link RangeSeekBar}, #FF33B5E5. This is also known as
@@ -91,12 +93,14 @@ public class RangeSeekBar extends ImageView {
      *             Will be thrown if min/max value type is not one of Long,
      *             Double, Integer, Float, Short, Byte or BigDecimal.
      */
-    public RangeSeekBar(Integer absoluteMinValue, Integer absoluteMaxValue,
-            Context context) throws IllegalArgumentException {
+    public RangeSeekBar(T absoluteMinValue, T absoluteMaxValue, Context context)
+            throws IllegalArgumentException {
         super(context);
         this.absoluteMinValue = absoluteMinValue;
         this.absoluteMaxValue = absoluteMaxValue;
-        // numberType = NumberType.fromNumber(absoluteMinValue);
+        absoluteMinValuePrim = absoluteMinValue.doubleValue();
+        absoluteMaxValuePrim = absoluteMaxValue.doubleValue();
+        numberType = NumberType.fromNumber(absoluteMinValue);
 
         // make RangeSeekBar focusable. This solves focus handling issues in
         // case EditText widgets are being used along with the RangeSeekBar
@@ -131,7 +135,7 @@ public class RangeSeekBar extends ImageView {
      * 
      * @return The absolute minimum value of the range.
      */
-    public Integer getAbsoluteMinValue() {
+    public T getAbsoluteMinValue() {
         return absoluteMinValue;
     }
 
@@ -141,7 +145,7 @@ public class RangeSeekBar extends ImageView {
      * 
      * @return The absolute maximum value of the range.
      */
-    public Integer getAbsoluteMaxValue() {
+    public T getAbsoluteMaxValue() {
         return absoluteMaxValue;
     }
 
@@ -150,7 +154,7 @@ public class RangeSeekBar extends ImageView {
      * 
      * @return The currently selected min value.
      */
-    public Integer getSelectedMinValue() {
+    public T getSelectedMinValue() {
         return normalizedToValue(normalizedMinValue);
     }
 
@@ -162,11 +166,11 @@ public class RangeSeekBar extends ImageView {
      *            The Number value to set the minimum value to. Will be clamped
      *            to given absolute minimum/maximum range.
      */
-    public void setSelectedMinValue(Integer value) {
+    public void setSelectedMinValue(T value) {
         // in case absoluteMinValue == absoluteMaxValue, avoid division by zero
         // when normalizing.
-        if (0 == (absoluteMaxValue - absoluteMinValue)) {
-            setNormalizedMinValue(0);
+        if (0 == (absoluteMaxValuePrim - absoluteMinValuePrim)) {
+            setNormalizedMinValue(0d);
         } else {
             setNormalizedMinValue(valueToNormalized(value));
         }
@@ -177,7 +181,7 @@ public class RangeSeekBar extends ImageView {
      * 
      * @return The currently selected max value.
      */
-    public Integer getSelectedMaxValue() {
+    public T getSelectedMaxValue() {
         return normalizedToValue(normalizedMaxValue);
     }
 
@@ -189,11 +193,11 @@ public class RangeSeekBar extends ImageView {
      *            The Number value to set the maximum value to. Will be clamped
      *            to given absolute minimum/maximum range.
      */
-    public void setSelectedMaxValue(Integer value) {
+    public void setSelectedMaxValue(T value) {
         // in case absoluteMinValue == absoluteMaxValue, avoid division by zero
         // when normalizing.
-        if (0 == (absoluteMaxValue - absoluteMinValue)) {
-            setNormalizedMaxValue(1);
+        if (0 == (absoluteMaxValuePrim - absoluteMinValuePrim)) {
+            setNormalizedMaxValue(1d);
         } else {
             setNormalizedMaxValue(valueToNormalized(value));
         }
@@ -203,12 +207,12 @@ public class RangeSeekBar extends ImageView {
      * Registers given listener callback to notify about changed selected
      * values.
      * 
-     * @param onRangeSeekBarChangeListener
+     * @param listener
      *            The listener to notify about changed selected values.
      */
     public void setOnRangeSeekBarChangeListener(
-            OnRangeSeekBarChangeListener onRangeSeekBarChangeListener) {
-        this.listener = onRangeSeekBarChangeListener;
+            OnRangeSeekBarChangeListener<T> listener) {
+        this.listener = listener;
     }
 
     /**
@@ -529,9 +533,9 @@ public class RangeSeekBar extends ImageView {
      * @return
      */
     @SuppressWarnings("unchecked")
-    private int normalizedToValue(double normalized) {
-        return (int) (absoluteMinValue + normalized
-                * (absoluteMaxValue - absoluteMinValue));
+    private T normalizedToValue(double normalized) {
+        return (T) numberType.toNumber(absoluteMinValuePrim + normalized
+                * (absoluteMaxValuePrim - absoluteMinValuePrim));
     }
 
     /**
@@ -541,13 +545,13 @@ public class RangeSeekBar extends ImageView {
      *            The Number value to normalize.
      * @return The normalized double.
      */
-    public double valueToNormalized(Integer value) {
-        if (0 == absoluteMaxValue - absoluteMinValue) {
+    private double valueToNormalized(T value) {
+        if (0 == absoluteMaxValuePrim - absoluteMinValuePrim) {
             // prevent division by zero, simply return 0.
-            return 0;
+            return 0d;
         }
-        return (value - absoluteMinValue)
-                / (absoluteMaxValue - absoluteMinValue);
+        return (value.doubleValue() - absoluteMinValuePrim)
+                / (absoluteMaxValuePrim - absoluteMinValuePrim);
     }
 
     /**
@@ -587,9 +591,9 @@ public class RangeSeekBar extends ImageView {
      * @param <T>
      *            The Number type the RangeSeekBar has been declared with.
      */
-    public interface OnRangeSeekBarChangeListener {
-        public void onRangeSeekBarValuesChanged(RangeSeekBar bar,
-                Integer minValue, Integer maxValue);
+    public interface OnRangeSeekBarChangeListener<T> {
+        public void onRangeSeekBarValuesChanged(RangeSeekBar<?> bar,
+                T minValue, T maxValue);
     }
 
     /**
@@ -597,5 +601,63 @@ public class RangeSeekBar extends ImageView {
      */
     private static enum Thumb {
         MIN, MAX
+    };
+
+    /**
+     * Utility enumaration used to convert between Numbers and doubles.
+     * 
+     * @author Stephan Tittel (stephan.tittel@kom.tu-darmstadt.de)
+     * 
+     */
+    private static enum NumberType {
+        LONG, DOUBLE, INTEGER, FLOAT, SHORT, BYTE, BIG_DECIMAL;
+
+        public static <E extends Number> NumberType fromNumber(E value)
+                throws IllegalArgumentException {
+            if (value instanceof Long) {
+                return LONG;
+            }
+            if (value instanceof Double) {
+                return DOUBLE;
+            }
+            if (value instanceof Integer) {
+                return INTEGER;
+            }
+            if (value instanceof Float) {
+                return FLOAT;
+            }
+            if (value instanceof Short) {
+                return SHORT;
+            }
+            if (value instanceof Byte) {
+                return BYTE;
+            }
+            if (value instanceof BigDecimal) {
+                return BIG_DECIMAL;
+            }
+            throw new IllegalArgumentException("Number class '"
+                    + value.getClass().getName() + "' is not supported");
+        }
+
+        public Number toNumber(double value) {
+            switch (this) {
+            case LONG:
+                return new Long((long) value);
+            case DOUBLE:
+                return value;
+            case INTEGER:
+                return new Integer((int) value);
+            case FLOAT:
+                return new Float(value);
+            case SHORT:
+                return new Short((short) value);
+            case BYTE:
+                return new Byte((byte) value);
+            case BIG_DECIMAL:
+                return new BigDecimal(value);
+            }
+            throw new InstantiationError("can't convert " + this
+                    + " to a Number object");
+        }
     }
 }

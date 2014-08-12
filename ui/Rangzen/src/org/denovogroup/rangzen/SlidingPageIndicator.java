@@ -31,9 +31,12 @@
 
 package org.denovogroup.rangzen;
 
+import org.denovogroup.rangzen.IntroductionFragment.FragmentType;
 import org.denovogroup.rangzen.RangzenService;
 import org.denovogroup.rangzen.StorageBase;
 
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -45,6 +48,8 @@ import android.util.Log;
 import android.view.ActionMode;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
@@ -133,29 +138,14 @@ public class SlidingPageIndicator extends FragmentActivity {
      *            The Linear Layout that holds the Facebook LoginButton
      */
     public void linLayoutButton(View v) {
-        ImageView iv1 = (ImageView) findViewById(R.id.imageView1);
-        ImageView iv2 = (ImageView) findViewById(R.id.imageView2);
-        ImageView iv3 = (ImageView) findViewById(R.id.imageView3);
-        BitmapDrawable bd1 = (BitmapDrawable) iv1.getBackground();
-        BitmapDrawable bd2 = (BitmapDrawable) iv2.getBackground();
-        BitmapDrawable bd3 = (BitmapDrawable) iv3.getBackground();
-        Bitmap b1 = bd1.getBitmap();
-        Bitmap b2 = bd2.getBitmap();
-        Bitmap b3 = bd3.getBitmap();
-        b1.recycle();
-        b2.recycle();
-        b3.recycle();
-        Log.d("MapsActivity", "is recycled = " + b1.isRecycled());
-        Log.d("MapsActivity", "is recycled = " + b2.isRecycled());
-        Log.d("MapsActivity", "is recycled = " + b3.isRecycled());
-        b1 = null;
-        b2 = null;
-        b3 = null;
-        Intent intent = new Intent();
-        intent.setClass(this, AboutPage.class);
-        startActivity(intent);
+        Fragment fragment = new IntroductionFragment();
+        Bundle b = new Bundle();
+        b.putSerializable("whichScreen", FragmentType.FIRSTABOUT);
+        fragment.setArguments(b);
+        FragmentManager fm = (FragmentManager) getSupportFragmentManager();
+        fm.beginTransaction().add(R.id.firstAbout, fragment).addToBackStack("about").commit();
     }
-
+    
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         return super.onOptionsItemSelected(item);

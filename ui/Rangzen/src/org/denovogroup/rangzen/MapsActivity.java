@@ -35,6 +35,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.denovogroup.rangzen.IntroductionFragment.FragmentType;
+import org.denovogroup.rangzen.RangeSeekBar.OnRangeSeekBarChangeListener;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -45,13 +48,13 @@ import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.widget.AdapterView;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.location.Location;
 import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
@@ -65,6 +68,7 @@ import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -137,7 +141,7 @@ public class MapsActivity extends FragmentActivity implements
     private static boolean isSliderOn = false;
 
     /** RangeBar slider that will determine how many points will be shown. */
-    private RangeSeekBar polyLineRange;
+    private RangeSeekBar<Double> polyLineRange;
 
     /**
      * Define a request code to send to Google Play services This code is
@@ -149,7 +153,7 @@ public class MapsActivity extends FragmentActivity implements
      * Polyline ArrayList in order to hold all polyline options as the next one
      * is built.
      */
-    private static ArrayList<Polyline> array = new ArrayList<Polyline>();
+    private ArrayList<Polyline> array = new ArrayList<Polyline>();
 
     /** Size of the current polyline. */
     private int sizePoly = 0;
@@ -162,6 +166,9 @@ public class MapsActivity extends FragmentActivity implements
 
     /** Helps with determining what functionality the back button should have. */
     private static boolean aboutShowing = false;
+
+    /** Percent change that the slider should change by. */
+    private final int integerPercentChange = 10;
 
     private Bitmap bitmap1;
     private Bitmap bitmap2;
@@ -202,7 +209,6 @@ public class MapsActivity extends FragmentActivity implements
             mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
             mLocationStore = new LocationStore(this,
                     StorageBase.ENCRYPTION_NONE);
-            mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
             mapFragment = (SupportMapFragment) SupportMapFragment.newInstance();
             mapFragment.setRetainInstance(true);
             map = mapFragment.getMap();
@@ -301,8 +307,40 @@ public class MapsActivity extends FragmentActivity implements
         int size = mLocationStore.getMostRecentSequenceNumber();
         if (size != 0) {
             drawPoints(-1, -1, 0);
-            polyLineRange.setNormalizedMaxValue(size);
+            polyLineRange.setNormalizedMaxValue(1);
             polyLineRange.setNormalizedMinValue(0);
+        }
+    }
+
+    /**
+     * Manually garbage collect and unbind the drawables in this map frame so
+     * they can be collected.
+     */
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        hasCentered = false;
+        unbindDrawables(findViewById(R.id.mapFrame));
+        System.gc();
+    }
+
+    /**
+     * Recursively go through the views in this view and unbind their
+     * backgrounds so they can be garbage collected.
+     * 
+     * @param view
+     *            In this case it will be map frame, the ultimate parent UI
+     *            frame.
+     */
+    private void unbindDrawables(View view) {
+        if (view.getBackground() != null) {
+            view.getBackground().setCallback(null);
+        }
+        if (view instanceof ViewGroup && !(view instanceof AdapterView)) {
+            for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) {
+                unbindDrawables(((ViewGroup) view).getChildAt(i));
+            }
+            ((ViewGroup) view).removeAllViews();
         }
     }
 
@@ -314,16 +352,37 @@ public class MapsActivity extends FragmentActivity implements
      *            The left arrow button.
      */
     public void sLeftArrow(View v) {
-        int min = polyLineRange.getSelectedMinValue();
-        int max = polyLineRange.getSelectedMaxValue();
+        double min = polyLineRange.getSelectedMinValue();
+        double max = polyLineRange.getSelectedMaxValue();
         mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
         int size = mLocationStore.getMostRecentSequenceNumber();
-        double change = (double) size * .1;
-        if (min > change && min - change <= 0) {
-            drawPoints((Integer.valueOf((int) (min - change))),
-                    polyLineRange.getSelectedMaxValue(), -1);
-            double doubly2 = ((double) min - change) / (double) size;
-            polyLineRange.setNormalizedMinValue(doubly2);
+        double percentChange = ((double) integerPercentChange / 100.0);
+        double lowDrawPercent = (min - percentChange);
+        Log.d(TAG, "value of min =" + min);
+        Log.d(TAG, "value of max = " + max);
+        Log.d(TAG, "value of size = " + size);
+        Log.d(TAG, "value of change = " + percentChange);
+        Log.d(TAG, "value of lowDraw =" + lowDrawPercent);
+        
+        if (size == -1) {
+            return;
+        }
+        
+        int highDraw = (int) (max * size);
+        if (highDraw == 0) {
+            highDraw++;
+        }
+        int lowDraw = (int) (lowDrawPercent * size);
+        if (lowDraw == 0) {
+            lowDraw++;
+        }
+        
+        if (lowDrawPercent <= 0) {
+            drawPoints(1, highDraw, -1);
+            polyLineRange.setNormalizedMinValue(0);
+        } else {
+            drawPoints(lowDraw, highDraw, -1);
+            polyLineRange.setNormalizedMinValue(lowDrawPercent);
         }
     }
 
@@ -335,17 +394,38 @@ public class MapsActivity extends FragmentActivity implements
      *            The right arrow button.
      */
     public void sRightArrow(View v) {
-        int max = polyLineRange.getSelectedMaxValue();
-        int min = polyLineRange.getSelectedMinValue();
+        double max = polyLineRange.getSelectedMaxValue();
+        double min = polyLineRange.getSelectedMinValue();
         mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
         int size = mLocationStore.getMostRecentSequenceNumber();
-        double change = (double) size * .1;
-        Log.d(TAG, "value of change = " + String.valueOf(change));
-        if (max + change < size
-                && (Integer.valueOf((int) (max + change)) > min && min != 0)) {
-            drawPoints(min, (Integer.valueOf((int) (max + change))), -1);
-            double doubly2 = ((double) max + change) / (double) size;
-            polyLineRange.setNormalizedMaxValue(doubly2);
+        double percentChange = ((double) integerPercentChange / 100.0);
+        double highDrawPercent = (max + percentChange);
+        Log.d(TAG, "value of min =" + min);
+        Log.d(TAG, "value of max = " + max);
+        Log.d(TAG, "value of size = " + size);
+        Log.d(TAG, "value of change = " + percentChange);
+        Log.d(TAG, "value of highDrawPercent =" + highDrawPercent);
+
+        int highDraw = (int) (highDrawPercent * size);
+        if (highDraw == 0) {
+            highDraw++;
+        }
+        int lowDraw = (int) (min * size);
+        if (lowDraw == 0) {
+            lowDraw++;
+        }
+        if (size == -1) {
+            return;
+        }
+        
+        if (max + percentChange >= 1) {
+            Log.d(TAG, " > 90 percent");
+            drawPoints(lowDraw, size, -1);
+            polyLineRange.setNormalizedMaxValue(size);
+        } else {
+            Log.d(TAG, " < 90 percent");
+            drawPoints(lowDraw, highDraw, -1);
+            polyLineRange.setNormalizedMaxValue(highDrawPercent);
         }
     }
 
@@ -354,23 +434,38 @@ public class MapsActivity extends FragmentActivity implements
      * (taken care of edge cases with no locations stored).
      */
     private void createSlider() {
-        int size = 0;
-        mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
-        size = mLocationStore.getMostRecentSequenceNumber();
-        polyLineRange = new RangeSeekBar(1, size, this);
-        polyLineRange
-                .setOnRangeSeekBarChangeListener(new RangeSeekBar.OnRangeSeekBarChangeListener() {
+//        int size = 0;
+//        mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
+//        size = mLocationStore.getMostRecentSequenceNumber();
+//        if (size == -1) {
+//            size = 1;
+//        }
+        polyLineRange = new RangeSeekBar<Double>(0d, 1d, this);
+        OnRangeSeekBarChangeListener<Double> change = new OnRangeSeekBarChangeListener<Double>() {
 
-                    @Override
-                    public void onRangeSeekBarValuesChanged(RangeSeekBar bar,
-                            Integer minValue, Integer maxValue) {
-                        if (maxValue != -1 && maxValue != minValue
-                                && minValue < maxValue && minValue != -1) {
-                            drawPoints(minValue, maxValue, 0);
-                        }
+            @Override
+            public void onRangeSeekBarValuesChanged(RangeSeekBar<?> bar,
+                    Double minValue, Double maxValue) {
+                // TODO Auto-generated method stub
+                Log.i(TAG, "User selected new range values: MIN=" + minValue
+                        + ", MAX=" + maxValue);
+                mLocationStore = new LocationStore(getApplicationContext(), StorageBase.ENCRYPTION_DEFAULT);
+                int size = mLocationStore.getMostRecentSequenceNumber();
+                if (maxValue != -1 && maxValue != minValue
+                        && minValue < maxValue && minValue != -1) {
+                    int lowDraw = (int) (minValue * size);
+                    int highDraw = (int) (maxValue * size);
+                    if (lowDraw == 0) {
+                        lowDraw++;
                     }
-                });
-
+                    if (highDraw == 0) {
+                        highDraw++;
+                    }
+                    drawPoints(lowDraw, highDraw, 0);
+                }
+            }
+        };
+        polyLineRange.setOnRangeSeekBarChangeListener(change);
         LinearLayout slider = (LinearLayout) findViewById(R.id.slider);
         slider.addView(polyLineRange);
     }
@@ -412,6 +507,7 @@ public class MapsActivity extends FragmentActivity implements
     public void sDeny(View v) {
         Log.i(TAG, "Denied permission.");
         Intent intent = new Intent();
+        hasCentered = false;
         intent.setClass(this, SlidingPageIndicator.class);
         startActivity(intent);
         finish();
@@ -465,7 +561,7 @@ public class MapsActivity extends FragmentActivity implements
     public void s(View v) {
         Fragment info = new IntroductionFragment();
         Bundle b = new Bundle();
-        b.putInt("whichScreen", 5);
+        b.putSerializable("whichScreen", FragmentType.SECONDABOUT);
         info.setArguments(b);
         findViewById(R.id.infoHolder).setClickable(true);
         fragmentManager = getSupportFragmentManager();
@@ -482,18 +578,9 @@ public class MapsActivity extends FragmentActivity implements
      */
     @Override
     public void onBackPressed() {
-        if (aboutShowing) {
-            super.onBackPressed();
-            findViewById(R.id.infoHolder).setClickable(false);
-            aboutShowing = false;
-        } else {
-            recycleBitmaps();
-            Intent setIntent = new Intent(Intent.ACTION_MAIN);
-            setIntent.addCategory(Intent.CATEGORY_HOME);
-            hasCentered = false;
-            startActivity(setIntent);
-            finish();
-        }
+        super.onBackPressed();
+        hasCentered = false;
+        findViewById(R.id.infoHolder).setClickable(false);
     }
 
     /**
@@ -513,7 +600,7 @@ public class MapsActivity extends FragmentActivity implements
             // //set has seen transparency in a shared save preference
             transparent = new IntroductionFragment();
             Bundle b2 = new Bundle();
-            b2.putInt("whichScreen", 6);
+            b2.putSerializable("whichScreen", FragmentType.TRANSPARENT);
             transparent.setArguments(b2);
             findViewById(R.id.transparentHolder).bringToFront();
             fragmentManager.beginTransaction()
@@ -549,8 +636,8 @@ public class MapsActivity extends FragmentActivity implements
                             StorageBase.ENCRYPTION_DEFAULT);
                     mStore.put(RangzenService.EXPERIMENT_STATE_KEY,
                             RangzenService.EXP_STATE_OPTED_OUT);
-                    mStore.put(RangzenService.REGISTRATION_FAILURE_REASON_KEY, null);
-                    
+                    mStore.put(RangzenService.REGISTRATION_FAILURE_REASON_KEY,
+                            null);
 
                     // Stop Rangzen Service.
                     Intent rangzenServiceIntent = new Intent(
@@ -596,7 +683,6 @@ public class MapsActivity extends FragmentActivity implements
         // Disconnecting the client invalidates it.
         Log.d(TAG, "onStop was called");
         locationClient.disconnect();
-        //recycleBitmaps();
         super.onStop();
     }
 
@@ -751,18 +837,7 @@ public class MapsActivity extends FragmentActivity implements
             Toast.makeText(this, "map was null in onResume", Toast.LENGTH_SHORT)
                     .show();
         }
-        registerForLocationUpdates();
     }
-
-    /** A handle to the Android location manager. */
-    private LocationManager mLocationManager;
-
-    /**
-     * String designating the provider we want to use (GPS) for location. We
-     * need the accuracy GPS provides - network based location is accurate to
-     * within like a mile, according to the docs.
-     */
-    private static final String LOCATION_GPS_PROVIDER = LocationManager.PASSIVE_PROVIDER;
 
     /** Time between location updates in milliseconds - 1 minute. */
     private static final long LOCATION_UPDATE_INTERVAL = 5000 * 60 * 1;
@@ -775,19 +850,6 @@ public class MapsActivity extends FragmentActivity implements
 
     /** Handle to Rangzen location storage provider. */
     private LocationStore mLocationStore;
-
-    private void registerForLocationUpdates() {
-        if (mLocationManager == null) {
-            Log.e(TAG,
-                    "Can't register for location updates; location manager is null.");
-            return;
-        }
-        mLocationManager.requestLocationUpdates(LOCATION_GPS_PROVIDER,
-                LOCATION_UPDATE_INTERVAL, LOCATION_UPDATE_DISTANCE_MINIMUM,
-                mLocationListener);
-        Log.i(TAG, "Registered for location every " + LOCATION_UPDATE_INTERVAL
-                + "ms");
-    }
 
     /**
      * Called from OnCreate in order to only draw the previous points once.
@@ -803,34 +865,6 @@ public class MapsActivity extends FragmentActivity implements
         pb.setVisibility(View.VISIBLE);
         new DrawPointsThread().execute(minValue, maxValue, isArrow);
     }
-
-    /**
-     * Will add a polyline between previous and current points on a location
-     * change, if the distance between them is large enough.
-     */
-    private LocationListener mLocationListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
-        }
-
-        @Override
-        public void onProviderDisabled(String provider) {
-            Log.d(TAG, "Provider disabled: " + provider);
-        }
-
-        @Override
-        public void onProviderEnabled(String provider) {
-            Log.d(TAG, "Provider enabled: " + provider);
-
-        }
-
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-            Log.d(TAG, "Provider " + provider + " status changed to status "
-                    + status);
-        }
-
-    };
 
     /**
      * Determines if the distance between two LatLng points is large enough
@@ -965,7 +999,7 @@ public class MapsActivity extends FragmentActivity implements
                 ExchangeStore exchangeStore = new ExchangeStore(
                         getApplicationContext(), StorageBase.ENCRYPTION_DEFAULT);
                 ownExchanges = exchangeStore.getAllExchanges();
-                Log.d(TAG, "size " + ownExchanges.size());
+                Log.d(TAG, "size of own exchanges" + ownExchanges.size());
 
             } catch (ClassNotFoundException | IOException e) {
                 Log.e(TAG, "Not able to make polyLine on Async!");
@@ -1018,7 +1052,9 @@ public class MapsActivity extends FragmentActivity implements
             // TODO (Jesus) Finish the Async race... condition.
             numAsync -= 1;
             ProgressBar pb = (ProgressBar) findViewById(R.id.progress);
-            pb.setVisibility(View.INVISIBLE);
+            if (pb != null) {
+                pb.setVisibility(View.INVISIBLE);
+            }
         }
     }
 }
