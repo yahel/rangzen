@@ -33,8 +33,11 @@ package org.denovogroup.rangzen;
 import android.app.Activity;
 import android.content.SharedPreferences;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
@@ -220,24 +223,34 @@ public class MessageStore {
    *
    * @return Returns up to k messages with the highest priority values.
    */
-  public TreeMap getTopK(int k) {
-    TreeMap topk = new TreeMap<Float, String>();
+  public TreeMap<Float, Collection<String>> getTopK(int k) {
+    TreeMap<Float, Collection<String>> topk = new TreeMap<Float, Collection<String>>();
  
 binloop: for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
       String binKey = getBinKey(bin);
       Set<String> msgs = store.getSet(binKey);
       if (msgs == null) continue;
 
-      TreeMap sortedmsgs = new TreeMap<Float, String>();
+      TreeMap<Float, List<String>> sortedmsgs = new TreeMap<Float, List<String>>();
       for (String m : msgs) {
-        sortedmsgs.put(getMessagePriority(m, -1), m);
+        float priority = getMessagePriority(m, -1);
+        if (!sortedmsgs.containsKey(priority)) {
+          sortedmsgs.put(priority, new ArrayList<String>());
+        }
+        sortedmsgs.get(priority).add(m);
       }
 
-      NavigableMap<Float, String> m = sortedmsgs.descendingMap();
-      for (Entry<Float, String> e : m.entrySet()) {
-        if (topk.size() >= k) break binloop;
+      NavigableMap<Float, List<String>> descMap = sortedmsgs.descendingMap();
+      for (Entry<Float, List<String>> e : descMap.entrySet()) {
+        for (String m : e.getValue()) {
+          if (topk.size() >= k) break binloop;
 
-        topk.put(e.getKey(), e.getValue());
+          float priority = e.getKey();
+          if (!topk.containsKey(priority)) {
+            topk.put(priority, new HashSet<String>());
+          }
+          topk.get(priority).add(m);
+        }
       }
     }
 

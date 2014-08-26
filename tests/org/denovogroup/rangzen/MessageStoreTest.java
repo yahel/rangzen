@@ -30,6 +30,7 @@
  */
 package org.denovogroup.rangzen;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeMap;
@@ -52,7 +53,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
@@ -83,6 +83,8 @@ public class MessageStoreTest {
   private static final float TEST_PRIORITY_1 = 1.0f;
   private static final float TEST_PRIORITY_2 = 0.2f;
   private static final float TEST_PRIORITY_3 = 0.9f;
+  private static final float TEST_PRIORITY_4 = 0.8f;
+  private static final float TEST_PRIORITY_5 = 0.7f;
 
   private static final float TEST_PRIORITY_INVALID = 1.1f;
 
@@ -111,34 +113,95 @@ public class MessageStoreTest {
     store.addMessage(TEST_MSG_2, TEST_PRIORITY_2);
     store.addMessage(TEST_MSG_3, TEST_PRIORITY_3);
 
-    TreeMap topk = store.getTopK(0);
+    TreeMap<Float, Collection<String>> topk = store.getTopK(0);
     assertEquals(topk.size(), 0);
 
     topk = store.getTopK(1);
     assertEquals(topk.size(), 1);
-    assertTrue(topk.values().contains(TEST_MSG_1));
-    assertFalse(topk.values().contains(TEST_MSG_2));
-    assertFalse(topk.values().contains(TEST_MSG_3));
+    assertTrue(flattenTopK(topk).contains(TEST_MSG_1));
+    assertFalse(flattenTopK(topk).contains(TEST_MSG_2));
+    assertFalse(flattenTopK(topk).contains(TEST_MSG_3));
     assertEquals((Float) topk.lastKey(), TEST_PRIORITY_1, 0.01f);
 
     topk = store.getTopK(2);
     assertEquals(topk.size(), 2);
-    assertTrue(topk.values().contains(TEST_MSG_1));
-    assertFalse(topk.values().contains(TEST_MSG_2));
-    assertTrue(topk.values().contains(TEST_MSG_3));
+    assertTrue(flattenTopK(topk).contains(TEST_MSG_1));
+    assertFalse(flattenTopK(topk).contains(TEST_MSG_2));
+    assertTrue(flattenTopK(topk).contains(TEST_MSG_3));
     assertEquals((Float) topk.lastKey(), TEST_PRIORITY_1, 0.01f);
     assertEquals((Float) topk.lowerKey(topk.lastKey()), TEST_PRIORITY_3, 0.01f);
 
     topk = store.getTopK(3);
     assertEquals(topk.size(), 3);
-    assertTrue(topk.values().contains(TEST_MSG_1));
-    assertTrue(topk.values().contains(TEST_MSG_2));
-    assertTrue(topk.values().contains(TEST_MSG_3));
+    assertTrue(flattenTopK(topk).contains(TEST_MSG_1));
+    assertTrue(flattenTopK(topk).contains(TEST_MSG_2));
+    assertTrue(flattenTopK(topk).contains(TEST_MSG_3));
     assertEquals((Float) topk.lastKey(), TEST_PRIORITY_1, 0.01f);
     assertEquals((Float) topk.lowerKey(topk.lastKey()), TEST_PRIORITY_3, 0.01f);
     assertEquals((Float) topk.lowerKey(topk.lowerKey(topk.lastKey())), TEST_PRIORITY_2, 0.01f);
 
     topk = store.getTopK(4);
     assertEquals(topk.size(), 3);
+  }
+
+  /**
+   * Utility method for storeMessages test that flattens a topk set into a set
+   * of messages.
+   */
+  private Set<String> flattenTopK(TreeMap<Float, Collection<String>> topk) {
+    HashSet<String> topkMessages = new HashSet<String>();
+    for (Collection<String> messages : topk.values()) {
+      for (String m : messages) {
+        topkMessages.add(m);
+      }
+    }
+    return topkMessages;
+  }
+
+  /**
+   * Regression test for the bug where getTopK messages only returned one message
+   * per unique priority score. 
+   */
+  @Test
+  public void regressionGetTopKPriorityScoreTest() {
+    store.addMessage("Test1", TEST_PRIORITY_1);
+    store.addMessage("Test2", TEST_PRIORITY_1);
+    store.addMessage("Test3", TEST_PRIORITY_1);
+    store.addMessage("Test4", TEST_PRIORITY_2);
+    store.addMessage("Test5", TEST_PRIORITY_3);
+    store.addMessage("Test6", TEST_PRIORITY_4);
+    store.addMessage("Test7s", TEST_PRIORITY_4);
+    store.addMessage("Test8", TEST_PRIORITY_4);
+    store.addMessage("test9", TEST_PRIORITY_4);
+    store.addMessage("Test10", TEST_PRIORITY_4);
+    store.addMessage("Test11", TEST_PRIORITY_5);
+    store.addMessage("Test12", TEST_PRIORITY_5);
+
+    // One collection of messages per distinct priority value (there are 5 above).
+    assertEquals(5, store.getTopK(12).size());
+    int messagesReturned = 0;
+    TreeMap<Float, Collection<String>> topk = store.getTopK(12);
+    for (Collection<String> messages : topk.values()) {
+      for (String m : messages) {
+        messagesReturned++;
+      }
+    }
+    // One message per message we inserted.
+    assertEquals(12, messagesReturned);
+  }
+
+  @Test
+  public void duplicateMessageAddTest() {
+    int MORE_THAN_3 = 10;
+    store.addMessage("Test1", TEST_PRIORITY_1);
+    store.addMessage("Test1", TEST_PRIORITY_1);
+
+    assertEquals(1, store.getTopK(MORE_THAN_3).size());
+    assertEquals(1, flattenTopK(store.getTopK(MORE_THAN_3)).size());
+
+    store.addMessage("Test1", TEST_PRIORITY_2);
+
+    assertEquals(1, store.getTopK(MORE_THAN_3).size());
+    assertEquals(1, flattenTopK(store.getTopK(MORE_THAN_3)).size());
   }
 }
