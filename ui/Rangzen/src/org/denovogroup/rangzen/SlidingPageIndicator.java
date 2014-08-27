@@ -31,7 +31,7 @@
 
 package org.denovogroup.rangzen;
 
-import org.denovogroup.rangzen.IntroductionFragment.FragmentType;
+import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
 import org.denovogroup.rangzen.RangzenService;
 import org.denovogroup.rangzen.StorageBase;
 
@@ -104,7 +104,7 @@ public class SlidingPageIndicator extends FragmentActivity {
         if (hasLoggedIn) {
             Log.i(TAG, "Has logged in.");
             Intent intent = new Intent();
-            intent.setClass(SlidingPageIndicator.this, MapsActivity.class);
+            intent.setClass(SlidingPageIndicator.this, Opener.class);
             startActivity(intent);
             SlidingPageIndicator.this.finish();
         }
@@ -138,7 +138,7 @@ public class SlidingPageIndicator extends FragmentActivity {
      *            The Linear Layout that holds the Facebook LoginButton
      */
     public void linLayoutButton(View v) {
-        Fragment fragment = new IntroductionFragment();
+        Fragment fragment = new FragmentOrganizer();
         Bundle b = new Bundle();
         b.putSerializable("whichScreen", FragmentType.FIRSTABOUT);
         fragment.setArguments(b);

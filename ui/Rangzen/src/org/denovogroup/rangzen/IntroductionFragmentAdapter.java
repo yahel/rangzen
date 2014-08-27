@@ -31,7 +31,7 @@
 
 package org.denovogroup.rangzen;
 
-import org.denovogroup.rangzen.IntroductionFragment.FragmentType;
+import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -84,7 +84,7 @@ class IntroductionFragmentAdapter extends FragmentPagerAdapter implements
         position = position % mCount;
         Bundle b = new Bundle();
         b.putSerializable("whichScreen", type);
-        Fragment fragment = new IntroductionFragment();
+        Fragment fragment = new FragmentOrganizer();
         fragment.setArguments(b);
         return fragment;
     }

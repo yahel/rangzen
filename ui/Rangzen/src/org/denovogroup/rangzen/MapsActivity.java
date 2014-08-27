@@ -35,7 +35,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.denovogroup.rangzen.IntroductionFragment.FragmentType;
+import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
 import org.denovogroup.rangzen.RangeSeekBar.OnRangeSeekBarChangeListener;
 
 import android.app.Activity;
@@ -104,33 +104,33 @@ public class MapsActivity extends FragmentActivity implements
      * The fragment that contains the map itself. It is the second most top
      * fragment in its parent FrameLayout.
      */
-    private SupportMapFragment mapFragment;
+    private SupportMapFragment mMapFragment;
 
     /**
      * Variable that will last the length of the activity, so the map will not
      * be centered gain while the activity is up.
      */
-    private static boolean hasCentered = false;
+    private static boolean mHasCentered = false;
 
     /**
      * The map object itself that is inside of the SupportMapFragment.
      */
-    private GoogleMap map;
+    private GoogleMap mMap;
     /**
      * Used to connect and disconnect from Google Location Services and
      * locations.
      */
-    private LocationClient locationClient;
+    private LocationClient mLocationClient;
     /**
      * The transparent fragment. It is the bottom most layer of the FrameLayout
      * but is brought to the top if created.
      */
-    private Fragment transparent;
+    private Fragment mTransparent;
     /**
      * This is the object that manages all of the Fragments visible and
      * invisible, and adds, replaces or removes fragments.
      */
-    private FragmentManager fragmentManager;
+    private FragmentManager mFragmentManager;
 
     /**
      * Handle to Rangzen storage manager.
@@ -138,10 +138,10 @@ public class MapsActivity extends FragmentActivity implements
     private StorageBase mStore;
 
     /** Used to determine if the slider is on or off. */
-    private static boolean isSliderOn = false;
+    private static boolean mIsSliderOn = false;
 
     /** RangeBar slider that will determine how many points will be shown. */
-    private RangeSeekBar<Double> polyLineRange;
+    private RangeSeekBar<Double> mPolyLineRange;
 
     /**
      * Define a request code to send to Google Play services This code is
@@ -153,22 +153,22 @@ public class MapsActivity extends FragmentActivity implements
      * Polyline ArrayList in order to hold all polyline options as the next one
      * is built.
      */
-    private ArrayList<Polyline> array = new ArrayList<Polyline>();
+    private ArrayList<Polyline> mPolylineArray = new ArrayList<Polyline>();
 
     /** Size of the current polyline. */
-    private int sizePoly = 0;
+    private int mSizeofPolyline = 0;
 
     /** Number of running Async Tasks. */
-    private static int numAsync = 0;
+    private static int mNumAsyncTasks = 0;
 
     /** List of exchanges for this current map. */
-    private ArrayList<Marker> markers = new ArrayList<Marker>();
+    private ArrayList<Marker> mMarkers = new ArrayList<Marker>();
 
     /** Helps with determining what functionality the back button should have. */
-    private static boolean aboutShowing = false;
+    private static boolean mAboutShowing = false;
 
     /** Percent change that the slider should change by. */
-    private final int integerPercentChange = 10;
+    private final int mIntegerPercentChange = 10;
 
     private Bitmap bitmap1;
     private Bitmap bitmap2;
@@ -192,7 +192,7 @@ public class MapsActivity extends FragmentActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.master);
-        locationClient = new LocationClient(this, this, this);
+        mLocationClient = new LocationClient(this, this, this);
         createButtonImage(R.id.ib, R.drawable.abouticon19,
                 R.drawable.pressedinfo, false, 1);
         createButtonImage(R.id.button22, R.drawable.slider,
@@ -209,12 +209,12 @@ public class MapsActivity extends FragmentActivity implements
             mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
             mLocationStore = new LocationStore(this,
                     StorageBase.ENCRYPTION_NONE);
-            mapFragment = (SupportMapFragment) SupportMapFragment.newInstance();
-            mapFragment.setRetainInstance(true);
-            map = mapFragment.getMap();
-            fragmentManager = getSupportFragmentManager();
-            fragmentManager.beginTransaction()
-                    .replace(R.id.mapHolder, mapFragment).commit();
+            mMapFragment = (SupportMapFragment) SupportMapFragment.newInstance();
+            mMapFragment.setRetainInstance(true);
+            mMap = mMapFragment.getMap();
+            mFragmentManager = getSupportFragmentManager();
+            mFragmentManager.beginTransaction()
+                    .replace(R.id.mapHolder, mMapFragment).commit();
             createTransparentFragment();
         }
         createSlider();
@@ -287,12 +287,12 @@ public class MapsActivity extends FragmentActivity implements
      */
     public void sSliderButton(View v) {
         LinearLayout slider = (LinearLayout) findViewById(R.id.slider);
-        if (!isSliderOn || slider.getVisibility() == View.INVISIBLE) {
+        if (!mIsSliderOn || slider.getVisibility() == View.INVISIBLE) {
             slider.setVisibility(View.VISIBLE);
-            isSliderOn = true;
+            mIsSliderOn = true;
         } else {
             slider.setVisibility(View.INVISIBLE);
-            isSliderOn = false;
+            mIsSliderOn = false;
         }
     }
 
@@ -307,8 +307,8 @@ public class MapsActivity extends FragmentActivity implements
         int size = mLocationStore.getMostRecentSequenceNumber();
         if (size != 0) {
             drawPoints(-1, -1, 0);
-            polyLineRange.setNormalizedMaxValue(1);
-            polyLineRange.setNormalizedMinValue(0);
+            mPolyLineRange.setNormalizedMaxValue(1);
+            mPolyLineRange.setNormalizedMinValue(0);
         }
     }
 
@@ -319,7 +319,7 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        hasCentered = false;
+        mHasCentered = false;
         unbindDrawables(findViewById(R.id.mapFrame));
         System.gc();
     }
@@ -352,11 +352,11 @@ public class MapsActivity extends FragmentActivity implements
      *            The left arrow button.
      */
     public void sLeftArrow(View v) {
-        double min = polyLineRange.getSelectedMinValue();
-        double max = polyLineRange.getSelectedMaxValue();
+        double min = mPolyLineRange.getSelectedMinValue();
+        double max = mPolyLineRange.getSelectedMaxValue();
         mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
         int size = mLocationStore.getMostRecentSequenceNumber();
-        double percentChange = ((double) integerPercentChange / 100.0);
+        double percentChange = ((double) mIntegerPercentChange / 100.0);
         double lowDrawPercent = (min - percentChange);
         Log.d(TAG, "value of min =" + min);
         Log.d(TAG, "value of max = " + max);
@@ -379,10 +379,10 @@ public class MapsActivity extends FragmentActivity implements
         
         if (lowDrawPercent <= 0) {
             drawPoints(1, highDraw, -1);
-            polyLineRange.setNormalizedMinValue(0);
+            mPolyLineRange.setNormalizedMinValue(0);
         } else {
             drawPoints(lowDraw, highDraw, -1);
-            polyLineRange.setNormalizedMinValue(lowDrawPercent);
+            mPolyLineRange.setNormalizedMinValue(lowDrawPercent);
         }
     }
 
@@ -394,11 +394,11 @@ public class MapsActivity extends FragmentActivity implements
      *            The right arrow button.
      */
     public void sRightArrow(View v) {
-        double max = polyLineRange.getSelectedMaxValue();
-        double min = polyLineRange.getSelectedMinValue();
+        double max = mPolyLineRange.getSelectedMaxValue();
+        double min = mPolyLineRange.getSelectedMinValue();
         mLocationStore = new LocationStore(this, StorageBase.ENCRYPTION_DEFAULT);
         int size = mLocationStore.getMostRecentSequenceNumber();
-        double percentChange = ((double) integerPercentChange / 100.0);
+        double percentChange = ((double) mIntegerPercentChange / 100.0);
         double highDrawPercent = (max + percentChange);
         Log.d(TAG, "value of min =" + min);
         Log.d(TAG, "value of max = " + max);
@@ -421,11 +421,11 @@ public class MapsActivity extends FragmentActivity implements
         if (max + percentChange >= 1) {
             Log.d(TAG, " > 90 percent");
             drawPoints(lowDraw, size, -1);
-            polyLineRange.setNormalizedMaxValue(size);
+            mPolyLineRange.setNormalizedMaxValue(size);
         } else {
             Log.d(TAG, " < 90 percent");
             drawPoints(lowDraw, highDraw, -1);
-            polyLineRange.setNormalizedMaxValue(highDrawPercent);
+            mPolyLineRange.setNormalizedMaxValue(highDrawPercent);
         }
     }
 
@@ -440,7 +440,7 @@ public class MapsActivity extends FragmentActivity implements
 //        if (size == -1) {
 //            size = 1;
 //        }
-        polyLineRange = new RangeSeekBar<Double>(0d, 1d, this);
+        mPolyLineRange = new RangeSeekBar<Double>(0d, 1d, this);
         OnRangeSeekBarChangeListener<Double> change = new OnRangeSeekBarChangeListener<Double>() {
 
             @Override
@@ -465,9 +465,9 @@ public class MapsActivity extends FragmentActivity implements
                 }
             }
         };
-        polyLineRange.setOnRangeSeekBarChangeListener(change);
+        mPolyLineRange.setOnRangeSeekBarChangeListener(change);
         LinearLayout slider = (LinearLayout) findViewById(R.id.slider);
-        slider.addView(polyLineRange);
+        slider.addView(mPolyLineRange);
     }
 
     /**
@@ -475,7 +475,7 @@ public class MapsActivity extends FragmentActivity implements
      * destroyed in order for the method to be called again.
      */
     private void centerMap() {
-        Location location = locationClient.getLastLocation();
+        Location location = mLocationClient.getLastLocation();
         LatLng latLng;
         if (location == null) {
             latLng = new LatLng(0, 0);
@@ -487,13 +487,13 @@ public class MapsActivity extends FragmentActivity implements
         CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng,
                 15);
         setUpMapIfNeeded();
-        if (map != null) {
-            if (!hasCentered) {
-                map.animateCamera(cameraUpdate);
-                hasCentered = true;
+        if (mMap != null) {
+            if (!mHasCentered) {
+                mMap.animateCamera(cameraUpdate);
+                mHasCentered = true;
             }
-            map.setMyLocationEnabled(true);
-            map.setBuildingsEnabled(true);
+            mMap.setMyLocationEnabled(true);
+            mMap.setBuildingsEnabled(true);
         }
     }
 
@@ -507,7 +507,7 @@ public class MapsActivity extends FragmentActivity implements
     public void sDeny(View v) {
         Log.i(TAG, "Denied permission.");
         Intent intent = new Intent();
-        hasCentered = false;
+        mHasCentered = false;
         intent.setClass(this, SlidingPageIndicator.class);
         startActivity(intent);
         finish();
@@ -522,9 +522,9 @@ public class MapsActivity extends FragmentActivity implements
      */
     public void sAccept(View v) {
         Log.i(TAG, "Accepted permission.");
-        transparent.getView().setClickable(false);
-        transparent.getView().setVisibility(View.INVISIBLE);
-        ViewGroup vg = (ViewGroup) transparent.getView().getParent();
+        mTransparent.getView().setClickable(false);
+        mTransparent.getView().setVisibility(View.INVISIBLE);
+        ViewGroup vg = (ViewGroup) mTransparent.getView().getParent();
         vg.setClickable(false);
         vg.setVisibility(View.INVISIBLE);
         ViewGroup vgParent = (ViewGroup) vg.getParent();
@@ -559,16 +559,16 @@ public class MapsActivity extends FragmentActivity implements
      *            The view that contains the about icon.
      */
     public void s(View v) {
-        Fragment info = new IntroductionFragment();
+        Fragment info = new FragmentOrganizer();
         Bundle b = new Bundle();
         b.putSerializable("whichScreen", FragmentType.SECONDABOUT);
         info.setArguments(b);
         findViewById(R.id.infoHolder).setClickable(true);
-        fragmentManager = getSupportFragmentManager();
-        FragmentTransaction ft = fragmentManager.beginTransaction();
+        mFragmentManager = getSupportFragmentManager();
+        FragmentTransaction ft = mFragmentManager.beginTransaction();
         ft.add(R.id.infoHolder, info);
         ft.addToBackStack("info");
-        aboutShowing = true;
+        mAboutShowing = true;
         ft.commit();
     }
 
@@ -579,7 +579,7 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        hasCentered = false;
+        mHasCentered = false;
         findViewById(R.id.infoHolder).setClickable(false);
     }
 
@@ -598,13 +598,13 @@ public class MapsActivity extends FragmentActivity implements
 
         if (!hasSeentransparent) {
             // //set has seen transparency in a shared save preference
-            transparent = new IntroductionFragment();
+            mTransparent = new FragmentOrganizer();
             Bundle b2 = new Bundle();
             b2.putSerializable("whichScreen", FragmentType.TRANSPARENT);
-            transparent.setArguments(b2);
+            mTransparent.setArguments(b2);
             findViewById(R.id.transparentHolder).bringToFront();
-            fragmentManager.beginTransaction()
-                    .replace(R.id.transparentHolder, transparent).commit();
+            mFragmentManager.beginTransaction()
+                    .replace(R.id.transparentHolder, mTransparent).commit();
         }
     }
 
@@ -619,7 +619,7 @@ public class MapsActivity extends FragmentActivity implements
                 switch (which) {
                 case DialogInterface.BUTTON_POSITIVE:
                     // Yes button clicked
-                    hasCentered = false;
+                    mHasCentered = false;
                     SharedPreferences settings = getSharedPreferences(
                             SlidingPageIndicator.PREFS_NAME, 0);
                     SharedPreferences.Editor editor = settings.edit();
@@ -671,7 +671,7 @@ public class MapsActivity extends FragmentActivity implements
         super.onStart();
         // connect the client
         if (isGooglePlayServicesAvailable()) {
-            locationClient.connect();
+            mLocationClient.connect();
         }
     }
 
@@ -682,7 +682,7 @@ public class MapsActivity extends FragmentActivity implements
     protected void onStop() {
         // Disconnecting the client invalidates it.
         Log.d(TAG, "onStop was called");
-        locationClient.disconnect();
+        mLocationClient.disconnect();
         super.onStop();
     }
 
@@ -728,7 +728,7 @@ public class MapsActivity extends FragmentActivity implements
              */
             switch (resultCode) {
             case Activity.RESULT_OK:
-                locationClient.connect();
+                mLocationClient.connect();
                 break;
             }
 
@@ -773,7 +773,7 @@ public class MapsActivity extends FragmentActivity implements
      */
     @Override
     public void onConnected(Bundle dataBundle) {
-        if (!hasCentered) {
+        if (!mHasCentered) {
             drawPoints(-1, -1, 0);
             centerMap();
         }
@@ -823,7 +823,7 @@ public class MapsActivity extends FragmentActivity implements
 
     @Override
     protected void onPause() {
-        map.setMyLocationEnabled(false);
+        mMap.setMyLocationEnabled(false);
         super.onPause();
     }
 
@@ -831,8 +831,8 @@ public class MapsActivity extends FragmentActivity implements
     protected void onResume() {
         super.onResume();
         setUpMapIfNeeded();
-        if (map != null) {
-            map.setMyLocationEnabled(true);
+        if (mMap != null) {
+            mMap.setMyLocationEnabled(true);
         } else {
             Toast.makeText(this, "map was null in onResume", Toast.LENGTH_SHORT)
                     .show();
@@ -860,7 +860,7 @@ public class MapsActivity extends FragmentActivity implements
      *            The min value of the points to include on the map.
      */
     private void drawPoints(Integer minValue, Integer maxValue, Integer isArrow) {
-        numAsync++;
+        mNumAsyncTasks++;
         ProgressBar pb = (ProgressBar) findViewById(R.id.progress);
         pb.setVisibility(View.VISIBLE);
         new DrawPointsThread().execute(minValue, maxValue, isArrow);
@@ -924,11 +924,11 @@ public class MapsActivity extends FragmentActivity implements
     private void setUpMapIfNeeded() {
         // Do a null check to confirm that we have not already instantiated the
         // map.
-        if (map == null) {
-            mapFragment = ((SupportMapFragment) getSupportFragmentManager()
+        if (mMap == null) {
+            mMapFragment = ((SupportMapFragment) getSupportFragmentManager()
                     .findFragmentById(R.id.mapHolder));
-            if (mapFragment != null) {
-                map = mapFragment.getMap();
+            if (mMapFragment != null) {
+                mMap = mMapFragment.getMap();
             }
         }
     }
@@ -965,7 +965,7 @@ public class MapsActivity extends FragmentActivity implements
                             integers[1]);
                 }
                 size = locations.size();
-                if (map != null) {
+                if (mMap != null) {
                     for (int i = 0; i < size; i++) {
                         SerializableLocation current = locations.get(i);
                         if (i == 0) {
@@ -980,23 +980,23 @@ public class MapsActivity extends FragmentActivity implements
                             prevLL = currentLL;
                         }
                         if (distanceAllows(prevLL, currentLL)) {
-                            if (sizePoly > 50) {
+                            if (mSizeofPolyline > 50) {
                                 options.add(polyline);
                                 polyline = new PolylineOptions();
-                                sizePoly = 0;
+                                mSizeofPolyline = 0;
                             }
                             polyline.add(prevLL, currentLL).width(4)
                                     .color(Color.BLUE).visible(true);
-                            sizePoly++;
+                            mSizeofPolyline++;
                         }
                         prevLL = currentLL;
                     }
                 }
                 // Catch remaining points under max allowed in one poly.
-                if (sizePoly > 0) {
+                if (mSizeofPolyline > 0) {
                     options.add(polyline);
                     polyline = new PolylineOptions();
-                    sizePoly = 0;
+                    mSizeofPolyline = 0;
                 }
                 ExchangeStore exchangeStore = new ExchangeStore(
                         getApplicationContext(), StorageBase.ENCRYPTION_DEFAULT);
@@ -1013,11 +1013,11 @@ public class MapsActivity extends FragmentActivity implements
         @Override
         protected void onPostExecute(Integer result) {
             super.onPostExecute(result);
-            if (numAsync == 1) {
+            if (mNumAsyncTasks == 1) {
                 polylines = new ArrayList<Polyline>();
                 ownMarkers = new ArrayList<Marker>();
                 for (PolylineOptions poly : options) {
-                    polylines.add(map.addPolyline(poly));
+                    polylines.add(mMap.addPolyline(poly));
                 }
                 for (Exchange exchange : ownExchanges) {
                     if (exchange.start_time > lowerTimeBound
@@ -1027,24 +1027,24 @@ public class MapsActivity extends FragmentActivity implements
                                 exchange.start_location.latitude,
                                 exchange.start_location.longitude);
                         marker.position(exStart);
-                        ownMarkers.add(map.addMarker(marker));
+                        ownMarkers.add(mMap.addMarker(marker));
                     }
                 }
                 if (!isArrow) {
-                    for (Polyline poly : array) {
+                    for (Polyline poly : mPolylineArray) {
                         poly.remove();
                     }
-                    for (Marker marker : markers) {
+                    for (Marker marker : mMarkers) {
                         marker.remove();
                     }
-                    array = polylines;
-                    markers = ownMarkers;
+                    mPolylineArray = polylines;
+                    mMarkers = ownMarkers;
                 } else {
                     for (Polyline polyline : polylines) {
-                        array.add(polyline);
+                        mPolylineArray.add(polyline);
                     }
                     for (Marker marker : ownMarkers) {
-                        markers.add(marker);
+                        mMarkers.add(marker);
                     }
                 }
             }
@@ -1052,7 +1052,7 @@ public class MapsActivity extends FragmentActivity implements
                     "Number of points being shown = " + size,
                     Toast.LENGTH_SHORT).show();
             // TODO (Jesus) Finish the Async race... condition.
-            numAsync -= 1;
+            mNumAsyncTasks -= 1;
             ProgressBar pb = (ProgressBar) findViewById(R.id.progress);
             if (pb != null) {
                 pb.setVisibility(View.INVISIBLE);

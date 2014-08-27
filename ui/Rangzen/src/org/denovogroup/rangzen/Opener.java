@@ -31,6 +31,9 @@
 
 package org.denovogroup.rangzen;
 
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -40,31 +43,37 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewTreeObserver.OnGlobalLayoutListener;
+import android.view.inputmethod.InputMethodManager;
+import android.webkit.WebView.FindListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 /**
- * This class is the manager of all of the fragments in the sidebar including
- * the feed it also manages the sidebar, the two of these managings are very
- * related.
+ * This class is the manager of all of the fragments that are clickable in the
+ * sidebar. The sidebar itself is also programmed in this class and pulls new
+ * activities or switches main fragment views.
  */
 public class Opener extends ActionBarActivity implements OnItemClickListener {
 
-    Button db, retry, capture;
-    LinearLayout surfaceHolder;
-    private DrawerLayout drawerLayout;
-    private ListView listView;
-    private ActionBarDrawerToggle drawerListener;
-    private SidebarListAdapter myAdapter;
-    private TextView currentTV;
+    private DrawerLayout mDrawerLayout;
+    private ListView mListView;
+    private ActionBarDrawerToggle mDrawerListener;
+    private SidebarListAdapter mSidebarAdapter;
+    private static TextView mCurrentTextView;
+    private static boolean mHasStored = false;
 
     /** Initialize the contents of the activities menu. */
     @Override
@@ -82,36 +91,66 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.drawer_layout);
 
-        drawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
-        listView = (ListView) findViewById(R.id.drawerList);
-        myAdapter = new SidebarListAdapter(this);
-        listView.setAdapter(myAdapter);
-        listView.setOnItemClickListener(this);
-        drawerListener = new ActionBarDrawerToggle(this, drawerLayout,
+        if (!mHasStored) {
+            storeTempMessages();
+        }
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
+        // activityRootView = drawerLayout;
+        mListView = (ListView) findViewById(R.id.drawerList);
+        mSidebarAdapter = new SidebarListAdapter(this);
+        mListView.setAdapter(mSidebarAdapter);
+        mListView.setOnItemClickListener(this);
+        mDrawerListener = new ActionBarDrawerToggle(this, mDrawerLayout,
                 R.drawable.ic_drawer, R.string.open, R.string.close) {
-            boolean notOpenedYet = true;
 
             @Override
-            public void onDrawerClosed(View drawerView) {
-                super.onDrawerClosed(drawerView);
+            public boolean onOptionsItemSelected(MenuItem item) {
+                return super.onOptionsItemSelected(item);
             }
 
             @Override
             public void onDrawerOpened(View drawerView) {
                 super.onDrawerOpened(drawerView);
-                if (notOpenedYet) {
-                    View view = listView.getChildAt(0);
-                    currentTV = (TextView) view.findViewById(R.id.textView1);
-                }
+                InputMethodManager inputMethodManager = (InputMethodManager) getApplication()
+                        .getSystemService(Activity.INPUT_METHOD_SERVICE);
+                inputMethodManager.hideSoftInputFromWindow(getWindow()
+                        .getCurrentFocus().getWindowToken(), 0);
             }
 
         };
 
-        drawerLayout.setDrawerListener(drawerListener);
+        mDrawerLayout.setDrawerListener(mDrawerListener);
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        drawerLayout.setDrawerShadow(R.drawable.drawer_shadow, Gravity.LEFT);
+        mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, Gravity.LEFT);
+    }
 
+    private void storeTempMessages() {
+        MessageStore messageStore = new MessageStore(this,
+                StorageBase.ENCRYPTION_DEFAULT);
+        Log.d("Opener", "first " + messageStore.addMessage("Test1", 1));
+        Log.d("Opener",
+                "second "
+                        + messageStore.addMessage("Test2",
+                                1.5f));
+        Log.d("Opener",
+                "third "
+                        + messageStore.addMessage(
+                                "Test3", 2));
+
+        Log.d("Opener", "fourth " + messageStore.addMessage("Test4", .5f));
+        Log.d("Opener", "fifth " + messageStore.addMessage("Test5", .5f));
+        Log.d("Opener", "sixth " + messageStore.addMessage("Test6", .5f));
+
+        Log.d("Opener", "seventh " + messageStore.addMessage("Test7s", .5f));
+        Log.d("Opener", "eighth " + messageStore.addMessage("Test8", .5f));
+        Log.d("Opener", "9 " + messageStore.addMessage("test9", .5f));
+
+        Log.d("Opener", "10 " + messageStore.addMessage("Test10", 2));
+        Log.d("Opener", "11 " + messageStore.addMessage("Test11", .5f));
+        Log.d("Opener", "12 " + messageStore.addMessage("Test12", .5f));
+        Log.d("Opener", "tree size = " + messageStore.getTopK(12).size());
+        mHasStored = true;
     }
 
     /**
@@ -121,7 +160,22 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
-        drawerListener.syncState();
+        mDrawerListener.syncState();
+        if (mCurrentTextView == null) {
+            Fragment needAdd = new ListFragmentOrganizer();
+            Bundle b = new Bundle();
+            b.putSerializable("whichScreen",
+                    ListFragmentOrganizer.FragmentType.FEED);
+            needAdd.setArguments(b);
+            FragmentManager fragmentManager = getSupportFragmentManager();
+
+            FragmentTransaction ft = fragmentManager.beginTransaction();
+
+            ft.replace(R.id.mainContent, needAdd);
+
+            ft.commit();
+            selectItem(0);
+        }
     }
 
     /**
@@ -130,8 +184,11 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (drawerListener.onOptionsItemSelected(item)) {
+        if (mDrawerListener.onOptionsItemSelected(item)) {
             return true;
+        }
+        if (item.getItemId() == R.id.new_post) {
+            showFragment(1);
         }
         return super.onOptionsItemSelected(item);
     }
@@ -142,7 +199,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        drawerListener.onConfigurationChanged(newConfig);
+        mDrawerListener.onConfigurationChanged(newConfig);
     }
 
     /**
@@ -152,9 +209,11 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position,
             long id) {
-        selectItem(position);
+        if (position != 1) {
+            selectItem(position);
+        }
         showFragment(position);
-        drawerLayout.closeDrawers();
+        mDrawerLayout.closeDrawers();
     }
 
     /**
@@ -162,7 +221,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      * the page the fragment that was chosen.
      */
     public void selectItem(int position) {
-        listView.setItemChecked(position, true);
+        mListView.setItemChecked(position, true);
         String[] sidebar = getResources().getStringArray(R.array.sidebar);
         setTitle(sidebar[position]);
     }
@@ -178,6 +237,19 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         getSupportActionBar().setTitle(title);
     }
 
+    public void makeTitleBold(int position) {
+        View view = mListView.getChildAt(position);
+        if (mCurrentTextView == null) {
+            mCurrentTextView = (TextView) view.findViewById(R.id.textView1);
+        }
+        mCurrentTextView.setTypeface(null, Typeface.NORMAL);
+        mCurrentTextView.setTextSize(17);
+        mCurrentTextView = (TextView) view.findViewById(R.id.textView1);
+
+        mCurrentTextView.setTypeface(null, Typeface.BOLD);
+        mCurrentTextView.setTextSize(19);
+    }
+
     /**
      * This handles the instantiation of all of the fragments when they are
      * chosen. This also transforms the title of the item in the list to bold
@@ -189,22 +261,18 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      */
     public void showFragment(int position) {
         Fragment needAdd = null;
-        View view = listView.getChildAt(position);
-        currentTV.setTypeface(null, Typeface.NORMAL);
-        currentTV.setTextSize(17);
-        currentTV = (TextView) view.findViewById(R.id.textView1);
-        currentTV.setTypeface(null, Typeface.BOLD);
-        currentTV.setTextSize(19);
         if (position == 0) {
-            // TODO (Jesus) actually need to create a feed layout and custom
-            // row for the feed.
             needAdd = new ListFragmentOrganizer();
+            Bundle b = new Bundle();
+            b.putSerializable("whichScreen",
+                    ListFragmentOrganizer.FragmentType.FEED);
+            needAdd.setArguments(b);
 
         } else if (position == 1) {
-            // TODO (Jesus) Code for the new post, anything that needs to be
-            // setup for new posts.
-            needAdd = new PostFrag();
-
+            Intent intent = new Intent();
+            intent.setClass(this, PostActivity.class);
+            startActivity(intent);
+            return;
         } else if (position == 2) {
             // TODO (Jesus) For the prototype need to create an add friend page
             // add friend. This is probably no longer necessary at all.
@@ -220,18 +288,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             // TODO (Jesus) Create a view for the saved posts.
             needAdd = new ListFragmentOrganizer();
         }
-
-        // TODO (Jesus) This part will create a fragment manager and transaction
-        // in
-        // order to replace the current fragment on the screen also some
-        // fragment
-        // classes will manage more than one layout so a
-        // bundle will be sent to them.
-
-        Bundle data = new Bundle();
-
-        data.putInt("position", position);
-
+        makeTitleBold(position);
         FragmentManager fragmentManager = getSupportFragmentManager();
 
         FragmentTransaction ft = fragmentManager.beginTransaction();

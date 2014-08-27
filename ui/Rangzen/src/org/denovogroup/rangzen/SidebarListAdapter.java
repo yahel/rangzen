@@ -42,16 +42,17 @@ import android.widget.TextView;
 
 public class SidebarListAdapter extends BaseAdapter {
 
-    private Context context;
-    String[] sidebar;
+    /** Activity context passed into the ListAdapter to get resources. */
+    private Context mContext;
+    /** Array of string items in the sidebar. */
+    private String[] mSidebarItems;
 
     /**
      * I currently have not found the icons for this, but this is a list of
      * icons to be used in the NavigationDrawer.
      * 
      */
-    int[] images = { R.drawable.ic_launcher, R.drawable.ic_launcher,
-            R.drawable.ic_launcher, R.drawable.ic_launcher,
+    private int[] mSidebarImages = { R.drawable.ic_launcher, R.drawable.ic_launcher,
             R.drawable.ic_launcher, R.drawable.ic_launcher };
 
     /**
@@ -62,13 +63,13 @@ public class SidebarListAdapter extends BaseAdapter {
      *            The context of the activity that spawned this class.
      */
     public SidebarListAdapter(Context context) {
-        this.context = context;
-        sidebar = context.getResources().getStringArray(R.array.sidebar);
+        this.mContext = context;
+        mSidebarItems = context.getResources().getStringArray(R.array.sidebar);
     }
 
     @Override
     public int getCount() {
-        return sidebar.length;
+        return mSidebarItems.length;
     }
 
     /**
@@ -77,7 +78,7 @@ public class SidebarListAdapter extends BaseAdapter {
      */
     @Override
     public Object getItem(int position) {
-        return sidebar[position];
+        return mSidebarItems[position];
     }
 
     @Override
@@ -93,7 +94,7 @@ public class SidebarListAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         View row = null;
         if (convertView == null) {
-            LayoutInflater inflater = (LayoutInflater) context
+            LayoutInflater inflater = (LayoutInflater) mContext
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             row = inflater.inflate(R.layout.custom_row, parent, false);
         } else {
@@ -106,14 +107,8 @@ public class SidebarListAdapter extends BaseAdapter {
         rowText.setPadding(50, 26, 0, 0);
         rowText.setTextColor(row.getResources().getColor(R.color.whitish));
         ImageView rowImage = (ImageView) row.findViewById(R.id.imageView1);
-        rowText.setText(sidebar[position]);
-        rowImage.setImageResource(images[position]);
-
-        if (position == 0) {
-            rowText.setTypeface(null, Typeface.BOLD);
-            rowText.setTextSize(19);
-        }
-
+        rowText.setText(mSidebarItems[position]);
+        rowImage.setImageResource(mSidebarImages[position]);
         return row;
     }
 

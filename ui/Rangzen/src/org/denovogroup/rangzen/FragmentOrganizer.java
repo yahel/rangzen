@@ -31,7 +31,9 @@
 
 package org.denovogroup.rangzen;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -40,12 +42,16 @@ import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -54,19 +60,21 @@ import android.widget.TextView;
 
 /**
  * This class manages the behavior for all of the introductory fragments as well
- * as the behavior of the transparent fragment before the maps. It is in control
- * of text fields, positioning, as well as any Facebook activities.
+ * as the behavior of the transparent fragment before the maps and any other non
+ * listview fragment. It is in control of text fields, positioning, and some
+ * functionality.
  */
-public class IntroductionFragment extends Fragment {
-    private RelativeLayout currentRelativeLayout;
-    private FrameLayout currentFrameLayout;
+public class FragmentOrganizer extends Fragment {
+    private RelativeLayout mCurrentRelativeLayout;
     private ImageView iv;
     private static final String TAG = "MainFragment";
+
     // Typeface zwodTypeFace;
 
     enum FragmentType {
-        FIRSTINTRO, SECONDINTRO, THIRDINTRO, FIRSTABOUT, SECONDABOUT, TRANSPARENT
+        FIRSTINTRO, SECONDINTRO, THIRDINTRO, FIRSTABOUT, SECONDABOUT, TRANSPARENT, POST
     }
+
     /**
      * This is the amount in density pixels that the title of the app will be
      * from the top of the screen.
@@ -91,83 +99,20 @@ public class IntroductionFragment extends Fragment {
             Bundle savedInstanceState) {
 
         Bundle b = getArguments();
-        FragmentType whichScreen = (FragmentType) b.getSerializable("whichScreen");
+        FragmentType whichScreen = (FragmentType) b
+                .getSerializable("whichScreen");
         switch (whichScreen) {
         case FIRSTINTRO:
-            View view = (View) inflater.inflate(R.layout.firstintro, container,
-                    false);
-            currentRelativeLayout = (RelativeLayout) view
-                    .findViewById(R.id.firstIntro);
-            currentFrameLayout = (FrameLayout) view.findViewById(R.id.firstFrame);
-            iv = (ImageView) view.findViewById(R.id.imageView1);
-
-            showFullScreenImage(R.drawable.newyorkyyyyy);
-            makeRanzenTextView();
-            TextView tv = (TextView) view.findViewById(R.id.textView1);
-            tv.bringToFront();
-            Button cont = (Button) view.findViewById(R.id.contButton1);
-            cont.setText("Continue");
-            cont.setTextColor(Color.WHITE);
-            cont.bringToFront();
-            currentRelativeLayout.bringToFront();
-            return view;
+            return firstIntro(inflater, container);
 
         case SECONDINTRO:
-            View view1 = inflater.inflate(R.layout.secondintro, container,
-                    false);
-            currentRelativeLayout = (RelativeLayout) view1
-                    .findViewById(R.id.secondIntro);
-            currentFrameLayout = (FrameLayout) view1.findViewById(R.id.secondFrame);
-            iv = (ImageView) view1.findViewById(R.id.imageView2);
-            showFullScreenImage(R.drawable.hands);
-
-            makeRanzenTextView();
-
-            Button cont1 = (Button) view1.findViewById(R.id.contButton2);
-            cont1.setText("Continue");
-            cont1.setTextColor(Color.WHITE);
-            cont1.bringToFront();
-            TextView tv2 = (TextView) view1.findViewById(R.id.textView2);
-            tv2.bringToFront();
-            currentRelativeLayout.bringToFront();
-            return view1;
+            return secondIntro(inflater, container);
 
         case THIRDINTRO:
-            View view2 = inflater
-                    .inflate(R.layout.thirdintro, container, false);
-            currentRelativeLayout = (RelativeLayout) view2
-                    .findViewById(R.id.thirdIntro);
-            currentFrameLayout = (FrameLayout) view2.findViewById(R.id.thirdFrame);
-            iv = (ImageView) view2.findViewById(R.id.imageView3);
-            
-            showFullScreenImage(R.drawable.soccer);
+            return thirdIntro(inflater, container);
 
-            makeRanzenTextView();
-            Button cont2 = (Button) view2.findViewById(R.id.contButton3);
-            cont2.setText("Continue");
-            cont2.setTextColor(Color.WHITE);
-            cont2.bringToFront();
-
-            TextView tv3 = (TextView) view2.findViewById(R.id.textView3);
-            tv3.bringToFront();
-            currentRelativeLayout.bringToFront();
-
-            return view2;
-            
         case FIRSTABOUT:
-            View view3 = inflater.inflate(R.layout.modifiedabout, container, false);
-            Button button = (Button) view3.findViewById(R.id.continueBeforeMaps);
-            button.setText("Continue");
-            button.setOnClickListener(new View.OnClickListener() { 
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent();
-                    intent.setClass(v.getContext(), MapsActivity.class);
-                    startActivity(intent);
-                    getActivity().finish();
-                }
-            });
-            return view3;
+            return firstAbout(inflater, container);
 
         case SECONDABOUT:
 
@@ -181,10 +126,135 @@ public class IntroductionFragment extends Fragment {
                     container, false);
             view6.setSoundEffectsEnabled(false);
             return view6;
+
+        case POST:
+            return post(inflater, container);
         default:
             return null;
         }
+    }
 
+    private View firstIntro(LayoutInflater inflater, ViewGroup container) {
+        View view = (View) inflater.inflate(R.layout.firstintro, container,
+                false);
+        mCurrentRelativeLayout = (RelativeLayout) view
+                .findViewById(R.id.firstIntro);
+        iv = (ImageView) view.findViewById(R.id.imageView1);
+
+        showFullScreenImage(R.drawable.newyorkyyyyy);
+        makeRanzenTextView();
+        TextView tv = (TextView) view.findViewById(R.id.textView1);
+        tv.bringToFront();
+        Button cont = (Button) view.findViewById(R.id.contButton1);
+        cont.setText("Continue");
+        cont.setTextColor(Color.WHITE);
+        cont.bringToFront();
+        mCurrentRelativeLayout.bringToFront();
+        return view;
+    }
+
+    private View secondIntro(LayoutInflater inflater, ViewGroup container) {
+        View view1 = inflater.inflate(R.layout.secondintro, container, false);
+        mCurrentRelativeLayout = (RelativeLayout) view1
+                .findViewById(R.id.secondIntro);
+        iv = (ImageView) view1.findViewById(R.id.imageView2);
+        showFullScreenImage(R.drawable.hands);
+
+        makeRanzenTextView();
+
+        Button cont1 = (Button) view1.findViewById(R.id.contButton2);
+        cont1.setText("Continue");
+        cont1.setTextColor(Color.WHITE);
+        cont1.bringToFront();
+        TextView tv2 = (TextView) view1.findViewById(R.id.textView2);
+        tv2.bringToFront();
+        mCurrentRelativeLayout.bringToFront();
+        return view1;
+    }
+
+    private View thirdIntro(LayoutInflater inflater, ViewGroup container) {
+        View view2 = inflater.inflate(R.layout.thirdintro, container, false);
+        mCurrentRelativeLayout = (RelativeLayout) view2
+                .findViewById(R.id.thirdIntro);
+        iv = (ImageView) view2.findViewById(R.id.imageView3);
+
+        showFullScreenImage(R.drawable.soccer);
+
+        makeRanzenTextView();
+        Button cont2 = (Button) view2.findViewById(R.id.contButton3);
+        cont2.setText("Continue");
+        cont2.setTextColor(Color.WHITE);
+        cont2.bringToFront();
+
+        TextView tv3 = (TextView) view2.findViewById(R.id.textView3);
+        tv3.bringToFront();
+        mCurrentRelativeLayout.bringToFront();
+
+        return view2;
+    }
+
+    private View firstAbout(LayoutInflater inflater, ViewGroup container) {
+        View view3 = inflater.inflate(R.layout.modifiedabout, container, false);
+        Button button = (Button) view3.findViewById(R.id.continueBeforeMaps);
+        button.setText("Continue");
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.setClass(v.getContext(), Opener.class);
+                startActivity(intent);
+                SharedPreferences settings = getActivity()
+                        .getSharedPreferences(SlidingPageIndicator.PREFS_NAME,
+                                0);
+                SharedPreferences.Editor editor = settings.edit();
+
+                editor.putBoolean("hasLoggedIn", true);
+                editor.commit();
+                getActivity().finish();
+            }
+        });
+        return view3;
+    }
+
+    private View post(LayoutInflater inflater, ViewGroup container) {
+        View view7 = inflater.inflate(R.layout.makepost, container, false);
+        EditText messageBox = (EditText) view7.findViewById(R.id.editText1);
+        InputMethodManager imm = (InputMethodManager) getActivity()
+                .getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.toggleSoftInput(InputMethodManager.SHOW_FORCED,
+                InputMethodManager.HIDE_IMPLICIT_ONLY);
+        messageBox.addTextChangedListener(new TextWatcher() {
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count,
+                    int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before,
+                    int count) {
+                TextView characterCount = (TextView) getActivity()
+                        .findViewById(R.id.characterCount);
+                characterCount.setText(String.valueOf(140 - count));
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+
+        });
+        Button cancel = (Button) view7.findViewById(R.id.button1);
+        cancel.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                EditText message = (EditText) getActivity().findViewById(
+                        R.id.editText1);
+                message.setText("");
+            }
+        });
+        Button send = (Button) view7.findViewById(R.id.button2);
+        return view7;
     }
 
     /**
@@ -289,7 +359,7 @@ public class IntroductionFragment extends Fragment {
         tv.setText("Rangzen");
         tv.setTextColor(Color.WHITE);
         tv.setTextSize(55);
-        currentRelativeLayout.addView(tv);
+        mCurrentRelativeLayout.addView(tv);
         RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT,
                 RelativeLayout.LayoutParams.WRAP_CONTENT);

@@ -15,34 +15,44 @@
         android:layout_weight="1.07"
         android:ems="10"
         android:gravity="top|left"
-        android:hint="@string/hint" >
+        android:hint="@string/hint"
+        android:maxLength="140" >
 
         <requestFocus />
     </EditText>
 
     <LinearLayout
+        android:id="@+id/accountSpinner"
         style="@style/Holo.ButtonBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="bottom|center_vertical" >
 
         <Button
-            android:id="@android:id/button1"
+            android:id="@+id/button1"
             style="@style/ButtonBarButton"
             android:layout_width="wrap_content"
             android:layout_height="50dp"
             android:layout_weight="1"
-            android:text="@string/action_search" />
+            android:text="Clear" />
+
+        <TextView
+            android:id="@+id/characterCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingLeft="20dp"
+            android:paddingRight="20dp"
+            android:text="140" />
 
         <Button
-            android:id="@android:id/button2"
+            android:id="@+id/button2"
             style="@style/ButtonBarButton"
             android:layout_width="wrap_content"
             android:layout_height="50dp"
             android:layout_alignBaseline="@android:id/button1"
             android:layout_weight="1"
-            android:enabled="false"
-            android:text="@string/action_settings" />
+            android:enabled="true"
+            android:text="Send" />
     </LinearLayout>
 
 </LinearLayout>

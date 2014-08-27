@@ -36,12 +36,28 @@ import android.support.v4.app.ListFragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.Toast;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ListView;
 
 /**
  * This class is meant to be an organizer for the list views that will be
  * present in Rangzen which are the friends list and feed.
  */
 public class ListFragmentOrganizer extends ListFragment {
+
+    /**
+     * There are two list Fragments in the UI, the feed and possibly the friends
+     * page.
+     */
+    enum FragmentType {
+        FEED, FRIENDS
+    }
+
+    /** Creates and populates the content for the feed fragment. */
+    private FeedListAdapter mFeedListAdaper;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,6 +66,34 @@ public class ListFragmentOrganizer extends ListFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.feed, container, false);
+
+        Bundle b = getArguments();
+        FragmentType whichScreen = (FragmentType) b
+                .getSerializable("whichScreen");
+        switch (whichScreen) {
+        case FEED:
+            View view = (View) inflater
+                    .inflate(R.layout.feed, container, false);
+            ListView listView = (ListView) view.findViewById(android.R.id.list);
+            mFeedListAdaper = new FeedListAdapter(getActivity());
+            listView.setAdapter(mFeedListAdaper);
+            return view;
+        case FRIENDS:
+            View view2 = inflater.inflate(R.layout.feed_row, container, false);
+            return view2;
+        default:
+            return null;
+        }
     }
+
+    @Override
+    public void onListItemClick(ListView l, View v, int position, long id) {
+        // TODO (Jesus) A lot of getting the correct hashtags... this may be
+        // intensive? Idk how else to do it.
+        super.onListItemClick(l, v, position, id);
+        Toast.makeText(getActivity(), "position = " + position,
+                Toast.LENGTH_SHORT).show();
+
+    }
+
 }
