@@ -52,3 +52,28 @@ prebuilt_jar(
   visibility = [ 'PUBLIC' ],
 )
 
+prebuilt_native_library(
+  name = 'batphone_native_libs',
+  native_libs = 'batphone/libs',
+)
+
+android_resource(
+  name = 'servalMeshRes',
+  res = 'batphone/res',
+  package = 'org.servalproject',
+)
+
+android_library(
+  name = 'servalMesh',
+  srcs = glob(['batphone/src/org/servalproject/shell/*.java']) +
+         glob(['batphone/src/org/servalproject/system/*.java'], 
+                excludes = [
+                  'batphone/src/org/servalproject/system/StateCheckIntentService.java',
+                ]
+             ),
+  deps = [
+    ':batphone_native_libs',
+    ':servalMeshRes',
+  ],
+  visibility = [ 'PUBLIC' ],
+)

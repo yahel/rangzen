@@ -24,6 +24,6 @@ android_library(
     '//ui/google-play-services_lib/libs:google-play-services',
     '//ui/google-play-services_lib:googlePlayServicesRes',
     '//java/org/denovogroup/rangzen:experimentalBackend',
-    '//libs/batphone:servalMesh',
+    '//libs:servalMesh',
   ],
 )
