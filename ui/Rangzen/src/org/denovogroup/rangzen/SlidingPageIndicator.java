@@ -33,6 +33,7 @@ package org.denovogroup.rangzen;
 
 import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 
@@ -43,6 +44,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
@@ -63,6 +65,7 @@ import com.viewpagerindicator.PageIndicator;
 import org.servalproject.shell.Shell;
 import org.servalproject.system.Chipset;
 import org.servalproject.system.ChipsetDetection;
+import org.servalproject.system.CoreTask;
 import org.servalproject.system.LogOutput;
 import org.servalproject.system.WifiAdhocControl;
 import org.servalproject.system.WifiControl;
@@ -106,14 +109,19 @@ public class SlidingPageIndicator extends FragmentActivity {
         Thread t = new Thread() {
           @Override
           public void run() {
+            Log.v(TAG, "Extracting serval.zip");
+            try { 
+              Shell shell = Shell.startRootShell();
+              AssetManager m = SlidingPageIndicator.this.getAssets();
+              CoreTask coretask = new CoreTask();
+              coretask.setPath(SlidingPageIndicator.this.getFilesDir().getAbsolutePath());
+              coretask.extractZip(m.open("serval.zip"), new File(coretask.DATA_FILE_PATH));
+              Log.i(TAG, "Extracted serval.zip to " + coretask.DATA_FILE_PATH);
+            } catch (IOException e) {
+              Log.e(TAG, "IOException extracting serval.zip: " + e);
+            }
             ChipsetDetection.context = getApplicationContext();
             ChipsetDetection cd = ChipsetDetection.getDetection();
-
-            if (cd.downloadNewScripts()) {
-              Log.i(TAG, "Downloaded new scripts successfully.");
-            } else {
-              Log.e(TAG, "Failed to download new scripts.");
-            }
 
             Set<Chipset> chipsets = cd.getDetectedChipsets();
             Log.i(TAG, "Detected chipsets: " + chipsets);
