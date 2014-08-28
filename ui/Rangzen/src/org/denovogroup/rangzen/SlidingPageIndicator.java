@@ -32,6 +32,10 @@
 package org.denovogroup.rangzen;
 
 import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
+
+import java.io.IOException;
+import java.util.Set;
+
 import org.denovogroup.rangzen.RangzenService;
 import org.denovogroup.rangzen.StorageBase;
 
@@ -56,6 +60,15 @@ import android.widget.ImageView;
 import com.viewpagerindicator.LinePageIndicator;
 import com.viewpagerindicator.PageIndicator;
 
+import org.servalproject.shell.Shell;
+import org.servalproject.system.Chipset;
+import org.servalproject.system.ChipsetDetection;
+import org.servalproject.system.LogOutput;
+import org.servalproject.system.WifiAdhocControl;
+import org.servalproject.system.WifiControl;
+import org.servalproject.system.WifiControl.Completion;
+import org.servalproject.system.WifiControl.CompletionReason;
+
 /**
  * This class creates the LinePageIndicator, which are the moving lines on the
  * bottom of the screen for different tabs. These are both created on the
@@ -67,6 +80,8 @@ public class SlidingPageIndicator extends FragmentActivity {
 
     /** Shown in Android log. */
     private static final String TAG = "SlidingPageIndicator";
+
+    public WifiControl wifiControl;
     
     /**
      * Give your SharedPreferences file a name and save it to a static variable.
@@ -87,6 +102,48 @@ public class SlidingPageIndicator extends FragmentActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Thread t = new Thread() {
+          @Override
+          public void run() {
+            ChipsetDetection.context = getApplicationContext();
+            ChipsetDetection cd = ChipsetDetection.getDetection();
+
+            if (cd.downloadNewScripts()) {
+              Log.i(TAG, "Downloaded new scripts successfully.");
+            } else {
+              Log.e(TAG, "Failed to download new scripts.");
+            }
+
+            Set<Chipset> chipsets = cd.getDetectedChipsets();
+            Log.i(TAG, "Detected chipsets: " + chipsets);
+
+            wifiControl = new WifiControl(SlidingPageIndicator.this);
+            wifiControl.off(new Completion() {
+              @Override
+              public void onFinished(CompletionReason reason) {
+                try { 
+                  Shell shell = Shell.startRootShell();
+                  if (wifiControl.testAdhoc(shell, null)) {
+                    Log.i(TAG, "testAdhoc succeeded.");
+                  } else {
+                    Log.e(TAG, "testAdhoc failed.");
+                  }
+                } catch (IOException e) {
+                  Log.e(TAG, "IOException while testing whether Adhoc is available!: " + e);
+                }
+              }
+            });
+
+            if (WifiAdhocControl.isAdhocSupported()) {
+              Log.i(TAG, "Adhoc wifi is supported according to Serval Mesh.");
+            } else {
+              Log.e(TAG, "Adhoc wifi NOT supported according to Serval Mesh.");
+            }
+
+          }
+        };
+        t.start();
 
         mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
         String state = getExperimentState();

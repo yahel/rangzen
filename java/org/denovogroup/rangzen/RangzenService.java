@@ -62,6 +62,7 @@ import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 
+
 /**
  * Core service of the Rangzen app. Started at startup, remains alive
  * indefinitely to perform the background tasks of Rangzen.

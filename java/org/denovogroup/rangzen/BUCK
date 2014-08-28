@@ -31,5 +31,6 @@ android_library(
     '//libs:gson',
     '//res/org/denovogroup/rangzen:res',
     '//java/com/github/kevinsawicki/http:httpRequest',
+    '//libs/batphone:servalMesh'
   ],
 )

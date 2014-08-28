@@ -1,0 +1,3 @@
+[submodule "libs/batphone"]
+	path = libs/batphone
+	url = git@github.com:denovogroup/batphone.git
