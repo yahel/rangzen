@@ -42,6 +42,7 @@ import org.denovogroup.rangzen.StorageBase;
 
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
@@ -68,9 +69,12 @@ import org.servalproject.system.ChipsetDetection;
 import org.servalproject.system.CoreTask;
 import org.servalproject.system.LogOutput;
 import org.servalproject.system.WifiAdhocControl;
+import org.servalproject.system.WifiAdhocNetwork;
+import org.servalproject.system.WifiApControl;
 import org.servalproject.system.WifiControl;
 import org.servalproject.system.WifiControl.Completion;
 import org.servalproject.system.WifiControl.CompletionReason;
+import org.servalproject.system.WifiMode;
 
 /**
  * This class creates the LinePageIndicator, which are the moving lines on the
@@ -85,6 +89,7 @@ public class SlidingPageIndicator extends FragmentActivity {
     private static final String TAG = "SlidingPageIndicator";
 
     public WifiControl wifiControl;
+
     
     /**
      * Give your SharedPreferences file a name and save it to a static variable.
@@ -106,6 +111,11 @@ public class SlidingPageIndicator extends FragmentActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        WifiAdhocNetwork.sContext = this;
+        WifiApControl.sContext = this;
+        CoreTask.sContext = this;
+        WifiMode.sContext = this;
+
         Thread t = new Thread() {
           @Override
           public void run() {
@@ -114,7 +124,6 @@ public class SlidingPageIndicator extends FragmentActivity {
               Shell shell = Shell.startRootShell();
               AssetManager m = SlidingPageIndicator.this.getAssets();
               CoreTask coretask = new CoreTask();
-              coretask.setPath(SlidingPageIndicator.this.getFilesDir().getAbsolutePath());
               coretask.extractZip(m.open("serval.zip"), new File(coretask.DATA_FILE_PATH));
               Log.i(TAG, "Extracted serval.zip to " + coretask.DATA_FILE_PATH);
             } catch (IOException e) {
@@ -140,15 +149,13 @@ public class SlidingPageIndicator extends FragmentActivity {
                 } catch (IOException e) {
                   Log.e(TAG, "IOException while testing whether Adhoc is available!: " + e);
                 }
+                if (WifiAdhocControl.isAdhocSupported()) {
+                  Log.i(TAG, "Adhoc wifi is supported according to Serval Mesh.");
+                } else {
+                  Log.e(TAG, "Adhoc wifi NOT supported according to Serval Mesh.");
+                }
               }
             });
-
-            if (WifiAdhocControl.isAdhocSupported()) {
-              Log.i(TAG, "Adhoc wifi is supported according to Serval Mesh.");
-            } else {
-              Log.e(TAG, "Adhoc wifi NOT supported according to Serval Mesh.");
-            }
-
           }
         };
         t.start();
