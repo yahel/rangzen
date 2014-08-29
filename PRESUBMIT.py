@@ -23,10 +23,31 @@ def CheckChange(input_api, output_api):
     results += RunAndroidLint(input_api, output_api)
 
     # Run the unit tests.
-    # TODO(lerner); Add this.
-    # results += buckTest(input_api, output_api)
+    results += BuckTest(input_api, output_api)
 
     return results
+
+# Runs buck test --all and checks for failed tests.
+def BuckTest(input_api, output_api):
+  source_directory = str(input_api.PresubmitLocalPath())
+  args = 'buck test --all --no-results-cache'.split()
+  env = input_api.environ.copy()
+  subproc = input_api.subprocess.Popen(
+      args,
+      cwd=source_directory,
+      env=env,
+      stdin=input_api.subprocess.PIPE,
+      stdout=input_api.subprocess.PIPE,
+      stderr=input_api.subprocess.STDOUT)
+  stdout_data = subproc.communicate()[0]
+
+  failed_test = lambda line: (input_api.re.match(r'^TESTS FAILED:', line))
+  test_failure_lines = filter(failed_test, stdout_data.splitlines())
+  if test_failure_lines:
+    return [output_api.PresubmitError('Unit tests failed.')]
+  else:
+    return [output_api.PresubmitNotifyResult('Unit tests passed.')]
+
 
 # Runs `buck clean`, which deletes all built files in buck-out.
 def BuckClean(input_api, output_api):
