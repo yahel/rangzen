@@ -111,6 +111,12 @@ public class SlidingPageIndicator extends FragmentActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // TODO(lerner): Clean up this hacky mess. Choose either to modify the
+        // APIs of the Batphone classes to pass them contexts on initialization
+        // OR have one central static place to keep a single context they can
+        // all use. Note that it's probably a good idea to keep them oblivious
+        // about Rangzen code, so having them reference a static member of 
+        // one of our activities or services is NOT recommended.
         WifiAdhocNetwork.sContext = this;
         WifiApControl.sContext = this;
         CoreTask.sContext = this;
@@ -119,43 +125,9 @@ public class SlidingPageIndicator extends FragmentActivity {
         Thread t = new Thread() {
           @Override
           public void run() {
-            Log.v(TAG, "Extracting serval.zip");
-            try { 
-              Shell shell = Shell.startRootShell();
-              AssetManager m = SlidingPageIndicator.this.getAssets();
-              CoreTask coretask = new CoreTask();
-              coretask.extractZip(m.open("serval.zip"), new File(coretask.DATA_FILE_PATH));
-              Log.i(TAG, "Extracted serval.zip to " + coretask.DATA_FILE_PATH);
-            } catch (IOException e) {
-              Log.e(TAG, "IOException extracting serval.zip: " + e);
-            }
-            ChipsetDetection.context = getApplicationContext();
-            ChipsetDetection cd = ChipsetDetection.getDetection();
-
-            Set<Chipset> chipsets = cd.getDetectedChipsets();
-            Log.i(TAG, "Detected chipsets: " + chipsets);
-
-            wifiControl = new WifiControl(SlidingPageIndicator.this);
-            wifiControl.off(new Completion() {
-              @Override
-              public void onFinished(CompletionReason reason) {
-                try { 
-                  Shell shell = Shell.startRootShell();
-                  if (wifiControl.testAdhoc(shell, null)) {
-                    Log.i(TAG, "testAdhoc succeeded.");
-                  } else {
-                    Log.e(TAG, "testAdhoc failed.");
-                  }
-                } catch (IOException e) {
-                  Log.e(TAG, "IOException while testing whether Adhoc is available!: " + e);
-                }
-                if (WifiAdhocControl.isAdhocSupported()) {
-                  Log.i(TAG, "Adhoc wifi is supported according to Serval Mesh.");
-                } else {
-                  Log.e(TAG, "Adhoc wifi NOT supported according to Serval Mesh.");
-                }
-              }
-            });
+            AdhocController ac = new AdhocController(SlidingPageIndicator.this);
+            ac.extractServalZip();
+            ac.testAdhoc();
           }
         };
         t.start();
