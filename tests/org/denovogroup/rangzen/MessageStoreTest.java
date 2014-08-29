@@ -117,14 +117,14 @@ public class MessageStoreTest {
     assertEquals(topk.size(), 0);
 
     topk = store.getTopK(1);
-    assertEquals(topk.size(), 1);
+    assertEquals(1, flattenTopK(topk).size());
     assertTrue(flattenTopK(topk).contains(TEST_MSG_1));
     assertFalse(flattenTopK(topk).contains(TEST_MSG_2));
     assertFalse(flattenTopK(topk).contains(TEST_MSG_3));
     assertEquals((Float) topk.lastKey(), TEST_PRIORITY_1, 0.01f);
 
     topk = store.getTopK(2);
-    assertEquals(topk.size(), 2);
+    assertEquals(2, flattenTopK(topk).size());
     assertTrue(flattenTopK(topk).contains(TEST_MSG_1));
     assertFalse(flattenTopK(topk).contains(TEST_MSG_2));
     assertTrue(flattenTopK(topk).contains(TEST_MSG_3));
@@ -132,7 +132,7 @@ public class MessageStoreTest {
     assertEquals((Float) topk.lowerKey(topk.lastKey()), TEST_PRIORITY_3, 0.01f);
 
     topk = store.getTopK(3);
-    assertEquals(topk.size(), 3);
+    assertEquals(3, flattenTopK(topk).size());
     assertTrue(flattenTopK(topk).contains(TEST_MSG_1));
     assertTrue(flattenTopK(topk).contains(TEST_MSG_2));
     assertTrue(flattenTopK(topk).contains(TEST_MSG_3));
@@ -188,6 +188,33 @@ public class MessageStoreTest {
     }
     // One message per message we inserted.
     assertEquals(12, messagesReturned);
+  }
+
+  /**
+   * Regression test for the bug where getTopK returns too many messages because
+   * it was stopping based on #bins instead of #messages.
+   */
+  @Test
+  public void regressionGetTopKReturnsTooManyMessages() {
+    store.addMessage("Test1", TEST_PRIORITY_1);
+    store.addMessage("Test2", TEST_PRIORITY_1);
+    store.addMessage("Test3", TEST_PRIORITY_1);
+    store.addMessage("Test4", TEST_PRIORITY_2);
+    store.addMessage("Test5", TEST_PRIORITY_3);
+    store.addMessage("Test6", TEST_PRIORITY_4);
+    store.addMessage("Test7s", TEST_PRIORITY_4);
+    store.addMessage("Test8", TEST_PRIORITY_4);
+    store.addMessage("test9", TEST_PRIORITY_4);
+    store.addMessage("Test10", TEST_PRIORITY_4);
+    store.addMessage("Test11", TEST_PRIORITY_5);
+    store.addMessage("Test12", TEST_PRIORITY_5);
+
+    // One collection of messages per distinct priority value (there are 5 above).
+    assertEquals(5, store.getTopK(12).size());
+
+    // Get right number of individual messages.
+    assertEquals(11, flattenTopK(store.getTopK(11)).size());
+    assertEquals(12, flattenTopK(store.getTopK(12)).size());
   }
 
   @Test

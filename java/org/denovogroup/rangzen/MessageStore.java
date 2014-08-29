@@ -226,6 +226,8 @@ public class MessageStore {
   public TreeMap<Float, Collection<String>> getTopK(int k) {
     TreeMap<Float, Collection<String>> topk = new TreeMap<Float, Collection<String>>();
  
+      int msgsStored = 0;
+
 binloop: for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
       String binKey = getBinKey(bin);
       Set<String> msgs = store.getSet(binKey);
@@ -243,13 +245,14 @@ binloop: for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
       NavigableMap<Float, List<String>> descMap = sortedmsgs.descendingMap();
       for (Entry<Float, List<String>> e : descMap.entrySet()) {
         for (String m : e.getValue()) {
-          if (topk.size() >= k) break binloop;
+          if (msgsStored >= k) break binloop;
 
           float priority = e.getKey();
           if (!topk.containsKey(priority)) {
             topk.put(priority, new HashSet<String>());
           }
           topk.get(priority).add(m);
+          msgsStored++;
         }
       }
     }
