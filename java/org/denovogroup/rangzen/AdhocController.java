@@ -37,12 +37,15 @@ import java.io.IOException;
 import org.servalproject.shell.Shell;
 import org.servalproject.system.CoreTask;
 import org.servalproject.system.WifiAdhocControl;
+import org.servalproject.system.WifiApControl;
+import org.servalproject.system.WifiApNetwork;
 import org.servalproject.system.WifiControl;
 import org.servalproject.system.WifiControl.Completion;
 import org.servalproject.system.WifiControl.CompletionReason;
 
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.net.wifi.WifiManager;
 import android.util.Log;
 
 public class AdhocController {
@@ -59,6 +62,11 @@ public class AdhocController {
    */
   private boolean adhocSupported;
 
+  /**
+   * Controller for becoming an AP.
+   */
+  private WifiApControl mWifiApControl;
+
   /** Included in Android monitor log messages. */
   private static String TAG = "AdhocController";
 
@@ -71,6 +79,33 @@ public class AdhocController {
   public AdhocController(Context context) {
     this.mContext = context;
     this.mWifiControl = new WifiControl(mContext);
+    WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+    this.mWifiApControl = WifiApControl.getApControl(wifiManager);
+  }
+
+  /**
+   * Check whether being an adhoc AP is supported on this device according
+   * to the assessment of Serval Mesh's WifiApControl.
+   *
+   * @return True if being an AP is supported, false otherwise.
+   */
+  public boolean isApModeSupported() {
+    return WifiApControl.isApSupported();
+  }
+
+  /**
+   * Attempt to become an AP.
+   */
+  public void activateApMode() {
+    WifiApNetwork network = mWifiApControl.getDefaultNetwork();
+    if (network != null && network.config != null) {
+      Log.i(TAG, "Calling connectAp");
+      mWifiControl.connectAp(network.config, null);
+      Log.i(TAG, "Called connectAp");
+    } else {
+      Log.e(TAG, "Network or its config was null (network was: " + network + ")");
+    }
+
   }
 
   /**

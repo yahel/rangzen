@@ -127,7 +127,17 @@ public class SlidingPageIndicator extends FragmentActivity {
           public void run() {
             AdhocController ac = new AdhocController(SlidingPageIndicator.this);
             ac.extractServalZip();
+
+            // This requires the serval.zip files.
             ac.testAdhoc();
+
+            // This DOESN'T require the serval.zip files
+            if (ac.isApModeSupported()) {
+              Log.i(TAG, "AP mode is supported");
+              ac.activateApMode();
+            } else {
+              Log.e(TAG, "AP mode is not supported");
+            }
           }
         };
         t.start();
