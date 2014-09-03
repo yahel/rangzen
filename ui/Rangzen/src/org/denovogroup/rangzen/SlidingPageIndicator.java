@@ -49,6 +49,7 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
@@ -121,6 +122,7 @@ public class SlidingPageIndicator extends FragmentActivity {
         WifiApControl.sContext = this;
         CoreTask.sContext = this;
         WifiMode.sContext = this;
+        CoreTask.sSettings = PreferenceManager.getDefaultSharedPreferences(this);
 
         Thread t = new Thread() {
           @Override
@@ -131,13 +133,15 @@ public class SlidingPageIndicator extends FragmentActivity {
             // This requires the serval.zip files.
             ac.testAdhoc();
 
+            ac.activateAdhocMode("rangzen_adhoc");
+
             // This DOESN'T require the serval.zip files
-            if (ac.isApModeSupported()) {
-              Log.i(TAG, "AP mode is supported");
-              ac.activateApMode();
-            } else {
-              Log.e(TAG, "AP mode is not supported");
-            }
+            // if (ac.isApModeSupported()) {
+            //   Log.i(TAG, "AP mode is supported");
+            //   ac.activateApMode();
+            // } else {
+            //   Log.e(TAG, "AP mode is not supported");
+            // }
           }
         };
         t.start();

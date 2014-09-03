@@ -31,12 +31,17 @@
 
 package org.denovogroup.rangzen;
 
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 import org.servalproject.shell.Shell;
 import org.servalproject.system.CoreTask;
 import org.servalproject.system.WifiAdhocControl;
+import org.servalproject.system.WifiAdhocNetwork;
 import org.servalproject.system.WifiApControl;
 import org.servalproject.system.WifiApNetwork;
 import org.servalproject.system.WifiControl;
@@ -66,6 +71,9 @@ public class AdhocController {
    * Controller for becoming an AP.
    */
   private WifiApControl mWifiApControl;
+
+  /** Instance of WifiAdhocControl used to manipulate WifiAdhoc. */
+  private WifiAdhocControl mWifiAdhocControl;
 
   /** Included in Android monitor log messages. */
   private static String TAG = "AdhocController";
@@ -107,6 +115,30 @@ public class AdhocController {
     }
 
   }
+
+  /**
+   * Activate Adhoc Mode.
+   */
+  public void activateAdhocMode() {
+    // WifiAdhocNetwork network = WifiAdhocControl.getDefaultNetwork();
+    if (network == null) {
+      Log.e(TAG, "Attempted to connect to adhoc network that doesn't exist or something?");
+      return;
+    }
+    mWifiControl.connectAdhoc(network, new Completion() {
+      @Override
+      public void onFinished(CompletionReason reason) {
+        if (reason == CompletionReason.Success) {
+          Log.i(TAG, "Connecting adhoc completed successfully!");
+        } else if (reason == CompletionReason.Cancelled) {
+          Log.w(TAG, "Connecting adhoc was cancelled.");
+        } else {
+          Log.e(TAG, "Connecting adhoc failed.");
+        }
+      }
+    });
+  }
+
 
   /**
    * A file called serval.zip is included in the assets/ directory of the APK
@@ -177,4 +209,5 @@ public class AdhocController {
       }
     });
   }
+  
 }
