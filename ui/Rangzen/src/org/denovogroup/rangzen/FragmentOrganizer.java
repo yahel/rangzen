@@ -73,7 +73,7 @@ public class FragmentOrganizer extends Fragment {
     // Typeface zwodTypeFace;
 
     enum FragmentType {
-        FIRSTINTRO, SECONDINTRO, THIRDINTRO, FIRSTABOUT, SECONDABOUT, TRANSPARENT, POST
+        FIRSTINTRO, SECONDINTRO, THIRDINTRO, FIRSTABOUT, SECONDABOUT, TRANSPARENT, POST, FRIENDS
     }
 
     /**
@@ -130,7 +130,8 @@ public class FragmentOrganizer extends Fragment {
 
         case POST:
             return post(inflater, container);
-
+            
+        case FRIENDS:
         default:
             return null;
         }

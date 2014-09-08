@@ -5,6 +5,8 @@ android_library(
     'DepthPageTransformer.java',
     'FeedListAdapter.java',
     'FragmentOrganizer.java',
+    'IntentIntegrator.java',
+    'IntentResult.java',
     'IntroductionFragmentAdapter.java',
     'ListFragmentOrganizer.java',
     'MapsActivity.java',
