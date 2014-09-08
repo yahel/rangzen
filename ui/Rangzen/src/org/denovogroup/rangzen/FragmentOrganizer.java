@@ -132,6 +132,7 @@ public class FragmentOrganizer extends Fragment {
             return post(inflater, container);
             
         case FRIENDS:
+            
         default:
             return null;
         }
