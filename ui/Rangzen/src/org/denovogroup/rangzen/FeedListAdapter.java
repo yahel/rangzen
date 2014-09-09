@@ -31,6 +31,7 @@
 
 package org.denovogroup.rangzen;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.TreeMap;
 import java.util.Map.Entry;
@@ -49,14 +50,12 @@ public class FeedListAdapter extends BaseAdapter {
 
     /** Activity context passed in to the FeedListAdapter. */
     private Context mContext;
-    /** Array of test messages created inside of Strings.xml. */
-    private String[] mMessages;
-    /** Array of test Trust Scores created inside of Strings.xml. */
-    private String[] mUpvoteValues;
-    /** Array of test dates of message creation created inside of Strings.xml. */
-    private String[] dates;
     /** Message store to be used to get the messages and trust score. */
     private MessageStore mMessageStore;
+    /** The trust score of the current message. */
+    private float mTrustScore;
+    /** The message that will go into the current row. */
+    private String mRealMessage;
     /**
      * Holds references to views so that findViewById() is not needed to be
      * called so many times.
@@ -76,20 +75,11 @@ public class FeedListAdapter extends BaseAdapter {
      */
     public FeedListAdapter(Context context) {
         this.mContext = context;
-
-        // (TODO (Jesus) This is not the correct way to get the actual values.
-        mMessages = context.getResources().getStringArray(R.array.messages);
-        mUpvoteValues = context.getResources().getStringArray(
-                R.array.upvoteValues);
-        dates = context.getResources().getStringArray(R.array.dates);
-        MessageStore messageStore = new MessageStore((Activity) context,
-                StorageBase.ENCRYPTION_DEFAULT);
-        // comments = context.getResources().getStringArray(R.array.comments);
     }
 
     @Override
     public int getCount() {
-        return mMessages.length;
+        return Integer.MAX_VALUE;
     }
 
     /**
@@ -98,7 +88,7 @@ public class FeedListAdapter extends BaseAdapter {
      */
     @Override
     public Object getItem(int position) {
-        return mMessages[position];
+        return "No Name";
     }
 
     @Override
@@ -107,73 +97,98 @@ public class FeedListAdapter extends BaseAdapter {
     }
 
     /**
-     * This populates the listView at specified positions with the text that
-     * belongs in them and it also populates the images of that row.
+     * Navigates the treemap and finds the correct message from memory to
+     * display at this position in the feed, then returns the row's view object,
+     * fully populated with information.
+     * 
+     * @param position
+     *            The current row index in the feed.
+     * @param convertView
+     *            The view object that contains the row, or null is one has not
+     *            been initialized.
+     * @param parent
+     *            The parent of convertView.
      */
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        mMessageStore = new MessageStore((Activity) mContext,
-                StorageBase.ENCRYPTION_DEFAULT);
-        TreeMap<Float, Collection<String>> tree = mMessageStore.getTopK(position + 1);
-        tree.size();
-        int i = 0;
-        String realMessage = "No message";
-        float trustScore = 3;
-        Log.d("MapsActivity", "VALUE of size of tree = " + tree.size());
-        Log.d("MapsActivity", "VALUE of POSITION = " + position);
-//        for (Entry<Float, String> e : tree.entrySet()) {
-//            Log.d("MapsActivity", "VALUE of ENTRY VALUE = " + e.getValue());
-//            Log.d("MapsActivity", "VALUE of ENTRY KEY = " + e.getKey());
-//            Log.d("MapsActivity", "VALUE of I = " + i);
-//            // if (i == position) {
-//            // Log.d("MapsActivity", "value of position = " + position);
-//            // Log.d("MapsActivity", "value of i = " + i);
-//            // Log.d("MapsActivity", "value of realMessage = " + e.getValue());
-//            // Log.d("MapsActivity", "value of trustScore = " + e.getKey());
-//            // realMessage = e.getValue();
-//            // trustScore = e.getKey();
-//            // break;
-//            // }
-//            i++;
-//        }
+        getMessageAndTrustScore(position);
         if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater) mContext
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(R.layout.feed_row, parent, false);
 
             mViewHolder = new ViewHolder();
-            mViewHolder.dateView = (TextView) convertView
+            mViewHolder.mDateView = (TextView) convertView
                     .findViewById(R.id.dateView);
-            mViewHolder.upvoteView = (TextView) convertView
+            mViewHolder.mUpvoteView = (TextView) convertView
                     .findViewById(R.id.upvoteView);
-            mViewHolder.hashtagView = (TextView) convertView
+            mViewHolder.mHashtagView = (TextView) convertView
                     .findViewById(R.id.hashtagView);
 
             convertView.setTag(mViewHolder);
         } else {
             mViewHolder = (ViewHolder) convertView.getTag();
         }
+        mViewHolder.mHashtagView.setText(mRealMessage);
+        mViewHolder.mUpvoteView.setText(String.valueOf(mTrustScore));
 
-        // TODO (jesus) this is not the correct way to implement, may need a
-        // null check in the future.
-        // viewHolder.commentView.setText(comments[position]);
-        mViewHolder.hashtagView.setText(realMessage);
-        mViewHolder.upvoteView.setText(String.valueOf(trustScore));
         return convertView;
     }
 
+    /**
+     * The message that we want will be in the top-most branch. I find the
+     * position in the first array that the message will be at by taking
+     * position and reducing it by the values of the other branches.
+     * 
+     * That value would be the index if the first array was backwards, because
+     * it's working backwards. So I flip the index by taking the length of the
+     * array - 1 and subtracting from that the firstArrayPosition.
+     * 
+     * @param position
+     *            The position in the list that is currently being populated.
+     */
+    private void getMessageAndTrustScore(int position) {
+        mMessageStore = new MessageStore((Activity) mContext,
+                StorageBase.ENCRYPTION_DEFAULT);
+        TreeMap<Float, Collection<String>> tree = mMessageStore
+                .getTopK(position + 1);
+        tree.size();
+        int firstArrayPosition = position;
+        String[] firstArray = null;
+        mRealMessage = "No message";
+        mTrustScore = 3;
+        for (Entry<Float, Collection<String>> e : tree.entrySet()) {
+            if (firstArray == null) {
+                String[] array = e.getValue().toArray(
+                        new String[e.getValue().size()]);
+                Arrays.sort(array);
+                firstArray = array;
+                mTrustScore = e.getKey();
+            } else {
+                firstArrayPosition -= e.getValue().size();
+            }
+        }
+        firstArrayPosition = (firstArray.length - 1) - firstArrayPosition;
+        mRealMessage = firstArray[firstArrayPosition];
+    }
+
+    /**
+     * This is used to recycle the views and increase speed of scrolling. This
+     * is held by the row object that keeps references to the views so that they
+     * do not have to be looked up every time they are populated or reshown.
+     */
     static class ViewHolder {
         /** The view object that holds the hashtag for this current row item. */
-        private TextView hashtagView;
+        private TextView mHashtagView;
         /**
          * The view object that holds the date of creation for this current row
          * item.
          */
-        private TextView dateView;
+        private TextView mDateView;
         /**
          * The view object that holds the trust score for this current row item.
          */
-        private TextView upvoteView;
+        private TextView mUpvoteView;
 
     }
 }

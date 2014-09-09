@@ -27,6 +27,7 @@ public class PostActivity extends FragmentActivity {
         Bundle b = new Bundle();
         b.putSerializable("whichScreen", FragmentOrganizer.FragmentType.POST);
         fragment.setArguments(b);
+//        getFragmentManager().beginTransaction().replace(R.id.firstFrame, fragment).commit();
         FragmentManager fragmentManager = getSupportFragmentManager();
 
         FragmentTransaction ft = fragmentManager.beginTransaction();
@@ -41,10 +42,11 @@ public class PostActivity extends FragmentActivity {
             AttributeSet attrs) {
         return super.onCreateView(parent, name, context, attrs);
     }
-
+    
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+        // Respond to the action bar's Up/Home button
         case android.R.id.home:
             InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             EditText mEditText = (EditText) findViewById(R.id.editText1);
