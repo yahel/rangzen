@@ -52,8 +52,10 @@ public class SidebarListAdapter extends BaseAdapter {
      * icons to be used in the NavigationDrawer.
      * 
      */
-    private int[] mSidebarImages = { R.drawable.ic_launcher, R.drawable.ic_launcher,
-            R.drawable.ic_launcher, R.drawable.ic_launcher };
+    private int[] mSidebarImages = { R.drawable.ic_action_view_as_list,
+            R.drawable.ic_action_new_event_light,
+            R.drawable.ic_action_add_person, R.drawable.ic_action_map,
+            R.drawable.ic_action_about };
 
     /**
      * sets sidebar to the list of the names of the ListView that is in the

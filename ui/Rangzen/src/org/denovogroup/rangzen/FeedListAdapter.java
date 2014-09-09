@@ -34,7 +34,6 @@ package org.denovogroup.rangzen;
 import java.util.Collection;
 import java.util.TreeMap;
 import java.util.Map.Entry;
-
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Typeface;
@@ -63,6 +62,9 @@ public class FeedListAdapter extends BaseAdapter {
      * called so many times.
      */
     private ViewHolder mViewHolder;
+
+    /** Maximum number of characters that can be sent in a message. */
+    private int mMaxCharacters = 140;
 
     /**
      * Sets the feed text fields to be their values from messages from memory.
@@ -157,7 +159,6 @@ public class FeedListAdapter extends BaseAdapter {
         // viewHolder.commentView.setText(comments[position]);
         mViewHolder.hashtagView.setText(realMessage);
         mViewHolder.upvoteView.setText(String.valueOf(trustScore));
-
         return convertView;
     }
 

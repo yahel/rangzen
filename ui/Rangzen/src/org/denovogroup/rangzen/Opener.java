@@ -31,9 +31,14 @@
 
 package org.denovogroup.rangzen;
 
+import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
+
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -50,6 +55,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView.FindListener;
@@ -129,14 +135,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         MessageStore messageStore = new MessageStore(this,
                 StorageBase.ENCRYPTION_DEFAULT);
         Log.d("Opener", "first " + messageStore.addMessage("Test1", 1));
-        Log.d("Opener",
-                "second "
-                        + messageStore.addMessage("Test2",
-                                1.5f));
-        Log.d("Opener",
-                "third "
-                        + messageStore.addMessage(
-                                "Test3", 2));
+        Log.d("Opener", "second " + messageStore.addMessage("Test2", 1.5f));
+        Log.d("Opener", "third " + messageStore.addMessage("Test3", 2));
 
         Log.d("Opener", "fourth " + messageStore.addMessage("Test4", .5f));
         Log.d("Opener", "fifth " + messageStore.addMessage("Test5", .5f));
@@ -277,16 +277,14 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             // TODO (Jesus) For the prototype need to create an add friend page
             // add friend. This is probably no longer necessary at all.
         } else if (position == 3) {
-            // TODO (Jesus) Possibly need to create a post to twitter page for
-            // the prototype?
-            // post to twitter
-        } else if (position == 4) {
-            // TODO (Jesus) Also for prototype need to view friend's list where
+            // TODO (Jesus) MAP
             // the user can view friends.
-            needAdd = new ListFragmentOrganizer();
+            needAdd = new MapsActivity();
         } else {
-            // TODO (Jesus) Create a view for the saved posts.
-            needAdd = new ListFragmentOrganizer();
+            needAdd = new FragmentOrganizer();
+            Bundle b = new Bundle();
+            b.putSerializable("whichScreen", FragmentType.SECONDABOUT);
+            needAdd.setArguments(b);
         }
         makeTitleBold(position);
         FragmentManager fragmentManager = getSupportFragmentManager();
@@ -294,7 +292,11 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         FragmentTransaction ft = fragmentManager.beginTransaction();
 
         ft.replace(R.id.mainContent, needAdd);
+        
+        ft.addToBackStack(null);
 
         ft.commit();
     }
+
+    
 }

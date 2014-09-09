@@ -129,11 +129,21 @@ public class FragmentOrganizer extends Fragment {
 
         case POST:
             return post(inflater, container);
+
         default:
             return null;
         }
     }
 
+    /**
+     * This will create the fragment for the first introductory slide.
+     * 
+     * @param inflater
+     *            LayoutInflater object that creates a java object from xml.
+     * @param container
+     *            The parent ViewGroup to the current view.
+     * @return Completed, formatted view (what the fragment will look like).
+     */
     private View firstIntro(LayoutInflater inflater, ViewGroup container) {
         View view = (View) inflater.inflate(R.layout.firstintro, container,
                 false);
@@ -153,6 +163,15 @@ public class FragmentOrganizer extends Fragment {
         return view;
     }
 
+    /**
+     * This will create the fragment for the second introductory slide.
+     * 
+     * @param inflater
+     *            LayoutInflater object that creates a java object from xml.
+     * @param container
+     *            The parent ViewGroup to the current view.
+     * @return Completed, formatted view (what the fragment will look like).
+     */
     private View secondIntro(LayoutInflater inflater, ViewGroup container) {
         View view1 = inflater.inflate(R.layout.secondintro, container, false);
         mCurrentRelativeLayout = (RelativeLayout) view1
@@ -172,6 +191,15 @@ public class FragmentOrganizer extends Fragment {
         return view1;
     }
 
+    /**
+     * This will create the fragment for the third introductory slide.
+     * 
+     * @param inflater
+     *            LayoutInflater object that creates a java object from xml.
+     * @param container
+     *            The parent ViewGroup to the current view.
+     * @return Completed, formatted view (what the fragment will look like).
+     */
     private View thirdIntro(LayoutInflater inflater, ViewGroup container) {
         View view2 = inflater.inflate(R.layout.thirdintro, container, false);
         mCurrentRelativeLayout = (RelativeLayout) view2
@@ -193,6 +221,15 @@ public class FragmentOrganizer extends Fragment {
         return view2;
     }
 
+    /**
+     * This will create the fragment for the first about slide.
+     * 
+     * @param inflater
+     *            LayoutInflater object that creates a java object from xml.
+     * @param container
+     *            The parent ViewGroup to the current view.
+     * @return Completed, formatted view (what the fragment will look like).
+     */
     private View firstAbout(LayoutInflater inflater, ViewGroup container) {
         View view3 = inflater.inflate(R.layout.modifiedabout, container, false);
         Button button = (Button) view3.findViewById(R.id.continueBeforeMaps);
@@ -216,6 +253,15 @@ public class FragmentOrganizer extends Fragment {
         return view3;
     }
 
+    /**
+     * This will create the fragment for "create post" page.
+     * 
+     * @param inflater
+     *            LayoutInflater object that creates a java object from xml.
+     * @param container
+     *            The parent ViewGroup to the current view.
+     * @return Completed, formatted view (what the fragment will look like).
+     */
     private View post(LayoutInflater inflater, ViewGroup container) {
         View view7 = inflater.inflate(R.layout.makepost, container, false);
         EditText messageBox = (EditText) view7.findViewById(R.id.editText1);
@@ -387,13 +433,4 @@ public class FragmentOrganizer extends Fragment {
         return px;
     }
 
-    /**
-     * For scenarios where the main activity is launched and user session is not
-     * null, the session state change notification may not be triggered. Trigger
-     * it if it's open/closed.
-     */
-    @Override
-    public void onResume() {
-        super.onResume();
-    }
 }

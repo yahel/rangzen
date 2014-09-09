@@ -73,7 +73,8 @@
         <item>Feed</item>
         <item>New Post</item>
         <item>Add Friend</item>
-        <item>View Friends</item>
+        <item>Map</item>
+        <item>Info</item>
     </string-array>
 
     <color name="whitish">#D7D7D7</color>
