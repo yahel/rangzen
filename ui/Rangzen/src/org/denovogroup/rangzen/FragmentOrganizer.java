@@ -57,6 +57,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 /**
  * This class manages the behavior for all of the introductory fragments as well
@@ -267,7 +268,8 @@ public class FragmentOrganizer extends Fragment {
         EditText messageBox = (EditText) view7.findViewById(R.id.editText1);
         InputMethodManager imm = (InputMethodManager) getActivity()
                 .getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.toggleSoftInput(InputMethodManager.SHOW_FORCED,
+        imm.toggleSoftInputFromWindow(messageBox.getWindowToken(),
+                InputMethodManager.SHOW_FORCED,
                 InputMethodManager.HIDE_IMPLICIT_ONLY);
         messageBox.addTextChangedListener(new TextWatcher() {
 
@@ -300,6 +302,30 @@ public class FragmentOrganizer extends Fragment {
             }
         });
         Button send = (Button) view7.findViewById(R.id.button2);
+        send.setOnClickListener(new View.OnClickListener() {
+
+            /**
+             * Stores the text of the TextView in the MessageStore with
+             * default priority 1.0f. Displays a Toast upon completion and
+             * exits the Activity.
+             * 
+             * @param v
+             *            The view which is clicked - in this case, the Button.
+             */
+            @Override
+            public void onClick(View v) {
+                MessageStore messageStore = new MessageStore(getActivity(),
+                        StorageBase.ENCRYPTION_DEFAULT);
+                String message = ((TextView) getActivity().findViewById(
+                        R.id.editText1)).getText().toString();
+                float priority = 1.0f;
+                messageStore.addMessage(message, priority);
+                Toast.makeText(getActivity(), "Message sent!",
+                        Toast.LENGTH_SHORT).show();
+                getActivity().finish();
+            }
+
+        });
         return view7;
     }
 
