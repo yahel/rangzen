@@ -149,8 +149,27 @@ public class FragmentOrganizer extends Fragment {
      * @return Completed, formatted view (what the fragment will look like).
      */
     private View makeFriendsPage(LayoutInflater inflater, ViewGroup container) {
-        // TODO Auto-generated method stub
-        return null;
+        // TODO (Jesus) Finish the friends page.
+        View view3 = inflater.inflate(R.layout.modifiedabout, container, false);
+        Button button = (Button) view3.findViewById(R.id.continueBeforeMaps);
+        button.setText("Scan a friend's");
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.setClass(v.getContext(), Opener.class);
+                startActivity(intent);
+                SharedPreferences settings = getActivity()
+                        .getSharedPreferences(SlidingPageIndicator.PREFS_NAME,
+                                0);
+                SharedPreferences.Editor editor = settings.edit();
+
+                editor.putBoolean("hasLoggedIn", true);
+                editor.commit();
+                getActivity().finish();
+            }
+        });
+        return view3;
     }
 
     /**

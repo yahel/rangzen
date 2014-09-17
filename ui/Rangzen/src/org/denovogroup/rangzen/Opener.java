@@ -301,7 +301,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         } else if (position == 2) {
             // TODO (Jesus) For the prototype need to create an add friend page
             // add friend. This is probably no longer necessary at all.
-            needAdd = new ListFragmentOrganizer();
+            needAdd = new FragmentOrganizer();
             Bundle b = new Bundle();
             b.putSerializable("whichScreen",
                     FragmentOrganizer.FragmentType.FRIENDS);
