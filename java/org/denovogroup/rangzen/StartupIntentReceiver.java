@@ -39,25 +39,10 @@ public class StartupIntentReceiver extends BroadcastReceiver {
   /** Included in log messages. */
   private static final String TAG = "StartupIntentReceiver";
 
-  /** Handle to Rangzen storage subsystem. */
-  private StorageBase mStore;
-
   @Override
   public void onReceive(Context context, Intent intent) {
-    mStore = new StorageBase(context, StorageBase.ENCRYPTION_DEFAULT);
-    String state = mStore.get(RangzenService.EXPERIMENT_STATE_KEY);
-    if (state == null) {
-      mStore.put(RangzenService.EXPERIMENT_STATE_KEY, RangzenService.EXP_STATE_START);
-      Log.i(TAG, "(First run!) Not starting Rangzen service, in state " + 
-                  RangzenService.EXP_STATE_START);
-    } else if (state.equals(RangzenService.EXP_STATE_START) ||
-               state.equals(RangzenService.EXP_STATE_OPTED_OUT)) {
-      Log.i(TAG, "Not starting Rangzen service since we're in state " + state);
-    } else {
-      Log.i(TAG, "In state " + state + " - starting Rangzen service.");
-      Intent serviceIntent = new Intent(context, RangzenService.class);
-      context.startService(serviceIntent);
-    }
+    Intent serviceIntent = new Intent(context, RangzenService.class);
+    context.startService(serviceIntent);
   }
 }
 

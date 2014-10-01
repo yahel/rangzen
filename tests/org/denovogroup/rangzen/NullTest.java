@@ -59,7 +59,7 @@ public class NullTest {
   @Test
   public void stupidContstantTest() {
     org.junit.Assert.assertTrue("testing the value of a string constant",
-            WifiDirectSpeaker.PING_STRING.equals("ping"));
+            WifiDirectSpeaker.DEFAULT_EXTRA_INT == -1);
   }
 
   /**

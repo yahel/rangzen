@@ -43,6 +43,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * Handles interaction with Android's Bluetooth subsystem.
@@ -137,7 +138,12 @@ public class BluetoothSpeaker {
    */
   public BluetoothDevice getDevice(String address) {
     if (mBluetoothAdapter != null) {
-      return mBluetoothAdapter.getRemoteDevice(address);
+      try { 
+        return mBluetoothAdapter.getRemoteDevice(address);
+      } catch (IllegalArgumentException e) {
+        Log.e(TAG, "Passed illegal address to get remote bluetooth device: " + address);
+        return null;
+      }
     } else {
       return null;
     }
@@ -155,6 +161,57 @@ public class BluetoothSpeaker {
       return null;
     }
 
+  }
+
+  /**
+   * Sanity check a string for whether it looks basically like a BT MAC. Just
+   * regexes the string, looking for 6 groups of hex digits deparated by : or -.
+   * Case insensitive.
+   *
+   * @param s A string which is to be checked for whether it looks like a Bluetooth
+   * MAC address.
+   * @return True if the string looks like a MAC address, false otherwise.
+   */
+  public static boolean looksLikeBluetoothAddress(String s) {
+     return Pattern.matches("^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$", s);
+  }
+
+  /**
+   * Check whether the address is owned by IANA or is the broadcast address
+   * (FF:FF:FF:FF:FF:FF).
+   *
+   * TODO(lerner): Improve this check. We might want to reject all multicast/broadcast
+   * and such; addresses not assigned to anyone; or other reserved addresses that
+   * I might not have been able to find.
+   *
+   * @param s An address to be checked.
+   * @return True if the address appears to be IANA owned or a broadcast address.
+   * Returns false if the address doesn't seem to be a MAC address at all.
+   */
+  public static boolean isReservedMACAddress(String s) {
+    if (!looksLikeBluetoothAddress(s)) {
+      return false;
+    }
+    // Normalize the address to simplify the regexes.
+    s = s.replace(":", "-");
+    s = s.toUpperCase();     
+
+    // Check against IANA-owned addresses and the broadcast address.
+    //
+    // https://www.iana.org/assignments/ethernet-numbers/ethernet-numbers.xhtml
+    // IANA is assigned all addresses starting 00-00-5E and 01-00-5E (the flipped
+    // least significant bit in the first octet indicates multicast instead of unicast).
+    //
+    // The second to least significant bit also has special meaning (group/individual)
+    // so I interpret that 2/3 are also reserved to IANA, even though their
+    // doc (linked above) only mentions 00-00-5E and 01-00-5E.
+    if (Pattern.matches("^0[0-3]-00-5E.*", s)) {
+      return true;
+    }
+    else if (Pattern.matches("^FF-FF-FF-FF-FF-FF$", s)) { // Broadcast address.
+      return true;
+    }
+    return false;
   }
 
   /**

@@ -89,13 +89,10 @@ public class SlidingPageIndicator extends FragmentActivity {
         super.onCreate(savedInstanceState);
 
         mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
-        String state = getExperimentState();
-        if (state == null) {
-          Log.i(TAG, "Initializing experiment state to EXP_STATE_START.");
-          mStore.put(RangzenService.EXPERIMENT_STATE_KEY, RangzenService.EXP_STATE_START);
-        } else {
-          Log.i(TAG, "Creating SlidingPageIndicator, state is " + state);
-        }
+        
+        // Start the RangzenService.
+        Intent serviceIntent = new Intent(this, RangzenService.class);
+        startService(serviceIntent);
 
         SharedPreferences settings = getSharedPreferences(
                 SlidingPageIndicator.PREFS_NAME, 0);
@@ -149,13 +146,5 @@ public class SlidingPageIndicator extends FragmentActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         return super.onOptionsItemSelected(item);
-    }
-
-    /**
-     * Retrieve the current experiment state. Sets the experiment state to
-     * START if none is set already.
-     */
-    private String getExperimentState() {
-      return mStore.get(RangzenService.EXPERIMENT_STATE_KEY);
     }
 }

@@ -30,45 +30,25 @@
  */
 package org.denovogroup.rangzen;
 
-import android.app.Activity;
+import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.NetworkInfo;
-import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
-import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager.ActionListener;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
 import android.net.wifi.p2p.WifiP2pManager.ChannelListener;
-import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
 import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Looper;
 import android.os.Parcelable;
 import android.util.Log;
-import android.widget.Toast;
 
-import java.io.IOException;
-import java.lang.StringBuilder;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousCloseException;
-import java.nio.channels.ClosedByInterruptException;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.DatagramChannel;
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Queue;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * This class handles interactions with the Android WifiP2pManager and the rest
@@ -85,42 +65,11 @@ import java.util.Queue;
  * pings to other devices, from higher levels of the app.
  */
 public class WifiDirectSpeaker extends BroadcastReceiver {
-  /** A string to send as the contents of a ping. */
-  public static final String PING_STRING = "ping";
-
-  /** A counter of number of pings sent. */
-  private int pingCount = 0;
-
-  /** A well-known port for Rangzen communications. */
-  public static final int RANGZEN_PORT = 23985;
-
-  /** The size of the headers of a UDP packet. */
-  public static final int UDP_HEADER_SIZE = 8;
-
-  /** The size of IP headers. */
-  public static final int IP_HEADER_SIZE = 20;
-
-  /** A maximum packet size for allocating packet receive buffers. */
-  public static final int MAX_PACKET_SIZE = 1500 - UDP_HEADER_SIZE - IP_HEADER_SIZE;
-  
   /** 
    * A default int value to be returned when getIntExtra fails to find
    * the requested key.
    */
   public static final int DEFAULT_EXTRA_INT = -1;
-
-  /** 
-   * An enum designating possible states (disconnected, connecting, connected)
-   * that the speaker can be in.
-   */
-  public enum ConnectionState {
-    NOT_CONNECTED, 
-    CONNECTION_IN_PROGRESS,
-    CONNECTED
-  }
-
-  /** The current state of connectivity the Speaker believes us to be in. */
-  private ConnectionState connectionState;
 
   /** A handle, retrieved from the OS, to the Wifi Direct framework. */
   private WifiP2pManager mWifiP2pManager;
@@ -131,47 +80,33 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   /** Rangzen peer manager instance. */
   private PeerManager mPeerManager;
 
+  /** BluetoothSpeaker used to get BluetoothDevices for peers. */
+  private BluetoothSpeaker mBluetoothSpeaker;
+
   /** Context to retrieve a WifiP2pManager from the Wifi Direct subsystem. */
-  private Context context;
-
-  /** Queue of messages per Peer. */
-  private Map<WifiP2pDevice, Queue<String>> messageQueues;
-
-  /** 
-   * This flag is set to true by the overlying app when it wants to look for
-   * peers.
-   */
-  private boolean seekingDesired = false;
-
-  /** The WifiP2pDevice representing the local device. */
-  private WifiP2pDevice localDevice = null;
-
-  /** Peer device we're attempting to speak with; null if nobody is selected. */
-  private WifiP2pDevice selectedPeerDevice = null;
-
-  /** 
-   * Set by a handler for WIFI_P2P_DISCOVERY_CHANGED_ACTION, this should be
-   * true only when the Android framework is actually seeking peers. 
-   */
-  private boolean seeking;
-
-  /**
-   * Most recent WifiP2p connection info object returned by WifiP2p subsystem.
-   * This is null at startup and is set to null whenever the connection is lost.
-   */
-  private WifiP2pInfo currentConnectionInfo;
-
-  /** If we're not the group owner, the IP address of the remote peer. */
-  private InetSocketAddress remoteAddress;
-
-  /** The channel (UDP socket) for incoming/outgoing messages. */
-  private DatagramChannel udpChannel;
+  private Context mContext;
 
   /** 
    * The looper that runs the onReceive() loop to handle Wifi Direct framework
    * events.
    */
-  private Looper looper;
+  private Looper mLooper;
+
+  /** 
+   * Flag to remember whether we're seeking peers. This flag is used to know
+   * whether we should start seeking peers again in seekPeers(). It reflects
+   * whether a request has been made, to scan for peers, regardless of whether
+   * that request has succeeded yet.
+   *
+   * Failed requests and stopping peer seeking set this to false.
+   */
+  private boolean mSeeking = false;
+
+  /** Whether the rest of the app would like us to look for peers. */
+  private boolean mSeekingDesired = false;
+
+  /** The WifiP2pDevice representing THIS device. */
+  private WifiP2pDevice mLocalDevice;
 
   /** Logging tag, attached to all Android log messages. */
   private static final String TAG = "WifiDirectSpeaker";
@@ -183,16 +118,12 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * retrieve an instance of WifiP2pSpeaker.
    */
   public WifiDirectSpeaker(Context context, PeerManager peerManager, 
+                           BluetoothSpeaker bluetoothSpeaker,
                            WifiDirectFrameworkGetter frameworkGetter) {
     super();
 
-    // TODO(lerner): Figure out which context we should be using. I don't
-    // understand which context is the appropriate context to be using: either
-    // the application context, the main activity's context, or the
-    // RangzenService's context. Most likely the correct answer is the Rangzen
-    // Service's context, since WifiDirectSpeaker is instantiated by the
-    // RangzenService.
-    this.context = context;
+    this.mContext = context;
+    this.mBluetoothSpeaker = bluetoothSpeaker;
 
     // Here we add a layer of apparently unnecessary indirection in order to
     // allow testing frameworks to provide a framewok getter that returns a 
@@ -206,17 +137,16 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     // wrong if the context passed in is, say, the Rangzen Service's context.
     // This is a place where I don't understand Android very well where I
     // should.
-    this.looper = context.getMainLooper();
+    this.mLooper = context.getMainLooper();
     Log.i(TAG, "Initializing Wifi P2P Channel...");
-    this.mWifiP2pChannel = mWifiP2pManager.initialize(context, looper, mChannelListener);
+    this.mWifiP2pChannel = mWifiP2pManager.initialize(context, mLooper, mChannelListener);
     Log.i(TAG, "Finished initializing Wifi P2P Channel.");
     this.mPeerManager = peerManager;
 
-    // Initialize message queues table as empty map.
-    messageQueues = new HashMap<WifiP2pDevice, Queue<String>>();
-
     // Register WifiDirectSpeaker to receive various events from the OS 
-    // Wifi Direct subsystem.
+    // Wifi Direct subsystem. When these events arrive, the onReceive method
+    // of this class is called, which dispatches them to other instance methods,
+    // one per event.
     IntentFilter intentFilter = new IntentFilter();
     intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
     intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
@@ -225,98 +155,37 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     intentFilter.addAction(WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION);
     context.registerReceiver(this, intentFilter);
 
-    // Instantiate a DatagramChannel which we'll use as our non-blocking
-    // interface to a UDP socket for sending/receiving packets over Wifi
-    // Direct. 
-    if (udpChannel == null) {
-      try {
-        udpChannel = DatagramChannel.open();
-        udpChannel.socket().bind(new InetSocketAddress(RANGZEN_PORT));
-        udpChannel.configureBlocking(false);
-        Log.i(TAG, "Created and bound a UDP socket.");
-      } catch (SocketException e) {
-        Log.e(TAG, "Couldn't create datagram socket: " + e);
-        udpChannel = null;
-      } catch (IOException e) {
-        Log.e(TAG, 
-              "IOException while opening/configuring non-blocking UDP channel: " + e);
-        udpChannel = null;
-      }
-    }
-
     Log.d(TAG, "Finished creating WifiDirectSpeaker.");
   }
 
   /**
-   * Unimplemented (data will not actually be sent!).
-   * TODO(lerner): Enqueue messages into per-device-queues and send them
-   * when we're connected to those devices.
+   * Handle incoming messages. This class handles broadcasts sent by WifiP2pManager. 
+   * We handle them by calling other methods in the class as appropriate to handle
+   * each type of event. One specific method is called for each type of event
+   * and handles all the logic related to that event.
    *
-   * Request that the given data be sent to the given peer device via 
-   * Wifi Direct. 
-   *
-   * @param message The message to be sent.
-   * @param destination The remote Wifi Direct peer to whom to send the message.
+   * @see android.content.BroadcastReceiver#onReceive(android.content.Context,
+   * android.content.Intent)
    */
-  public void send(String message, WifiP2pDevice destination) {
-    // TODO(lerner): What happens if the destination is null? This works
-    // but there's a queue for null now?
-    // Queue<String> queue = getDeviceMessageQueue(destination);
-    // queue.add(message);
-  }
-
-  /**
-   * Get the message queue for the given peer device. Lazily creates an empty
-   * queue if one does not yet exist.
-   *
-   * @param device The Wifi Direct peer device whose queue will be retrieved.
-   */
-  private Queue getDeviceMessageQueue(WifiP2pDevice device) {
-    if (messageQueues.containsKey(device)) {
-      return messageQueues.get(device);
+  @Override
+  public void onReceive(Context context, Intent intent) {
+    String action = intent.getAction();
+    if (WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION.equals(action)) {
+      onWifiP2pStateChanged(context, intent);
+    } else if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)) {
+      onWifiP2pPeersChanged(context, intent);
+    } else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action)) {
+      onWifiP2pConnectionChanged(context, intent);
+    } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
+      onWifiP2pThisDeviceChanged(context, intent);
+    } else if (WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION.equals(action)) {
+      onWifiP2pDiscoveryChanged(context, intent);
     } else {
-      Queue newQueue = new ArrayDeque<String>();
-      messageQueues.put(device, newQueue);
-      return newQueue;
+      // TODO(lerner): This shouldn't happen, exception?
+      Log.wtf(TAG, "Received an event we weren't expecting: " + action);
     }
   }
 
-  /**
-   * Issue a request to the WifiP2pManager to start discovering peers.
-   * This is an internal method. To turn on/off peer discovery from higher
-   * level application code, call setSeekingDesired(true/false).
-   */
-  private void seekPeers() {
-    mWifiP2pManager.discoverPeers(mWifiP2pChannel, new WifiP2pManager.ActionListener() {
-      @Override
-      public void onSuccess() {
-        Log.d(TAG, "Discovery initiated");
-      }
-      @Override
-      public void onFailure(int reasonCode) {
-        Log.d(TAG, "Discovery failed: " + reasonCode);
-        stopSeekingPeers();
-      }
-    });
-  }
-
-  /**
-   * Issue a request to the WifiP2pManager to stop discovering peers.
-   * This is an internal method. To turn on/off peer discovery from higher
-   * level application code, call setSeekingDesired(true/false).
-   */
-  private void stopSeekingPeers() {
-    mWifiP2pManager.stopPeerDiscovery(mWifiP2pChannel, new WifiP2pManager.ActionListener() {
-      @Override
-      public void onSuccess() {
-        Log.d(TAG, "Discovery stopped successfully.");
-      }
-      @Override
-      public void onFailure(int reasonCode) {
-        Log.d(TAG, "Failed to stop peer discovery? Reason: " + reasonCode);
-      }
-    });
-  }
 
   /**
    * Receives events indicating whether Wifi Direct is enabled or disabled.
@@ -357,9 +226,25 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     WifiP2pDeviceList peerDevices = (WifiP2pDeviceList) temp;
 
     for (WifiP2pDevice device : peerDevices.getDeviceList()) {
-      Peer peer = getCanonicalPeerByDevice(device);
-      Log.d(TAG, "Adding peer " + peer);  
-      mPeerManager.addPeer(peer);
+      if (device.deviceName != null && device.deviceName.startsWith(RangzenService.RSVP_PREFIX)) {
+        String bluetoothAddress = device.deviceName.replace(RangzenService.RSVP_PREFIX, "");
+        Log.i(TAG, "Found Rangzen peer " + device.deviceName + " with address " + bluetoothAddress);
+        if (BluetoothSpeaker.looksLikeBluetoothAddress(bluetoothAddress) &&
+            !BluetoothSpeaker.isReservedMACAddress(bluetoothAddress)) {
+          BluetoothDevice bluetoothDevice = mBluetoothSpeaker.getDevice(bluetoothAddress);
+          if (bluetoothDevice != null) {
+            Peer peer = getCanonicalPeerByDevice(bluetoothDevice);
+            Log.d(TAG, "Adding peer " + peer);  
+            mPeerManager.addPeer(peer);
+          } else {
+            Log.e(TAG, "Address " + bluetoothAddress + " got a null bluetooth device, not adding as peer.");
+          }
+        }
+        else {
+          Log.w(TAG, "Address from peer doesn't look like BT address or is reserved: " + bluetoothAddress);
+        }
+
+      }
     }
     Log.v(TAG, "P2P peers changed");
   }
@@ -369,29 +254,11 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * Updates the speaker's information on connection status.
    */
   private void onWifiP2pConnectionChanged(Context context, Intent intent) {
-    if (mWifiP2pManager == null) {
-      Log.e(TAG, "Handled Wifi Connection Changed event but don't have an " +
-                 "instance of WifiP2PManager - this shouldn't happen.");
-      return;
-    }
-
-    NetworkInfo info = (NetworkInfo) 
-            intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
+    NetworkInfo info = (NetworkInfo) intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
 
     if (info.isConnected()) {
-      connectionState = ConnectionState.CONNECTED;
       Log.i(TAG, "Wifi P2P connected");
-
-      // Request that a WifiP2pInfo object be delivered to our connection
-      // info listener, which will store the info object in currentConnectionInfo.
-      mWifiP2pManager.requestConnectionInfo(mWifiP2pChannel, mConnectionInfoListener);
     } else {
-      // It's a disconnect
-      // TODO(lerner): Dispatch a notification about this?
-      currentConnectionInfo = null;
-      remoteAddress = null;
-      connectionState = ConnectionState.NOT_CONNECTED;
-
       Log.i(TAG, "Wifi P2P disconnected");
     }
   }
@@ -401,9 +268,8 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * representing the local device has changed.
    */
   private void onWifiP2pThisDeviceChanged(Context context, Intent intent) {
-    localDevice = (WifiP2pDevice) intent.getParcelableExtra(
-        WifiP2pManager.EXTRA_WIFI_P2P_DEVICE);
-    Log.v(TAG, "Wifi P2P this device changed action received; local device is now: " + localDevice);
+    mLocalDevice = (WifiP2pDevice) intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_DEVICE);
+    Log.v(TAG, "Wifi P2P this device changed action received; local device is now: " + mLocalDevice);
   }
 
   /**
@@ -411,44 +277,18 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * for Wifi P2P peers.
    */
   private void onWifiP2pDiscoveryChanged(Context context, Intent intent) {
-    int seeking = intent.getIntExtra(WifiP2pManager.EXTRA_DISCOVERY_STATE, -1);
-    if (seeking == WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED) {
+    int discoveryStateCode = intent.getIntExtra(WifiP2pManager.EXTRA_DISCOVERY_STATE, -1);
+    if (discoveryStateCode == WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED) {
       Log.d(TAG, "Device is seeking Wifi Direct peers.");
-      this.seeking = true;
-    } else if (seeking == WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED) {
+      this.mSeeking = true;
+    } else if (discoveryStateCode == WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED) {
       Log.d(TAG, "Device is NOT seeking Wifi Direct peers.");
-      this.seeking = false;
+      this.mSeeking = false;
     } else {
       Log.wtf(TAG, "Discovery changed event didn't have an EXTRA_DISCOVERY_STATE?!");
     }
   }
 
-  /**
-   * Handle incoming messages. This class only handles the four types of
-   * broadcasts sent by WifiP2pManager. Dispatch messages to their appropriate
-   * handlers.
-   *
-   * @see android.content.BroadcastReceiver#onReceive(android.content.Context,
-   * android.content.Intent)
-   */
-  @Override
-  public void onReceive(Context context, Intent intent) {
-    String action = intent.getAction();
-    if (WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION.equals(action)) {
-      onWifiP2pStateChanged(context, intent);
-    } else if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)) {
-      onWifiP2pPeersChanged(context, intent);
-    } else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action)) {
-      onWifiP2pConnectionChanged(context, intent);
-    } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
-      onWifiP2pThisDeviceChanged(context, intent);
-    } else if (WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION.equals(action)) {
-      onWifiP2pDiscoveryChanged(context, intent);
-    } else {
-      // TODO(lerner): This shouldn't happen, exception?
-      Log.wtf(TAG, "Received an event we weren't expecting: " + action);
-    }
-  }
 
   /**
    * Respond to events raised by loss of communication with the Wifi Direct
@@ -458,20 +298,8 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     @Override
     public void onChannelDisconnected() {
       Log.w(TAG, "Communication with WifiP2pManager framework lost!");
-      // TODO(lerner): Respond to this fact with some ameliorating action.
-    }
-  };
-
-  /**
-   * Receives the response to a request for connection info from the Wifi
-   * Direct framework in the Android OS.
-   */
-  private ConnectionInfoListener mConnectionInfoListener = new ConnectionInfoListener() {
-    @Override
-    public void onConnectionInfoAvailable(WifiP2pInfo info) {
-      Log.d(TAG, "Connection info available: " + info);
-      currentConnectionInfo = info;
-      connectionState = ConnectionState.CONNECTED;
+      // TODO(lerner): Respond to this fact with some ameliorating action, probably
+      // ceasing to take other actions that won't work without the framework.
     }
   };
 
@@ -490,288 +318,109 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   };
 
   /**
-   * Determine the canonical Peer for a given device. The canonical Peer for
-   * a device is the instance of Peer located in PeerManager's peer list.
+   * Determine the canonical Peer for a given Bluetooth device. The canonical Peer for
+   * a device is the instance of Peer located in PeerManager's peer list, if any.
    *
-   * @param device The Wifi Direct device we want to learn the Peer for.
+   * @param device The Bluetooth device we want to learn the Peer for.
    * @return The canonical Peer instance for the peer reachable at the given 
    * device, or null if no such peer exists.
    */
-  private Peer getCanonicalPeerByDevice(WifiP2pDevice device) {
-    return mPeerManager.getCanonicalPeer(new Peer(new WifiDirectPeerNetwork(device)));
-  }
-
-  /**
-   * Return a peer device for which there are queued messages, or null if
-   * all sending queues are empty.
-   *
-   * @return A WifiP2pDevice with outgoing messages queued, or null if none exists.
-   */
-  WifiP2pDevice getPeerDeviceWithQueuedMessages() {
-    for (WifiP2pDevice device : messageQueues.keySet()) {
-      if (!getDeviceMessageQueue(device).isEmpty()) {
-        return device;
-      }
-    }
-    return null;
+  private Peer getCanonicalPeerByDevice(BluetoothDevice device) {
+    return mPeerManager.getCanonicalPeer(new Peer(new BluetoothPeerNetwork(device)));
   }
 
   /**
    * The "main loop" for WifiDirectSpeaker. This method is called each time
    * the RangzenService runs its backgroundTasks() method, which happens
    * periodically over time.
-   *
-   * Higher level code sets flags for what should happen during tasks, e.g.: If
-   * peer discovery is enabled but not on-going, this method starts peer
-   * discovery. If a peer is selected for connection but not connected, it
-   * starts connection. If a peer is connected, it sends/receives pings from
-   * that peer.
-   *
-   * TODO(lerner): Pull messages from sending queues and send them to remote peers.
-   * TODO(lerner): Receive messages from remote peers and enqueue them in 
-   * receive queues.
    */
   public void tasks() {
-    if (connectionState == ConnectionState.NOT_CONNECTED) {
-      if (selectedPeerDevice != null) {
-        connectToPeerDevice(selectedPeerDevice);
-      } else if (!seeking && seekingDesired) {
-        seekPeers();
-      } else if (seeking && !seekingDesired) {
-        stopSeekingPeers();
-      }
-    } else if (connectionState == ConnectionState.CONNECTION_IN_PROGRESS) {
-      // In this state, we've invited another peer to connect to us but we haven't
-      // yet successfully connected or failed to do so.
-      //
-      // TODO(lerner): Time out the connection after a while.
-      Log.v(TAG, "Waiting on connection to selected peer " + selectedPeerDevice);
-    } else if (connectionState == ConnectionState.CONNECTED) {
-      if ( currentConnectionInfo == null) {
-        Log.wtf(TAG, "connectionState of CONNECTED but no current connection info!");
-        return;
-      }
-      listenForPing();
-      pingOtherDevice();
+    if (mSeekingDesired) {
+      seekPeers();
+    } else {
+      stopSeekingPeers();
     }
   }
 
   /** 
-   * Call this method to start or stop peer discovery from outside application
-   * code.
+   * Call this method to start or stop peer discovery from outside the speaker.
    *
    * @param seekingDesired True if peer discovery is permitted.
    */
-  public void setSeekingDesired(boolean seekingDesired) {
-    this.seekingDesired = seekingDesired;
-  }
-  
-  /**
-   * Select a peer as the desired communication partner.
-   *
-   * @param peer The peer to which the speaker should attempt to connect and
-   * communicate with.
-   */
-  public void selectPeer(Peer peer) {
-    WifiP2pDevice device = peer.getNetwork().getWifiP2pDevice();
-    selectedPeerDevice = device;
+  public void setmSeekingDesired(boolean seekingDesired) {
+    this.mSeekingDesired = seekingDesired;
   }
 
   /**
-   * Check whether any packets have been received and echo one to the log, if
-   * one has.
+   * Issue a request to the WifiP2pManager to start discovering peers.
+   * This is an internal method. To turn on/off peer discovery from higher
+   * level application code, call setSeekingDesired(true/false).
    */
-  private void listenForPing() {
-    ByteBuffer packet = tryReceivePacket();
-    if (packet != null) {
-      String packetAsString = bufferToString(packet);
-      Log.d(TAG, "Received a packet, it says: " + packetAsString);
+  private void seekPeers() {
+    if (!mSeeking) {
+      mSeeking = true;
+      mWifiP2pManager.discoverPeers(mWifiP2pChannel, new WifiP2pManager.ActionListener() {
+        @Override
+        public void onSuccess() {
+          Log.d(TAG, "Discovery initiated");
+        }
+      @Override
+      public void onFailure(int reasonCode) {
+        Log.d(TAG, "Discovery failed: " + reasonCode);
+        mSeeking = false;
+        stopSeekingPeers();
+      }
+      });
+    } else {
+      Log.v(TAG, "Attempted to seek peers while already seeking, not doing it.");
     }
+
   }
 
   /**
-   * Convert buffer to string. (Assumes nul termination, for now.)
-   * TODO(lerner): Improve encoding.
+   * Issue a request to the WifiP2pManager to stop discovering peers.
+   * This is an internal method. To turn on/off peer discovery from higher
+   * level application code, call setSeekingDesired(true/false).
    */
-  private String bufferToString(ByteBuffer buf) {
-    StringBuilder sb = new StringBuilder("");
-    byte b;
-    while ((b = buf.get()) != 0) {
-      sb.append(b);
-    }
-    return sb.toString();
-  }
-
-  /**
-   * Initiate a Wifi Direct connection to the given peer.
-   *
-   * @param device The device to connect to.
-   */
-  private void connectToPeerDevice(WifiP2pDevice device) {
-    WifiP2pConfig config = new WifiP2pConfig();
-    config.deviceAddress = device.deviceAddress;
-
-    Log.d(TAG, "calling mWifiP2pManager.connect on: " + config.deviceAddress);
-
-    connectionState = ConnectionState.CONNECTION_IN_PROGRESS;
-    
-    // TODO(lerner): Don't attempt to connect if we're already connecting/
-    // connected, or disconnect first.
-    // TODO(lerner): Set a timeout for the connection that's starting.
-
-    mWifiP2pManager.connect(mWifiP2pChannel, config, new ActionListener() {
+  private void stopSeekingPeers() {
+    mSeeking = false;
+    mWifiP2pManager.stopPeerDiscovery(mWifiP2pChannel, new WifiP2pManager.ActionListener() {
       @Override
       public void onSuccess() {
-        Log.i(TAG, "Connection was requested successfully (we are not yet connected).");
+        Log.d(TAG, "Discovery stopped successfully.");
       }
-
       @Override
-      public void onFailure(int reason) {
-        Log.w(TAG, "Connect request rejected with error code: " + reason);
+      public void onFailure(int reasonCode) {
+        Log.d(TAG, "Failed to stop peer discovery? Reason: " + reasonCode);
       }
     });
   }
 
   /**
-   * Attempts to send a packet containing the bytes of the given message
-   * over udp to the other node in the connection.
-   *
-   * TODO(lerner): Encode the string more intelligently.
-   *
-   * @param message A string to be sent to the connected peer.
-   * @return True if the message seems to have been sent without incident,
-   * false in the event of an exception/failure.
+   * Set the user-friendly name broadcast by the Wifi Direct subsystem to 
+   * the given value. This is used to broadcast some value (e.g. our Bluetooth
+   * MAC address) to devices which can scan for us.
    */
-  private boolean sendMessageToRemotePeer(String message) {
-    if (!isConnected()) {
-      return false;
-    }
-
-    InetSocketAddress destination;
-    if (!isGroupOwner()) {
-      destination = new InetSocketAddress(currentConnectionInfo.groupOwnerAddress,
-                                          RANGZEN_PORT);
-    } else if (isGroupOwner() && remoteAddress != null) {
-      destination = new InetSocketAddress(remoteAddress.getAddress(),
-                                          RANGZEN_PORT);
-    } else {
-      Log.d(TAG, "We're the group owner and we don't know the remote address.");
-      return false;
-    }
-    ByteBuffer data = ByteBuffer.wrap(message.getBytes());
-
-    Log.d(TAG, "Created a packet with contents: " + new String(data.array()));
-
-    if (udpChannel == null) {
-      Log.e(TAG, "Attempted to send but udpChannel was null.");
-      return false;
+  public void setWifiDirectUserFriendlyName(String name) {
+    if (mWifiP2pManager == null || mWifiP2pChannel == null) {
+      return;
     }
     try {
-      udpChannel.send(data, destination);
-      Log.i(TAG, "Sent packet to " + destination);
-      return true;
-    } catch (ClosedChannelException e) {
-      Log.e(TAG, "Closed channel exception: " + e);
-      return false;
-    } catch (IOException e) {
-      Log.e(TAG, "Couldn't send packet over socket: " + e);
-      return false;
-    }
-  }
-
-  /**
-   * Check the socket for the next recieved packet and return it if one exists.
-   * Note that tryReceivePacket implicitly remembers the sender's IP address
-   * in an instance variable. This way group owners always have the address
-   * of their remote communication partner available as soon as a packet is 
-   * received.
-   *
-   * @return A single packet's content as a byte buffer, or null if no datagrams
-   * have been received since the last call or an exception occurred.
-   */
-  private ByteBuffer tryReceivePacket() {
-    if (udpChannel == null) {
-      Log.e(TAG, "Attempted to receive but udpChannel was null.");
-      return null;
-    }
-    try { 
-      ByteBuffer packet = ByteBuffer.allocate(MAX_PACKET_SIZE); 
-      packet.clear();
-
-      // udpChannel.receive is non-blocking - it returns null if no packet
-      // is available, and it returns the InetSocketAddress (IP and port)
-      // of the sender of the packet received, if a packet is available.
-      InetSocketAddress remoteAddress = (InetSocketAddress) udpChannel.receive(packet);
-      if (remoteAddress != null) {
-        this.remoteAddress = remoteAddress;
-        return packet;
-      } else {
-        return null;
-      }
-    } catch (ClosedChannelException e) {
-      Log.e(TAG, "Channel closed when called receive on udpChannel: " + e);
-      return null;
-    } catch (IOException e) {
-      Log.e(TAG, "IOException while receiving from udpChannel: "  + e);
-      return null;
-    }
-  }
-
-  /**
-   * Check whether we're currently connected to a Wifi Direct network,
-   * have a connection info object for that connection.
-   *
-   * @return True if we're in the connected state and have connection info
-   * for the connection.
-   */
-  private boolean isConnected() {
-    if (connectionState != ConnectionState.CONNECTED) {
-      Log.e(TAG, "Check that we are in CONNECTED state failed.");
-      return false;
-    } else if (currentConnectionInfo == null) {
-      Log.e(TAG, "Check that we have connection info available failed.");
-      return false;
-    } else {
-      return true;
-    }
-  }
-  
-  /**
-   * Check if we're the group owner of a connection.
-   *
-   * @return True if we're the owner of a group, false otherwise.
-   */
-  private boolean isGroupOwner() {
-    if (currentConnectionInfo == null) {
-      return false;
-    } else if (currentConnectionInfo.isGroupOwner) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  /**
-   * This exception is raised when an operation requiring a connected peer
-   * is attempted but the device is not currently connected to a peer.
-   */
-  public class NoConnectedPeerException extends Exception {
-    public NoConnectedPeerException(String message) {
-     super(message);
-    }
-  }
-
-  /**
-   * Send a ping to the other device in the connection, if a connection exists
-   * and if we know its address, regardless of whether we're the group owner or
-   * not.
-   */
-  private void pingOtherDevice() {
-    if (!isConnected()) {
-      return;
-    } else {
-      pingCount++;
-      sendMessageToRemotePeer(PING_STRING + ": " + pingCount);
+      // The WifiP2pManager.setDeviceName() method is hidden but accessible through
+      // reflection. The only place I've ever seen it used normally is in the settings
+      // panel of Android, under Wifi -> ... -> Wifi Direct to allow the user to 
+      // change the Wifi Direct name of their device.
+      Method method = mWifiP2pManager.getClass().getMethod("setDeviceName", Channel.class, String.class, ActionListener.class);
+      method.invoke(mWifiP2pManager, mWifiP2pChannel, name, null);
+    } catch (NoSuchMethodException e) {
+      e.printStackTrace();
+      Log.e(TAG, "Reflection found no such method as setDeviceName");
+    } catch (IllegalAccessException e) {
+      Log.e(TAG, "Illegal access exception: " + e);
+    } catch (IllegalArgumentException e) {
+      Log.e(TAG, "Illegal argument exception: " + e);
+    } catch (InvocationTargetException e) {
+      Log.e(TAG, "Invocation target exception: " + e);
     }
   }
 }

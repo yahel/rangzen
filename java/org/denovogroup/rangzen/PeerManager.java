@@ -444,32 +444,12 @@ public class PeerManager {
     mBluetoothSpeaker.tasks();
     
     for (Peer peer : mCurrentPeers) {
-      if (!recentlyExchangedWithPeer(peer) && !recentlyAttemptedExchangeWithPeer(peer)) {
-        Log.v(TAG, "Attempting to have an exchange with " + peer);
-        try {
-          SerializableLocation startLocation = mLocationStore.getLatestLocation();
-          Exchange exchange = mBluetoothSpeaker.connectAndStartExchange(peer);
-          if (exchange == null) {
-            Log.e(TAG, "Couldn't have exchange with peer " + peer);
-            recordExchangeAttemptTime(peer, new Date());
-          } else {
-            Log.i(TAG, "Completed connect and exchange with peer " + peer);
-            Log.i(TAG, "The exchange: " + exchange);
-            recordExchangeTime(peer, new Date(exchange.end_time));
-
-            SerializableLocation endLocation = mLocationStore.getLatestLocation();
-            exchange.start_location = startLocation;
-            exchange.end_location = endLocation;
-
-            mExchangeStore.addExchange(exchange);
-          }
-
-        } catch (IOException e) {
-          Log.e(TAG, String.format("Couldn't have exchange with peer %s: %s", peer, e));
-        }
+      try {
+        mBluetoothSpeaker.connectAndStartExchange(peer);
+      } catch (IOException e) {
+        Log.e(TAG, String.format("Couldn't have exchange with peer %s: %s", peer, e));
       }
-    }
-    
+    } 
     garbageCollectPeers();
     
     Log.v(TAG, "Finished with PeerManager tasks.");
