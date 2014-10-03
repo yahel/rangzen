@@ -260,7 +260,7 @@ public class MapsActivity extends Fragment implements
      * needs to be scaled down and the icon itself is created in the xml file,
      * "master.xml".
      */
-    private void createButtonImage(int buttonId, int notPressedImage,
+    public void createButtonImage(int buttonId, int notPressedImage,
             int pressedImage, boolean invert, int count, View view) {
         ImageButton button = (ImageButton) view.findViewById(buttonId);
         button.bringToFront();

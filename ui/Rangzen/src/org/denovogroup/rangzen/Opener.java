@@ -270,6 +270,15 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         mCurrentTextView.setTextSize(19);
     }
 
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        IntentResult scanResult = IntentIntegrator.parseActivityResult(
+                requestCode, resultCode, intent);
+        if (scanResult != null) {
+            Log.d("Opener", scanResult.getContents());
+        }
+        // else continue with any other code you need in the method
+    }
+
     /**
      * This handles the instantiation of all of the fragments when they are
      * chosen. This also transforms the title of the item in the list to bold
@@ -301,13 +310,13 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         } else if (position == 2) {
             // TODO (Jesus) For the prototype need to create an add friend page
             // add friend. This is probably no longer necessary at all.
-            needAdd = new FragmentOrganizer();
-            Bundle b = new Bundle();
-            b.putSerializable("whichScreen",
-                    FragmentOrganizer.FragmentType.FRIENDS);
-            needAdd.setArguments(b);
+        	Intent intent = new Intent();
+        	intent.setClass(this, QRCodeViewPager.class);
+        	//intent.setClass(this, CameraFragment.class);
+        	startActivity(intent);
         } else if (position == 3) {
             needAdd = new MapsActivity();
+        	return;
         } else {
             needAdd = new FragmentOrganizer();
             Bundle b = new Bundle();

@@ -7,6 +7,7 @@
   <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION"/>
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <uses-permission android:name="android.permission.CAMERA" />
   <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
   <uses-permission android:name="android.permission.BLUETOOTH" />
   <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
@@ -45,6 +46,17 @@
     </receiver>
     <activity
             android:name="org.denovogroup.rangzen.Opener"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.AppCompat.Light"
+            android:windowSoftInputMode="adjustResize" >
+            <intent-filter>
+                <action android:name="android.intent.action.DEFAULT" />
+
+                <category                 				android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+	<activity
+            android:name="org.denovogroup.rangzen.CameraFragment"
             android:label="@string/app_name"
             android:theme="@style/Theme.AppCompat.Light"
             android:windowSoftInputMode="adjustResize" >

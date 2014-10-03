@@ -109,5 +109,4 @@ public class ListFragmentOrganizer extends ListFragment {
         }
         super.onDestroyView();
     }
-
 }
