@@ -31,6 +31,8 @@
 
 package org.denovogroup.rangzen;
 
+import java.util.Stack;
+
 import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
 
 import android.app.Activity;
@@ -62,6 +64,7 @@ import android.webkit.WebView.FindListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -80,6 +83,9 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private SidebarListAdapter mSidebarAdapter;
     private static TextView mCurrentTextView;
     private static boolean mHasStored = false;
+    private static int mPosition = 0;
+    private static boolean mFirstTime = true;
+    private static Stack<Integer> mPrevPosition = new Stack<Integer>();
 
     /** Initialize the contents of the activities menu. */
     @Override
@@ -161,7 +167,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
         mDrawerListener.syncState();
-        if (mCurrentTextView == null) {
+        if (mFirstTime) {
+            Log.d("Opener", "first time post create");
             Fragment needAdd = new ListFragmentOrganizer();
             Bundle b = new Bundle();
             b.putSerializable("whichScreen",
@@ -170,12 +177,25 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             FragmentManager fragmentManager = getSupportFragmentManager();
 
             FragmentTransaction ft = fragmentManager.beginTransaction();
-
+            
             ft.replace(R.id.mainContent, needAdd);
 
             ft.commit();
+            mFirstTime = false;
             selectItem(0);
+            mPosition = 0;
         }
+    }
+    
+    @Override
+    public void onBackPressed() {
+        if (!mPrevPosition.empty()) {
+            mPosition = mPrevPosition.pop();
+            setTitle(mPosition);
+        } else {
+            mFirstTime = true;
+        }
+        super.onBackPressed();
     }
 
     /**
@@ -261,6 +281,11 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      */
     public void showFragment(int position) {
         Fragment needAdd = null;
+        if (mPosition == position) {
+            return;
+        }
+        mPrevPosition.add(mPosition);
+        mPosition = position;
         if (position == 0) {
             needAdd = new ListFragmentOrganizer();
             Bundle b = new Bundle();
@@ -274,11 +299,9 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             startActivity(intent);
             return;
         } else if (position == 2) {
-            // TODO (Jesus) For the prototype need to create an add friend page
-            // add friend. This is probably no longer necessary at all.
+            //TODO (Jesus) Finish add friends page.
+            return;
         } else if (position == 3) {
-            // TODO (Jesus) MAP
-            // the user can view friends.
             needAdd = new MapsActivity();
         } else {
             needAdd = new FragmentOrganizer();
@@ -293,10 +316,13 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
 
         ft.replace(R.id.mainContent, needAdd);
         
-        ft.addToBackStack(null);
+        if (!mFirstTime) {
+            Log.d("Opener", "added to backstack");
+            ft.addToBackStack(null);
+        }
 
+        mFirstTime = false;
         ft.commit();
     }
-
     
 }

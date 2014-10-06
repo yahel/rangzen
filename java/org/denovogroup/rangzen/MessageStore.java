@@ -35,6 +35,8 @@ import android.content.SharedPreferences;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -45,218 +47,334 @@ import java.util.Set;
 import java.util.TreeMap;
 
 /**
- * Storage for Rangzen messages that uses StorageBase underneath.  If instantiated as such,
- * automatically encrypts and decrypts data before storing in Android.
+ * Storage for Rangzen messages that uses StorageBase underneath. If
+ * instantiated as such, automatically encrypts and decrypts data before storing
+ * in Android.
  */
 public class MessageStore {
-  /** A handle for the underlying store */
-  private StorageBase store;
-  
-  /** The internal key used in the underlying store for Rangzen message data. */
-  private static final String MESSAGES_KEY = "RangzenMessages-";
+	/** A handle for the underlying store */
+	private StorageBase store;
 
-  /** The internal key used in the underlying store for Rangzen message priorities. */
-  private static final String MESSAGE_PRIORITY_KEY = "RangzenMessagePriority-";
+	/** The internal key used in the underlying store for Rangzen message data. */
+	private static final String MESSAGES_KEY = "RangzenMessages-";
 
-  /**
-   * The number of bins to use for storing messages.  Each bin stores 1/NUM_BINS range of priority
-   * values, called the INCREMENT.  Bin 0 stores [0,INCREMENT), bin 1 stores [INCREMENT,
-   * 2*INCREMENT), etc.
-   */
-  private static final int NUM_BINS = 5;
+	/**
+	 * The internal key used in the underlying store for Rangzen message
+	 * priorities.
+	 */
+	private static final String MESSAGE_PRIORITY_KEY = "RangzenMessagePriority-";
 
-  /** The range increment, computed from the number of bins. */
-  private static final float INCREMENT = 1.0f / (float) NUM_BINS;
+	/**
+	 * The number of bins to use for storing messages. Each bin stores
+	 * 1/NUM_BINS range of priority values, called the INCREMENT. Bin 0 stores
+	 * [0,INCREMENT), bin 1 stores [INCREMENT, 2*INCREMENT), etc.
+	 */
+	private static final int NUM_BINS = 5;
 
-  /** The min priority value. */
-  private static final float MIN_PRIORITY_VALUE = 0.0f;
+	/** The range increment, computed from the number of bins. */
+	private static final float INCREMENT = 1.0f / (float) NUM_BINS;
 
-  /** The max priority value. */
-  private static final float MAX_PRIORITY_VALUE = 2.0f;
+	/** The min priority value. */
+	private static final float MIN_PRIORITY_VALUE = 0.0f;
 
-  /** Ensures that the given priority value is in range. */
-  private static void checkPriority(float priority) throws IllegalArgumentException {
-    if (priority < MIN_PRIORITY_VALUE || priority > MAX_PRIORITY_VALUE) {
-      throw new IllegalArgumentException("Priority " + priority + " is outside valid range of [0,1]");
-    }
-  }
+	/** The max priority value. */
+	private static final float MAX_PRIORITY_VALUE = 2.0f;
 
-  /**
-   * Determines the bin key for a given bin number.
-   *
-   * @param bin The bin number.
-   *
-   * @return The String bin key to use for that bin.
-   */
-  private static String getBinKey(int bin) {
-    return MESSAGES_KEY + bin;
-  }
+	/** Ensures that the given priority value is in range. */
+	private static void checkPriority(float priority)
+			throws IllegalArgumentException {
+		if (priority < MIN_PRIORITY_VALUE || priority > MAX_PRIORITY_VALUE) {
+			throw new IllegalArgumentException("Priority " + priority
+					+ " is outside valid range of [0,1]");
+		}
+	}
 
-  /**
-   * Determines the message priority key for a given message.
-   *
-   * @param msg The message.
-   *
-   * @return The String message priority key for that message.
-   */
-  private static String getMessagePriorityKey(String msg) {
-    return MESSAGE_PRIORITY_KEY + msg;
-  }
+	/**
+	 * Determines the bin key for a given bin number.
+	 * 
+	 * @param bin
+	 *            The bin number.
+	 * 
+	 * @return The String bin key to use for that bin.
+	 */
+	private static String getBinKey(int bin) {
+		return MESSAGES_KEY + bin;
+	}
 
-  /**
-   * Determines the bin that corresponds to a given priority value.
-   *
-   * @param priority The priority for which to identify the bin number.
-   *
-   * @return The bin number.
-   */
-  private static int getBinForPriority(float priority) {
-    checkPriority(priority);
+	/**
+	 * Determines the message priority key for a given message.
+	 * 
+	 * @param msg
+	 *            The message.
+	 * 
+	 * @return The String message priority key for that message.
+	 */
+	private static String getMessagePriorityKey(String msg) {
+		return MESSAGE_PRIORITY_KEY + msg;
+	}
 
-    int bin = (int) (priority / INCREMENT);
-    if (bin >= NUM_BINS) {
-      // We should only select this bin if priority == 1.0.
-      bin = NUM_BINS - 1;
-    }
+	/**
+	 * Determines the bin that corresponds to a given priority value.
+	 * 
+	 * @param priority
+	 *            The priority for which to identify the bin number.
+	 * 
+	 * @return The bin number.
+	 */
+	private static int getBinForPriority(float priority) {
+		checkPriority(priority);
 
-    return bin;
-  }
+		int bin = (int) (priority / INCREMENT);
+		if (bin >= NUM_BINS) {
+			// We should only select this bin if priority == 1.0.
+			bin = NUM_BINS - 1;
+		}
 
-  /**
-   * Determines the message key to use for the bin corresponding to the given priority.
-   *
-   * @param priority The message for which to look up the key.
-   *
-   * @return A String to use as a key for the given bin.
-   */
-  private static String getBinKeyForPriority(float priority) {
-    checkPriority(priority);
+		return bin;
+	}
 
-    int bin = getBinForPriority(priority);
-    return getBinKey(bin);
-  }
+	/**
+	 * Determines the message key to use for the bin corresponding to the given
+	 * priority.
+	 * 
+	 * @param priority
+	 *            The message for which to look up the key.
+	 * 
+	 * @return A String to use as a key for the given bin.
+	 */
+	private static String getBinKeyForPriority(float priority) {
+		checkPriority(priority);
 
-  /**
-   * Creates a Rangzen message store, with a consistent application of encryption of that stored
-   * data, as specified.  All messages are associated with a priority value that can be modified.
-   *
-   * @param activity The app instance for which to perform storage.
-   * @param encryptionMode The encryption mode to use for all calls using this instance.
-   *
-   * TODO(barath): Add support for a storage limit, which automatically triggers garbage collection
-   *               when hit.
-   */
-  public MessageStore(Activity activity, int encryptionMode) throws IllegalArgumentException {
-    store = new StorageBase(activity, encryptionMode);
-  }
+		int bin = getBinForPriority(priority);
+		return getBinKey(bin);
+	}
 
-  /**
-   * Adds the given message with the given priority.
-   *
-   * @param msg The message to add.
-   * @param priority The priority to associate with the message.  The priority must be [0,1].
-   *
-   * @return Returns true if the message was added.  If the message already exists, does not modify
-   * the store and returns false.
-   */
-  public boolean addMessage(String msg, float priority) {
-    checkPriority(priority);
+	/**
+	 * Creates a Rangzen message store, with a consistent application of
+	 * encryption of that stored data, as specified. All messages are associated
+	 * with a priority value that can be modified.
+	 * 
+	 * @param activity
+	 *            The app instance for which to perform storage.
+	 * @param encryptionMode
+	 *            The encryption mode to use for all calls using this instance.
+	 * 
+	 *            TODO(barath): Add support for a storage limit, which
+	 *            automatically triggers garbage collection when hit.
+	 */
+	public MessageStore(Activity activity, int encryptionMode)
+			throws IllegalArgumentException {
+		store = new StorageBase(activity, encryptionMode);
+	}
 
-    // Check whether we have the message already (perhaps in another bin).
-    // TODO(barath): Consider improving performance by selecting a different key.
-    String msgPriorityKey = MESSAGE_PRIORITY_KEY + msg;
+	/**
+	 * Adds the given message with the given priority.
+	 * 
+	 * @param msg
+	 *            The message to add.
+	 * @param priority
+	 *            The priority to associate with the message. The priority must
+	 *            be [0,1].
+	 * 
+	 * @return Returns true if the message was added. If the message already
+	 *         exists, does not modify the store and returns false.
+	 */
+	public boolean addMessage(String msg, float priority) {
+		checkPriority(priority);
 
-    // A value less than all priorities in the store.
-    final float MIN_PRIORITY = -1.0f;
+		// Check whether we have the message already (perhaps in another bin).
+		// TODO(barath): Consider improving performance by selecting a different
+		// key.
+		String msgPriorityKey = MESSAGE_PRIORITY_KEY + msg;
 
-    // The default value that indicates not found.
-    final float NOT_FOUND = -2.0f;
+		// A value less than all priorities in the store.
+		final float MIN_PRIORITY = -1.0f;
 
-    boolean found = !(store.getFloat(msgPriorityKey, NOT_FOUND) < MIN_PRIORITY);
-    if (found) {
-      return false;
-    }
-    
-    // Get the existing message set for the bin, if it exists.
-    String binKey = getBinKeyForPriority(priority);
-    Set<String> msgs = store.getSet(binKey);
-    if (msgs == null) {
-      msgs = new HashSet<String>();
-    }
+		// The default value that indicates not found.
+		final float NOT_FOUND = -2.0f;
 
-    // Add the message with the given priority, and to the bin.
-    store.putFloat(msgPriorityKey, priority);
-    msgs.add(msg);
-    store.putSet(binKey, msgs);
+		boolean found = !(store.getFloat(msgPriorityKey, NOT_FOUND) < MIN_PRIORITY);
+		if (found) {
+			return false;
+		}
 
-    return true;
-  }
+		// Get the existing message set for the bin, if it exists.
+		String binKey = getBinKeyForPriority(priority);
+		Set<String> msgs = store.getSet(binKey);
+		if (msgs == null) {
+			msgs = new HashSet<String>();
+		}
 
-  /**
-   * Removes the given message from the store.
-   *
-   * @param msg The message to remove.
-   *
-   * @return Returns true if the message was removed.  If the message was not found, returns false.
-   */
-  public boolean deleteMessage(String msg) {
-    // TODO(barath): Implement.
-    return false;
-  }
+		// Add the message with the given priority, and to the bin.
+		store.putFloat(msgPriorityKey, priority);
+		msgs.add(msg);
+		store.putSet(binKey, msgs);
 
-  /**
-   * Returns the given message's priority, if present.
-   *
-   * @param msg The message whose priority to retrieve.
-   * @param defvalue The default value to return if not found.
-   *
-   * @return Returns msg's priority or defvalue if not found.
-   */
-  public float getMessagePriority(String msg, float defvalue) {
-    return store.getFloat(getMessagePriorityKey(msg), defvalue);
-  }
+		return true;
+	}
 
-  /**
-   * Returns the messages with highest priority values.
-   *
-   * @param k The number of messages to return.
-   *
-   * @return Returns up to k messages with the highest priority values.
-   */
-  public TreeMap<Float, Collection<String>> getTopK(int k) {
-    TreeMap<Float, Collection<String>> topk = new TreeMap<Float, Collection<String>>();
- 
-      int msgsStored = 0;
+	/**
+	 * Removes the given message from the store.
+	 * 
+	 * @param msg
+	 *            The message to remove.
+	 * 
+	 * @return Returns true if the message was removed. If the message was not
+	 *         found, returns false.
+	 */
+	public boolean deleteMessage(String msg) {
+		// TODO(barath): Implement.
+		return false;
+	}
 
-binloop: for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
-      String binKey = getBinKey(bin);
-      Set<String> msgs = store.getSet(binKey);
-      if (msgs == null) continue;
+	/**
+	 * Returns the given message's priority, if present.
+	 * 
+	 * @param msg
+	 *            The message whose priority to retrieve.
+	 * @param defvalue
+	 *            The default value to return if not found.
+	 * 
+	 * @return Returns msg's priority or defvalue if not found.
+	 */
+	public float getMessagePriority(String msg, float defvalue) {
+		return store.getFloat(getMessagePriorityKey(msg), defvalue);
+	}
 
-      TreeMap<Float, List<String>> sortedmsgs = new TreeMap<Float, List<String>>();
-      for (String m : msgs) {
-        float priority = getMessagePriority(m, -1);
-        if (!sortedmsgs.containsKey(priority)) {
-          sortedmsgs.put(priority, new ArrayList<String>());
-        }
-        sortedmsgs.get(priority).add(m);
-      }
+	/**
+	 * Returns the messages with highest priority values.
+	 * 
+	 * @param k
+	 *            The number of messages to return.
+	 * 
+	 * @return Returns up to k messages with the highest priority values.
+	 */
+	public TreeMap<Float, Collection<String>> getTopK(int k) {
+		TreeMap<Float, Collection<String>> topk = new TreeMap<Float, Collection<String>>();
 
-      NavigableMap<Float, List<String>> descMap = sortedmsgs.descendingMap();
-      for (Entry<Float, List<String>> e : descMap.entrySet()) {
-        for (String m : e.getValue()) {
-          if (msgsStored >= k) break binloop;
+		int msgsStored = 0;
 
-          float priority = e.getKey();
-          if (!topk.containsKey(priority)) {
-            topk.put(priority, new HashSet<String>());
-          }
-          topk.get(priority).add(m);
-          msgsStored++;
-        }
-      }
-    }
+		binloop: for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
+			String binKey = getBinKey(bin);
+			Set<String> msgs = store.getSet(binKey);
+			if (msgs == null)
+				continue;
 
-    return topk;
-  }
+			TreeMap<Float, List<String>> sortedmsgs = new TreeMap<Float, List<String>>();
+			for (String m : msgs) {
+				float priority = getMessagePriority(m, -1);
+				if (!sortedmsgs.containsKey(priority)) {
+					sortedmsgs.put(priority, new ArrayList<String>());
+				}
+				sortedmsgs.get(priority).add(m);
+			}
+
+			NavigableMap<Float, List<String>> descMap = sortedmsgs
+					.descendingMap();
+			for (Entry<Float, List<String>> e : descMap.entrySet()) {
+				for (String m : e.getValue()) {
+					if (msgsStored >= k)
+						break binloop;
+
+					float priority = e.getKey();
+					if (!topk.containsKey(priority)) {
+						topk.put(priority, new HashSet<String>());
+					}
+					topk.get(priority).add(m);
+					msgsStored++;
+				}
+			}
+		}
+
+		return topk;
+	}
+
+	/**
+	 * This will iterate over all of the messages in the message store and
+	 * return the number of messages
+	 * 
+	 * @return count The total number of messages in the message store.
+	 */
+	public int getMessageCount() {
+		int count = 0;
+		for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
+			String binKey = getBinKey(bin);
+			Set<String> msgs = store.getSet(binKey);
+			if (msgs == null)
+				continue;
+
+			for (String m : msgs) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	/**
+	 * This method goes through every message in all of the bins and inserts
+	 * them into an array list by trust score and then in the case of a tie,
+	 * alphabetically.
+	 * 
+	 * @param k
+	 *            The index of the message to return.
+	 * @return A message object that is the kth most trusted.
+	 */
+	public Message getKthMessage(int k) {
+		ArrayList<Message> topk = new ArrayList<Message>();
+
+		for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
+			String binKey = getBinKey(bin);
+			Set<String> msgs = store.getSet(binKey);
+			if (msgs == null)
+				continue;
+
+			for (String m : msgs) {
+				float priority = getMessagePriority(m, -1);
+				topk.add(new Message(priority, m));
+			}
+		}
+		Collections.sort(topk, new Comparator<Message>() {
+
+			@Override
+			public int compare(Message lhs, Message rhs) {
+				Message left = (Message) lhs;
+				Message right = (Message) rhs;
+				if (left.getPriority() > right.getPriority()) {
+					return -1;
+				} else if (left.getPriority() < right.getPriority()) {
+					return 1;
+				} else {
+					return left.getMessage().compareTo(right.getMessage());
+				}
+			}
+		});
+		return topk.get(k);
+	}
+
+	/**
+	 * Message Object that contains the message's priority and the contents of
+	 * the message.
+	 * 
+	 * @author Jesus Garcia
+	 * 
+	 */
+	public class Message {
+		/** The priority of the message. */
+		private float mPriority;
+		/** The contents of the message. */
+		private String mMessage;
+
+		public Message(float priority, String message) {
+			mPriority = priority;
+			mMessage = message;
+		}
+
+		public String getMessage() {
+			return mMessage;
+		}
+
+		public float getPriority() {
+			return mPriority;
+		}
+	}
 }

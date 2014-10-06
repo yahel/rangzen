@@ -31,8 +31,10 @@
 
 package org.denovogroup.rangzen;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 import android.app.Activity;
@@ -45,6 +47,9 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+import java.util.NavigableMap;
+
+import org.denovogroup.rangzen.MessageStore.Message;
 
 public class FeedListAdapter extends BaseAdapter {
 
@@ -52,10 +57,6 @@ public class FeedListAdapter extends BaseAdapter {
     private Context mContext;
     /** Message store to be used to get the messages and trust score. */
     private MessageStore mMessageStore;
-    /** The trust score of the current message. */
-    private float mTrustScore;
-    /** The message that will go into the current row. */
-    private String mRealMessage;
     /**
      * Holds references to views so that findViewById() is not needed to be
      * called so many times.
@@ -79,7 +80,9 @@ public class FeedListAdapter extends BaseAdapter {
 
     @Override
     public int getCount() {
-        return Integer.MAX_VALUE;
+        mMessageStore = new MessageStore((Activity) mContext,
+                StorageBase.ENCRYPTION_DEFAULT);
+        return mMessageStore.getMessageCount();
     }
 
     /**
@@ -111,7 +114,9 @@ public class FeedListAdapter extends BaseAdapter {
      */
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        getMessageAndTrustScore(position);
+        MessageStore messageStore = new MessageStore((Activity) mContext,
+                StorageBase.ENCRYPTION_DEFAULT);
+        Message message = messageStore.getKthMessage(position);
         if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater) mContext
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -129,47 +134,10 @@ public class FeedListAdapter extends BaseAdapter {
         } else {
             mViewHolder = (ViewHolder) convertView.getTag();
         }
-        mViewHolder.mHashtagView.setText(mRealMessage);
-        mViewHolder.mUpvoteView.setText(String.valueOf(mTrustScore));
+        mViewHolder.mHashtagView.setText(message.getMessage());
+        mViewHolder.mUpvoteView.setText(Float.toString(message.getPriority()));
 
         return convertView;
-    }
-
-    /**
-     * The message that we want will be in the top-most branch. I find the
-     * position in the first array that the message will be at by taking
-     * position and reducing it by the values of the other branches.
-     * 
-     * That value would be the index if the first array was backwards, because
-     * it's working backwards. So I flip the index by taking the length of the
-     * array - 1 and subtracting from that the firstArrayPosition.
-     * 
-     * @param position
-     *            The position in the list that is currently being populated.
-     */
-    private void getMessageAndTrustScore(int position) {
-        mMessageStore = new MessageStore((Activity) mContext,
-                StorageBase.ENCRYPTION_DEFAULT);
-        TreeMap<Float, Collection<String>> tree = mMessageStore
-                .getTopK(position + 1);
-        tree.size();
-        int firstArrayPosition = position;
-        String[] firstArray = null;
-        mRealMessage = "No message";
-        mTrustScore = 3;
-        for (Entry<Float, Collection<String>> e : tree.entrySet()) {
-            if (firstArray == null) {
-                String[] array = e.getValue().toArray(
-                        new String[e.getValue().size()]);
-                Arrays.sort(array);
-                firstArray = array;
-                mTrustScore = e.getKey();
-            } else {
-                firstArrayPosition -= e.getValue().size();
-            }
-        }
-        firstArrayPosition = (firstArray.length - 1) - firstArrayPosition;
-        mRealMessage = firstArray[firstArrayPosition];
     }
 
     /**

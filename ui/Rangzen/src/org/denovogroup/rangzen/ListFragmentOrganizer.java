@@ -95,5 +95,19 @@ public class ListFragmentOrganizer extends ListFragment {
                 Toast.LENGTH_SHORT).show();
 
     }
+    
+    @Override
+    public void onDestroyView() {
+        ListFragmentOrganizer f = (ListFragmentOrganizer) getFragmentManager().findFragmentById(R.layout.feed);
+        if (f != null) {
+            try {
+                getFragmentManager().beginTransaction().remove(f).commit();
+                
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+        }
+        super.onDestroyView();
+    }
 
 }
