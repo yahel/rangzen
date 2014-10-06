@@ -14,7 +14,10 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<merge xmlns:android="http://schemas.android.com/apk/res/android" >
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mapFrame"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
 
     <SurfaceView
         android:id="@+id/preview_view"
@@ -49,4 +52,4 @@
             android:clickable="true" />
     </RelativeLayout>
 
-</merge>
+</FrameLayout>

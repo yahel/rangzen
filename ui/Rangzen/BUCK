@@ -6,7 +6,6 @@ android_resource(
   deps = [
     '//ui/appcompat_v7_4:appcompatRes',
     '//ui/google-play-services_lib:googlePlayServicesRes',
-    '//ui/zxor:QRres',
   ],
 )
 

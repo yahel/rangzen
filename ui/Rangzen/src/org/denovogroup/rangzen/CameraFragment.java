@@ -17,7 +17,9 @@
 package org.denovogroup.rangzen;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -26,12 +28,16 @@ import android.graphics.drawable.StateListDrawable;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageButton;
@@ -48,11 +54,11 @@ import java.io.IOException;
 /**
  * @author Sean Owen
  */
-public final class CameraFragment extends Activity implements
+public final class CameraFragment extends Fragment implements
 		SurfaceHolder.Callback {
 
 	private static final String TAG = CameraFragment.class.getSimpleName();
-	private static final String SCAN_ACTION = "com.google.zxing.client.android.SCAN";
+	//private static final String SCAN_ACTION = "com.google.zxing.client.android.SCAN";
 
 	private boolean hasSurface;
 	private boolean returnResult;
@@ -67,19 +73,30 @@ public final class CameraFragment extends Activity implements
 
 		// returnResult should be true if activity was started using
 		// startActivityForResult() with SCAN_ACTION intent
-		Intent intent = getIntent();
-		returnResult = intent != null && SCAN_ACTION.equals(intent.getAction());
+//		Intent intent = getIntent();
+//		returnResult = intent != null && SCAN_ACTION.equals(intent.getAction());
+		//returnResult = true;
+		
+      SharedPreferences settings = getActivity().getSharedPreferences(
+      QRCodeViewPager.INTENT, 0);
+      settings.getBoolean("returnResult", true);
 
-		Window window = getWindow();
+		Window window = getActivity().getWindow();
 		window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-		setContentView(R.layout.qr_read);
-
+		//setContentView(R.layout.qr_read);
+	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		return inflater.inflate(R.layout.qr_read, container, false);
 	}
 
 	@Override
 	public synchronized void onResume() {
 		super.onResume();
-		SurfaceView surfaceView = (SurfaceView) findViewById(R.id.preview_view);
+		SurfaceView surfaceView = (SurfaceView) getActivity().findViewById(R.id.preview_view);
 		SurfaceHolder surfaceHolder = surfaceView.getHolder();
 		if (surfaceHolder == null) {
 			throw new IllegalStateException("No SurfaceHolder?");
@@ -134,20 +151,20 @@ public final class CameraFragment extends Activity implements
 		hasSurface = false;
 	}
 
-	@Override
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		if (result != null) {
-			switch (keyCode) {
-			case KeyEvent.KEYCODE_DPAD_CENTER:
-				handleResult(result);
-				return true;
-			case KeyEvent.KEYCODE_BACK:
-				reset();
-				return true;
-			}
-		}
-		return super.onKeyDown(keyCode, event);
-	}
+//	@Override
+//	public boolean onKeyDown(int keyCode, KeyEvent event) {
+//		if (result != null) {
+//			switch (keyCode) {
+//			case KeyEvent.KEYCODE_DPAD_CENTER:
+//				handleResult(result);
+//				return true;
+//			case KeyEvent.KEYCODE_BACK:
+//				reset();
+//				return true;
+//			}
+//		}
+//		return super.onKeyDown(keyCode, event);
+//	}
 
 	private void initCamera(SurfaceHolder holder) {
 		if (camera != null) {
@@ -178,10 +195,10 @@ public final class CameraFragment extends Activity implements
 			Intent scanResult = new Intent(
 					"com.google.zxing.client.android.SCAN");
 			scanResult.putExtra("SCAN_RESULT", result.getText());
-			setResult(RESULT_OK, scanResult);
-			finish();
+			getActivity().setResult(Activity.RESULT_OK, scanResult);
+			getActivity().finish();
 		} else {
-			TextView statusView = (TextView) findViewById(R.id.status_view);
+			TextView statusView = (TextView) getActivity().findViewById(R.id.status_view);
 			String text = result.getText();
 			statusView.setText(text);
 			statusView.setTextSize(TypedValue.COMPLEX_UNIT_SP,
@@ -191,7 +208,7 @@ public final class CameraFragment extends Activity implements
 		}
 	}
 
-	private void handleResult(Result result) {
+	public void handleResult(Result result) {
 		ParsedResult parsed = ResultParser.parseResult(result);
 		Intent intent;
 		if (parsed.getType() == ParsedResultType.URI) {
@@ -204,11 +221,15 @@ public final class CameraFragment extends Activity implements
 		startActivity(intent);
 	}
 
-	private synchronized void reset() {
-		TextView statusView = (TextView) findViewById(R.id.status_view);
+	public synchronized void reset() {
+		TextView statusView = (TextView) getActivity().findViewById(R.id.status_view);
 		statusView.setVisibility(View.GONE);
 		result = null;
 		decodeRunnable.startScanning();
+	}
+	
+	public Result getResult() {
+		return result;
 	}
 
 }

@@ -16,12 +16,14 @@
 
 package org.denovogroup.rangzen;
 
+import android.app.Activity;
 import android.hardware.Camera;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
+import com.google.android.gms.drive.internal.ac;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.BinaryBitmap;
 import com.google.zxing.DecodeHintType;
@@ -43,7 +45,8 @@ final class DecodeRunnable implements Runnable, Camera.PreviewCallback {
 
 	private static final String TAG = DecodeRunnable.class.getSimpleName();
 
-	private final CameraFragment activity;
+	private final CameraFragment activity1;
+	private final Activity activity;
 	private final Camera camera;
 	private final int height;
 	private final int width;
@@ -53,7 +56,8 @@ final class DecodeRunnable implements Runnable, Camera.PreviewCallback {
 	private final CountDownLatch handlerInitLatch;
 
 	DecodeRunnable(CameraFragment activity, Camera camera) {
-		this.activity = activity;
+		this.activity1 = activity;
+		this.activity = activity.getActivity();
 		this.camera = camera;
 		Camera.Parameters parameters = camera.getParameters();
 		Camera.Size previewSize = parameters.getPreviewSize();
@@ -123,7 +127,7 @@ final class DecodeRunnable implements Runnable, Camera.PreviewCallback {
 				activity.runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
-						activity.setResult(result);
+						activity1.setResult(result);
 					}
 				});
 			} else if (a == R.id.decode_failed) {

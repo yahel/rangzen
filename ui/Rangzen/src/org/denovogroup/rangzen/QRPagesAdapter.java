@@ -48,53 +48,75 @@ import com.viewpagerindicator.IconPagerAdapter;
  * specifically for the ViewPager class that enables sliding of fragments. This
  * is necessary to provide a list format for the ViewPager.
  */
-class QRPagesAdapter extends FragmentPagerAdapter implements
-        IconPagerAdapter {
-    
-    /** Number of slides in the introduction. */
-    private int mCount = 2;
+class QRPagesAdapter extends FragmentPagerAdapter implements IconPagerAdapter {
 
-    public QRPagesAdapter(FragmentManager fm) {
-        super(fm);
-    }
-    
-    @Override
-    public void destroyItem(View collection, int position, Object o) {
-        View view = (View)o;
-        ((ViewPager) collection).removeView(view);
-        view = null;
-    }
+	/** Number of slides in the introduction. */
+	private int mCount = 2;
+	private static Fragment one = null;
+	private static Fragment zero = null;
 
-    /**
-     * Creates a new instance of the fragment at position position.
-     * 
-     * @param position
-     *            The position of the fragment currently being created.
-     */
-    @Override
-    public Fragment getItem(int position) {
-        Enum type = null;
-        if (position == 0) {
-            type = FragmentType.QRRead;
-        } else {
-            type = FragmentType.QRRead;
-        }
-        position = position % mCount;
-        Bundle b = new Bundle();
-        b.putSerializable("whichScreen", type);
-        Fragment fragment = new FragmentOrganizer();
-        fragment.setArguments(b);
-        return fragment;
-    }
+	public QRPagesAdapter(FragmentManager fm) {
+		super(fm);
+	}
 
-    @Override
-    public int getCount() {
-        return mCount;
-    }
+	@Override
+	public void destroyItem(View collection, int position, Object o) {
+		View view = (View) o;
+		((ViewPager) collection).removeView(view);
+		view = null;
+	}
 
-    @Override
-    public int getIconResId(int index) {
-        return 0;
-    }
+	/**
+	 * Creates a new instance of the fragment at position position.
+	 * 
+	 * @param position
+	 *            The position of the fragment currently being created.
+	 */
+	@Override
+	public Fragment getItem(int position) {
+		Enum type = null;
+		if (position == 0) {
+			type = FragmentType.QRRead;
+		} else {
+			CameraFragment cam = new CameraFragment();
+			return cam;
+		}
+		position = position % mCount;
+		Bundle b = new Bundle();
+		b.putSerializable("whichScreen", type);
+		Fragment fragment = new FragmentOrganizer();
+		fragment.setArguments(b);
+		return fragment;
+	}
+	
+	@Override
+	public Object instantiateItem(View container, int position) {
+		// TODO Auto-generated method stub
+		Fragment fragment = (Fragment) super.instantiateItem(container, position);
+		if (position == 0) {
+			zero = fragment;
+		}
+		if (position == 1) {
+			one = fragment;
+		}
+		return fragment;
+	}
+	
+	public Fragment getFragment(int position) {
+		if (position == 0) {
+			return zero;
+		}
+		return one;
+	}
+
+	@Override
+	public int getCount() {
+		return mCount;
+	}
+
+	@Override
+	public int getIconResId(int index) {
+		return 0;
+	}
 
 }

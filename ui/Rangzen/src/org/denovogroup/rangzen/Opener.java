@@ -140,6 +140,23 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private void storeTempMessages() {
         MessageStore messageStore = new MessageStore(this,
                 StorageBase.ENCRYPTION_DEFAULT);
+        messageStore.addMessage("Don't go to Maddison Square Garden, the army is there.", 1);
+        messageStore.addMessage("How would we know if this is really anonymous?", 1);
+        messageStore.addMessage("Test1", 1);
+        
+        messageStore.addMessage("Test1", 1);
+        messageStore.addMessage("Test1", 1);
+        
+        messageStore.addMessage("Test1", 1);
+        messageStore.addMessage("Test1", 1);
+        messageStore.addMessage("Test1", 1);
+        messageStore.addMessage("Test1", 1);
+        messageStore.addMessage("Test1", 1);
+        
+        messageStore.addMessage("Test1", 1);
+        messageStore.addMessage("Test1", 1);
+        messageStore.addMessage("Test1", 1);
+        
         Log.d("Opener", "first " + messageStore.addMessage("Test1", 1));
         Log.d("Opener", "second " + messageStore.addMessage("Test2", 1.5f));
         Log.d("Opener", "third " + messageStore.addMessage("Test3", 2));
@@ -314,6 +331,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         	intent.setClass(this, QRCodeViewPager.class);
         	//intent.setClass(this, CameraFragment.class);
         	startActivity(intent);
+        	return;
         } else if (position == 3) {
             needAdd = new MapsActivity();
         	return;

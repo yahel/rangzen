@@ -39,6 +39,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.CursorJoiner.Result;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
@@ -46,12 +47,14 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.ActionMode;
+import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.viewpagerindicator.LinePageIndicator;
 import com.viewpagerindicator.PageIndicator;
@@ -67,15 +70,17 @@ public class QRCodeViewPager extends FragmentActivity {
 
     /** Shown in Android log. */
     private static final String TAG = "SlidingPageIndicator";
-    
+
     /**
      * Give your SharedPreferences file a name and save it to a static variable.
      */
-    public static final String PREFS_NAME = "rememberPagesSeen";
+    public static final String INTENT = "rememberPagesSeen";
 
-    private StorageBase mStore; 
+    private static final String SCAN_ACTION = "com.google.zxing.client.android.SCAN";
 
-    IntroductionFragmentAdapter mAdapter;
+    private StorageBase mStore;
+
+    QRPagesAdapter mAdapter;
     ViewPager mPager;
     PageIndicator mIndicator;
 
@@ -91,53 +96,61 @@ public class QRCodeViewPager extends FragmentActivity {
         mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
         String state = getExperimentState();
         if (state == null) {
-          Log.i(TAG, "Initializing experiment state to EXP_STATE_START.");
-          mStore.put(RangzenService.EXPERIMENT_STATE_KEY, RangzenService.EXP_STATE_START);
+            Log.i(TAG, "Initializing experiment state to EXP_STATE_START.");
+            mStore.put(RangzenService.EXPERIMENT_STATE_KEY,
+                    RangzenService.EXP_STATE_START);
         } else {
-          Log.i(TAG, "Creating SlidingPageIndicator, state is " + state);
+            Log.i(TAG, "Creating SlidingPageIndicator, state is " + state);
         }
 
-//        SharedPreferences settings = getSharedPreferences(
-//                SlidingPageIndicator.PREFS_NAME, 0);
-//        boolean hasLoggedIn = settings.getBoolean("hasLoggedIn", false);
-//
-//        if (hasLoggedIn) {
-//            Log.i(TAG, "Has logged in.");
-//            Intent intent = new Intent();
-//            intent.setClass(SlidingPageIndicator.this, Opener.class);
-//            startActivity(intent);
-//            SlidingPageIndicator.this.finish();
-//        }
-        setContentView(R.layout.simple_lines);
+        Intent intent = getIntent();
+        SharedPreferences settings = getSharedPreferences(
+                QRCodeViewPager.INTENT, 0);
+        SharedPreferences.Editor editor = settings.edit();
 
-        mAdapter = new IntroductionFragmentAdapter(getSupportFragmentManager());
+        editor.putBoolean("returnResult",
+                intent != null && SCAN_ACTION.equals(intent.getAction()));
+        editor.commit();
+
+        setContentView(R.layout.qr_simple_lines);
+
+        mAdapter = new QRPagesAdapter(getSupportFragmentManager());
 
         mPager = (ViewPager) findViewById(R.id.pager);
         mPager.setAdapter(mAdapter);
-
-        LinePageIndicator indicator = (LinePageIndicator) findViewById(R.id.indicator);
-        mIndicator = indicator;
-        indicator.setViewPager(mPager);
-        mPager.setPageTransformer(true, new DepthPageTransformer());
-        mPager.setOffscreenPageLimit(2);
-
-        final float density = getResources().getDisplayMetrics().density;
-        indicator.setSelectedColor(0xFFFFFFFF);
-        indicator.setUnselectedColor(0xFF888888);
-        indicator.setStrokeWidth(4 * density);
-        indicator.setLineWidth(30 * density);
     }
-    
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         return super.onOptionsItemSelected(item);
     }
 
     /**
-     * Retrieve the current experiment state. Sets the experiment state to
-     * START if none is set already.
+     * Retrieve the current experiment state. Sets the experiment state to START
+     * if none is set already.
      */
     private String getExperimentState() {
-      return mStore.get(RangzenService.EXPERIMENT_STATE_KEY);
+        return mStore.get(RangzenService.EXPERIMENT_STATE_KEY);
     }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (mPager.getCurrentItem() == 1) {
+            CameraFragment cam = (CameraFragment) getSupportFragmentManager()
+                    .findFragmentById(R.id.pager);
+            com.google.zxing.Result result = cam.getResult();
+            if (result != null) {
+                switch (keyCode) {
+                case KeyEvent.KEYCODE_DPAD_CENTER:
+                    cam.handleResult(result);
+                    return true;
+                case KeyEvent.KEYCODE_BACK:
+                    cam.reset();
+                    return true;
+                }
+            }
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
 }
