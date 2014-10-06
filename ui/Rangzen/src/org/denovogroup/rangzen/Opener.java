@@ -299,8 +299,13 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             startActivity(intent);
             return;
         } else if (position == 2) {
-            //TODO (Jesus) Finish add friends page.
-            return;
+            // TODO (Jesus) For the prototype need to create an add friend page
+            // add friend. This is probably no longer necessary at all.
+            needAdd = new ListFragmentOrganizer();
+            Bundle b = new Bundle();
+            b.putSerializable("whichScreen",
+                    FragmentOrganizer.FragmentType.FRIENDS);
+            needAdd.setArguments(b);
         } else if (position == 3) {
             needAdd = new MapsActivity();
         } else {
@@ -320,9 +325,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             Log.d("Opener", "added to backstack");
             ft.addToBackStack(null);
         }
-
         mFirstTime = false;
         ft.commit();
     }
-    
 }

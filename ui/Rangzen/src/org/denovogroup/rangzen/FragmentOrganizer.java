@@ -132,10 +132,25 @@ public class FragmentOrganizer extends Fragment {
             return post(inflater, container);
             
         case FRIENDS:
+            return makeFriendsPage(inflater, container);
             
         default:
             return null;
         }
+    }
+
+    /**
+     * This will create the fragment for the first introductory slide.
+     * 
+     * @param inflater
+     *            LayoutInflater object that creates a java object from xml.
+     * @param container
+     *            The parent ViewGroup to the current view.
+     * @return Completed, formatted view (what the fragment will look like).
+     */
+    private View makeFriendsPage(LayoutInflater inflater, ViewGroup container) {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     /**
@@ -285,7 +300,9 @@ public class FragmentOrganizer extends Fragment {
                     int count) {
                 TextView characterCount = (TextView) getActivity()
                         .findViewById(R.id.characterCount);
-                characterCount.setText(String.valueOf(140 - count));
+                EditText textBox = (EditText) getActivity()
+                        .findViewById(R.id.editText1);
+                characterCount.setText(String.valueOf(140 - textBox.getText().length()));
             }
 
             @Override
