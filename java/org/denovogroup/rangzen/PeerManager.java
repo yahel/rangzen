@@ -42,6 +42,9 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.OptionalDataException;
 import java.io.StreamCorruptedException;
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -445,13 +448,123 @@ public class PeerManager {
     
     for (Peer peer : mCurrentPeers) {
       try {
-        mBluetoothSpeaker.connectAndStartExchange(peer);
+        if (thisDeviceSpeaksTo(peer)) {
+          mBluetoothSpeaker.connectAndStartExchange(peer);
+        }
       } catch (IOException e) {
         Log.e(TAG, String.format("Couldn't have exchange with peer %s: %s", peer, e));
+      } catch (NoSuchAlgorithmException e) {
+        Log.wtf(TAG, "No algorithm for hashing peer addresses... " + e);
       }
     } 
     garbageCollectPeers();
     
     Log.v(TAG, "Finished with PeerManager tasks.");
+  }
+
+  /**
+   * Check whether this peer should start an exchange with the other peer
+   * or allow that peer to start an exchange, based on their addresses.
+   * Also returns false if the other peer isn't a Bluetooth using peer.
+   *
+   * @param other The other peer which we may want to talk to.
+   * @return True if it is our responsibility to start exchanges between this
+   * pair of devices, false otherwise.
+   */
+  public boolean thisDeviceSpeaksTo(Peer other) throws NoSuchAlgorithmException,
+                                                       UnsupportedEncodingException {
+    if (other == null || other.getNetwork() == null || 
+        other.getNetwork().getBluetoothDevice() == null ) {
+      return false;
+    } 
+    return thisDeviceSpeaksTo(other.getNetwork().getBluetoothDevice());
+  }
+
+  /**
+   * Check whether this device should start an exchange with the other device
+   * or allow that device to start an exchange, based on their addresses.
+   *
+   * @param other The other device which we may want to talk to.
+   * @return True if it is our responsibility to start exchanges between this
+   * pair of devices, false otherwise.
+   */
+  public boolean thisDeviceSpeaksTo(BluetoothDevice other) throws NoSuchAlgorithmException,
+                                                                  UnsupportedEncodingException {
+    if (other == null) {
+      return false;
+    } 
+    String otherAddr = other.getAddress();
+    if (otherAddr == null) {
+      return false;
+    }
+    String myAddr = mBluetoothSpeaker.getAddress(); 
+    if (myAddr.equals(whichInitiates(myAddr, otherAddr))) {
+      return true;
+    } else {
+      return false;
+    }
+
+  }
+
+  /**
+   * Decide which of the two addresses given should initiate communications.
+   * The algorithm is: sort the strings lexicographically, concatenate them,
+   * take their SHA-256 hash. If the first bit of the hash is a 1, then the
+   * lexicographically LOWER one initiates. Otherwise, the HIGHER one initiates.
+   *
+   * @param a A string. The order of these parameters does not matter.
+   * @param b A string. The order of these parameters does not matter.
+   *
+   * @return Which of the addresses should start speaking.
+   */
+  static String whichInitiates(String a, String b) throws NoSuchAlgorithmException,
+                                                    UnsupportedEncodingException {
+    if (a == null || b == null) {
+      return null;
+    }
+
+    // If a < b, concatenate them in the order a + b.
+    if (a.compareTo(b) < 0) {
+      if (startsWithAOneBit(concatAndHash(a, b))) {
+        return a;
+      } else {
+        return b;
+      }
+    // a > b, so concatenate them b + a.
+    } else {
+      if (startsWithAOneBit(concatAndHash(b, a))) {
+        return b;
+      } else {
+        return a;
+      }
+    }
+  }
+
+  /**
+   * Concatenates b to a and returns the SHA-256 of their concatenation.
+   *
+   * @param a A string
+   * @param b Another string.
+   * @return SHA-256(x+y)
+   */
+  static byte[] concatAndHash(String x, String y) throws NoSuchAlgorithmException,
+                                                    UnsupportedEncodingException {
+    MessageDigest md;
+    md = MessageDigest.getInstance("SHA-256");
+    md.update((x+y).getBytes("UTF-8"));
+    return md.digest();
+  }
+
+  /**
+   * Check whether the first bit of the 0'th byte of the given byte array is a 1.
+   * 
+   * @param An array of bytes.
+   * @return True if the first bit of the 0th byte is a 1, false otherwise.
+   */
+  static boolean startsWithAOneBit(byte[] bytes) {
+    if (bytes == null || bytes.length == 0) {
+      return false;
+    }
+    return (bytes[0] & 0x01) == 0x01;
   }
 }

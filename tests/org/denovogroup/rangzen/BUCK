@@ -181,3 +181,19 @@ robolectric_test(
     '//java/org/denovogroup/rangzen:experimentalBackend',
   ],
 )
+
+robolectric_test(
+  name = 'macOrderingTests',
+  srcs = ['MacOrderingTests.java'],
+  source_under_test = [ '//java/org/denovogroup/rangzen:experimentalBackend' ],
+  visibility = [ 'PUBLIC' ],
+  resources = [
+    '//res/org/denovogroup/rangzen:res',
+  ],
+  deps = [
+    '//libs:robolectric-2.3',
+    '//libs:junit-4.11',
+    '//libs:hamcrest-core-1.3',
+    '//java/org/denovogroup/rangzen:experimentalBackend',
+  ],
+)
