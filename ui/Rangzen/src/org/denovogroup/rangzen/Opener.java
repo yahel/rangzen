@@ -42,7 +42,9 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
@@ -50,6 +52,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
+import android.text.Html;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -102,7 +105,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.drawer_layout);
-
         if (!mHasStored) {
             storeTempMessages();
         }
@@ -140,39 +142,43 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private void storeTempMessages() {
         MessageStore messageStore = new MessageStore(this,
                 StorageBase.ENCRYPTION_DEFAULT);
-        messageStore.addMessage("Don't go to Maddison Square Garden, the army is there.", 1);
-        messageStore.addMessage("How would we know if this is really anonymous?", 1);
-        messageStore.addMessage("Test1", 1);
-        
-        messageStore.addMessage("Test1", 1);
-        messageStore.addMessage("Test1", 1);
-        
-        messageStore.addMessage("Test1", 1);
-        messageStore.addMessage("Test1", 1);
-        messageStore.addMessage("Test1", 1);
-        messageStore.addMessage("Test1", 1);
-        messageStore.addMessage("Test1", 1);
-        
-        messageStore.addMessage("Test1", 1);
-        messageStore.addMessage("Test1", 1);
-        messageStore.addMessage("Test1", 1);
-        
-        Log.d("Opener", "first " + messageStore.addMessage("Test1", 1));
-        Log.d("Opener", "second " + messageStore.addMessage("Test2", 1.5f));
-        Log.d("Opener", "third " + messageStore.addMessage("Test3", 2));
 
-        Log.d("Opener", "fourth " + messageStore.addMessage("Test4", .5f));
-        Log.d("Opener", "fifth " + messageStore.addMessage("Test5", .5f));
-        Log.d("Opener", "sixth " + messageStore.addMessage("Test6", .5f));
+        messageStore
+                .addMessage(
+                        "Crowds Swell, Tensions Surge As Hong Kong Leader Seeks End To Protests | ",
+                        1);
+        messageStore
+                .addMessage(
+                        "150 Protesters Disrupt Coal And Rail Operations In Southeast Australia ",
+                        1.5f);
+        messageStore
+                .addMessage(
+                        "Police Violence In Naples When Protests Erupt Over European Bank Policies ",
+                        2);
+
+        messageStore
+                .addMessage(
+                        "Mothers Challenge Social Cleansing As London's Housing Conflicts Sharpen ",
+                        .5f);
+        messageStore
+                .addMessage(
+                        "Europe Versus Facebook: Privacy Activists Sue Social Media Giant Over Data Breach #occupy ",
+                        .5f);
+        messageStore
+                .addMessage(
+                        "#occupy @occupy happening right now by sproul on UCB campus berkeley ",
+                        .5f);
 
         Log.d("Opener", "seventh " + messageStore.addMessage("Test7s", .5f));
         Log.d("Opener", "eighth " + messageStore.addMessage("Test8", .5f));
         Log.d("Opener", "9 " + messageStore.addMessage("test9", .5f));
 
-        Log.d("Opener", "10 " + messageStore.addMessage("Test10", 2));
+        messageStore
+                .addMessage(
+                        "Pentagon Supplies School Districts with Assault Rifles, Grenade Launchers, M.R.A.P.'s",
+                        2);
         Log.d("Opener", "11 " + messageStore.addMessage("Test11", .5f));
         Log.d("Opener", "12 " + messageStore.addMessage("Test12", .5f));
-        Log.d("Opener", "tree size = " + messageStore.getTopK(12).size());
         mHasStored = true;
     }
 
@@ -194,7 +200,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             FragmentManager fragmentManager = getSupportFragmentManager();
 
             FragmentTransaction ft = fragmentManager.beginTransaction();
-            
+
             ft.replace(R.id.mainContent, needAdd);
 
             ft.commit();
@@ -203,15 +209,15 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             mPosition = 0;
         }
     }
-    
+
     @Override
     public void onBackPressed() {
-        if (!mPrevPosition.empty()) {
-            mPosition = mPrevPosition.pop();
-            setTitle(mPosition);
-        } else {
-            mFirstTime = true;
-        }
+        // if (!mPrevPosition.empty()) {
+        // mPosition = mPrevPosition.pop();
+        // setTitle(mPosition);
+        // } else {
+        // mFirstTime = true;
+        // }
         super.onBackPressed();
     }
 
@@ -272,6 +278,10 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      */
     public void setTitle(String title) {
         getSupportActionBar().setTitle(title);
+        int titleId = getResources().getIdentifier("action_bar_title", "id",
+                "android");
+        TextView abTitle = (TextView) findViewById(titleId);
+        abTitle.setTextColor(Color.WHITE);
     }
 
     public void makeTitleBold(int position) {
@@ -288,12 +298,17 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        IntentResult scanResult = IntentIntegrator.parseActivityResult(
-                requestCode, resultCode, intent);
-        if (scanResult != null) {
-            Log.d("Opener", scanResult.getContents());
+        switch (requestCode) {
+        case 2:
+            setTitle("Feed");
+            int titleId = getResources().getIdentifier("action_bar_title",
+                    "id", "android");
+            TextView abTitle = (TextView) findViewById(titleId);
+            abTitle.setTextColor(Color.WHITE);
+            mPosition = 0;
+            makeTitleBold(0);
+            break;
         }
-        // else continue with any other code you need in the method
     }
 
     /**
@@ -310,8 +325,11 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         if (mPosition == position) {
             return;
         }
-        mPrevPosition.add(mPosition);
-        mPosition = position;
+        // To not mess up the stack with other activities vs fragments
+        if (position != 1 || position != 2) {
+            // mPrevPosition.add(mPosition);
+            mPosition = position;
+        }
         if (position == 0) {
             needAdd = new ListFragmentOrganizer();
             Bundle b = new Bundle();
@@ -322,19 +340,16 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         } else if (position == 1) {
             Intent intent = new Intent();
             intent.setClass(this, PostActivity.class);
-            startActivity(intent);
+            startActivityForResult(intent, 2);
             return;
         } else if (position == 2) {
-            // TODO (Jesus) For the prototype need to create an add friend page
-            // add friend. This is probably no longer necessary at all.
-        	Intent intent = new Intent();
-        	intent.setClass(this, QRCodeViewPager.class);
-        	//intent.setClass(this, CameraFragment.class);
-        	startActivity(intent);
-        	return;
-        } else if (position == 3) {
-            needAdd = new MapsActivity();
-        	return;
+            Intent intent = new Intent();
+            intent.setClass(this, QRCodeViewPager.class);
+            startActivityForResult(intent, 2);
+            return;
+            // } else if (position == 3) {
+            // needAdd = new MapsActivity();
+            // return;
         } else {
             needAdd = new FragmentOrganizer();
             Bundle b = new Bundle();
@@ -347,7 +362,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         FragmentTransaction ft = fragmentManager.beginTransaction();
 
         ft.replace(R.id.mainContent, needAdd);
-        
+
         if (!mFirstTime) {
             Log.d("Opener", "added to backstack");
             ft.addToBackStack(null);
@@ -355,4 +370,5 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         mFirstTime = false;
         ft.commit();
     }
+
 }

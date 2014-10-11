@@ -37,10 +37,12 @@ import org.denovogroup.rangzen.StorageBase;
 
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.CursorJoiner.Result;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
@@ -51,11 +53,14 @@ import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.android.gms.internal.ke;
 import com.viewpagerindicator.LinePageIndicator;
 import com.viewpagerindicator.PageIndicator;
 
@@ -93,16 +98,12 @@ public class QRCodeViewPager extends FragmentActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
-        String state = getExperimentState();
-        if (state == null) {
-            Log.i(TAG, "Initializing experiment state to EXP_STATE_START.");
-            mStore.put(RangzenService.EXPERIMENT_STATE_KEY,
-                    RangzenService.EXP_STATE_START);
-        } else {
-            Log.i(TAG, "Creating SlidingPageIndicator, state is " + state);
-        }
-
+        getActionBar().setDisplayHomeAsUpEnabled(true);
+        getActionBar().setTitle("Add Friend");
+        int titleId = getResources().getIdentifier("action_bar_title", "id", "android");
+        TextView abTitle = (TextView) findViewById(titleId);
+        abTitle.setTextColor(Color.WHITE);
+        
         Intent intent = getIntent();
         SharedPreferences settings = getSharedPreferences(
                 QRCodeViewPager.INTENT, 0);
@@ -121,23 +122,11 @@ public class QRCodeViewPager extends FragmentActivity {
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        return super.onOptionsItemSelected(item);
-    }
-
-    /**
-     * Retrieve the current experiment state. Sets the experiment state to START
-     * if none is set already.
-     */
-    private String getExperimentState() {
-        return mStore.get(RangzenService.EXPERIMENT_STATE_KEY);
-    }
-
-    @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (mPager.getCurrentItem() == 1) {
-            CameraFragment cam = (CameraFragment) getSupportFragmentManager()
-                    .findFragmentById(R.id.pager);
+        if (mPager.getCurrentItem() == 0) {
+            CameraFragment cam = (CameraFragment) mAdapter.getRegisteredFragment(0);
+//            CameraFragment cam = (CameraFragment) getSupportFragmentManager()
+//                    .findFragmentById(R.id.pager);
             com.google.zxing.Result result = cam.getResult();
             if (result != null) {
                 switch (keyCode) {
@@ -148,9 +137,26 @@ public class QRCodeViewPager extends FragmentActivity {
                     cam.reset();
                     return true;
                 }
+            } else {
+                if (keyCode == KeyEvent.KEYCODE_BACK) {
+                    getActionBar().setTitle("Feed");
+                    int titleId = getResources().getIdentifier("action_bar_title", "id", "android");
+                    TextView abTitle = (TextView) findViewById(titleId);
+                    abTitle.setTextColor(Color.WHITE);
+                }
             }
         }
         return super.onKeyDown(keyCode, event);
     }
-
+    
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+        // Respond to the action bar's Up/Home button
+        case android.R.id.home:
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 }

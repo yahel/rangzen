@@ -1,6 +1,7 @@
 package org.denovogroup.rangzen;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -8,11 +9,13 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.NavUtils;
 import android.util.AttributeSet;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.TextView;
 
 /** This activity crates the message sending page. It also handles back button. */
 public class PostActivity extends FragmentActivity {
@@ -22,7 +25,10 @@ public class PostActivity extends FragmentActivity {
         super.onCreate(arg0);
         setContentView(R.layout.fragment_holder);
         getActionBar().setDisplayHomeAsUpEnabled(true);
-        getActionBar().setTitle("View Feed");
+        getActionBar().setTitle("New Post");
+        int titleId = getResources().getIdentifier("action_bar_title", "id", "android");
+        TextView abTitle = (TextView) findViewById(titleId);
+        abTitle.setTextColor(Color.WHITE);
         Fragment fragment = new FragmentOrganizer();
         Bundle b = new Bundle();
         b.putSerializable("whichScreen", FragmentOrganizer.FragmentType.POST);
@@ -56,5 +62,13 @@ public class PostActivity extends FragmentActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+    
+    @Override
+    protected void onPause() {
+        InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        EditText mEditText = (EditText) findViewById(R.id.editText1);
+        mgr.hideSoftInputFromWindow(mEditText.getWindowToken(), 0);
+        super.onStop();
     }
 }

@@ -39,6 +39,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
 
 import com.viewpagerindicator.IconPagerAdapter;
@@ -54,6 +55,7 @@ class QRPagesAdapter extends FragmentPagerAdapter implements IconPagerAdapter {
 	private int mCount = 2;
 	private static Fragment one = null;
 	private static Fragment zero = null;
+	SparseArray<Fragment> registeredFragments = new SparseArray<Fragment>();
 
 	public QRPagesAdapter(FragmentManager fm) {
 		super(fm);
@@ -73,40 +75,23 @@ class QRPagesAdapter extends FragmentPagerAdapter implements IconPagerAdapter {
 	 *            The position of the fragment currently being created.
 	 */
 	@Override
-	public Fragment getItem(int position) {
+	public Fragment getItem(int position) {    
 		Enum type = null;
-		if (position == 0) {
+		Fragment fragment = null;
+		if (position == 1) {
 			type = FragmentType.QRRead;
+			position = position % mCount;
+	        Bundle b = new Bundle();
+	        b.putSerializable("whichScreen", type);
+	        fragment = new FragmentOrganizer();
+	        fragment.setArguments(b);
+	        registeredFragments.put(position, fragment);
+	        return fragment;
 		} else {
-			CameraFragment cam = new CameraFragment();
+			Fragment cam = new CameraFragment();
+			registeredFragments.put(position, cam);
 			return cam;
 		}
-		position = position % mCount;
-		Bundle b = new Bundle();
-		b.putSerializable("whichScreen", type);
-		Fragment fragment = new FragmentOrganizer();
-		fragment.setArguments(b);
-		return fragment;
-	}
-	
-	@Override
-	public Object instantiateItem(View container, int position) {
-		// TODO Auto-generated method stub
-		Fragment fragment = (Fragment) super.instantiateItem(container, position);
-		if (position == 0) {
-			zero = fragment;
-		}
-		if (position == 1) {
-			one = fragment;
-		}
-		return fragment;
-	}
-	
-	public Fragment getFragment(int position) {
-		if (position == 0) {
-			return zero;
-		}
-		return one;
 	}
 
 	@Override
@@ -118,5 +103,9 @@ class QRPagesAdapter extends FragmentPagerAdapter implements IconPagerAdapter {
 	public int getIconResId(int index) {
 		return 0;
 	}
+	
+	public Fragment getRegisteredFragment(int position) {
+        return registeredFragments.get(position);
+    }
 
 }

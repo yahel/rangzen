@@ -55,6 +55,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
@@ -150,7 +151,7 @@ public class FragmentOrganizer extends Fragment {
 
 		case QRRead:
 			return makeQRRead(inflater, container);
-
+			
 		case QRWrite:
 			return makeQRWrite(inflater, container);
 
@@ -184,57 +185,32 @@ public class FragmentOrganizer extends Fragment {
 	 */
 	private View makeQRRead(LayoutInflater inflater, ViewGroup container) {
 		// TODO (Jesus) Finish the friends page.
-		View view3 = inflater.inflate(R.layout.qr, container, false);
-		TextView qrInput = (TextView) getActivity().findViewById(
-				R.id.textView1);
-		String qrInputText = "0xfjddjvn377v7dft7cg6g72b3ge73g7d8b";
+		View view3 = inflater.inflate(R.layout.qr, container,
+				false);
+		TextView qrInput = (TextView) view3.findViewById(R.id.textView1);
+		String qrInputText = qrInput.getText().toString();
 		// Log.v(LOG_TAG, qrInputText);
 
-		// Find screen size
-		WindowManager manager = (WindowManager) getActivity()
-				.getSystemService(Context.WINDOW_SERVICE);
-		Display display = manager.getDefaultDisplay();
-		Point point = new Point();
-		display.getSize(point);
-		int width = point.x;
-		int height = point.y;
-		int smallerDimension = width < height ? width : height;
-		smallerDimension = smallerDimension * 3 / 4;
-
-		// Encode with a QR Code image
-		QRCodeWriter qrCodeEncoder = new QRCodeWriter();
-
-		try {
-			BitMatrix bitmap = qrCodeEncoder.encode(qrInputText,
-					BarcodeFormat.QR_CODE, width, height);
-			ImageView myImage = (ImageView) view3.findViewById(
-					R.id.imageView1);
-			myImage.setImageBitmap(toBitmap(bitmap));
-
-		} catch (WriterException e) {
-			e.printStackTrace();
-		}
-
+		new CreateQRCode().execute(qrInputText);
+		
 		return view3;
 	}
-
+	
 	/**
 	 * Writes the given Matrix on a new Bitmap object.
-	 * 
-	 * @param matrix
-	 *            the matrix to write.
+	 * @param matrix the matrix to write.
 	 * @return the new {@link Bitmap}-object.
 	 */
-	public static Bitmap toBitmap(BitMatrix matrix) {
-		int height = matrix.getHeight();
-		int width = matrix.getWidth();
-		Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
-		for (int x = 0; x < width; x++) {
-			for (int y = 0; y < height; y++) {
-				bmp.setPixel(x, y, matrix.get(x, y) ? Color.BLACK : Color.WHITE);
-			}
-		}
-		return bmp;
+	public static Bitmap toBitmap(BitMatrix matrix){
+	    int height = matrix.getHeight();
+	    int width = matrix.getWidth();
+	    Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+	    for (int x = 0; x < width; x++){
+	        for (int y = 0; y < height; y++){
+	            bmp.setPixel(x, y, matrix.get(x,y) ? Color.BLACK : Color.WHITE);
+	        }
+	    }
+	    return bmp;
 	}
 
 	/**
@@ -536,6 +512,46 @@ public class FragmentOrganizer extends Fragment {
 		float px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dip,
 				r.getDisplayMetrics());
 		return px;
+	}
+	
+	private class CreateQRCode extends AsyncTask<String, Integer, Integer> {
+
+	    BitMatrix bitmap = null;
+        @Override
+        protected Integer doInBackground(String... params) {
+         // Find screen size
+            WindowManager manager = (WindowManager) getActivity().getSystemService(
+                    Context.WINDOW_SERVICE);
+            Display display = manager.getDefaultDisplay();
+            Point point = new Point();
+            display.getSize(point);
+            int width = point.x;
+            int height = point.y;
+            int smallerDimension = width < height ? width : height;
+            smallerDimension = smallerDimension * 3 / 4;
+            
+            
+            QRCodeWriter qrCodeEncoder = new QRCodeWriter();
+
+            try {
+                bitmap = qrCodeEncoder.encode(params[0],
+                        BarcodeFormat.QR_CODE, width, height);
+
+            } catch (WriterException e) {
+                e.printStackTrace();
+            }
+            
+            return 1;
+        }
+        
+        @Override
+        protected void onPostExecute(Integer result) {
+            // TODO Auto-generated method stub
+            super.onPostExecute(result);
+            ImageView myImage = (ImageView) getActivity().findViewById(R.id.imageView1);
+            myImage.setImageBitmap(toBitmap(bitmap));
+        }
+	    
 	}
 
 }
