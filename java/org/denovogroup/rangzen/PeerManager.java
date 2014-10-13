@@ -425,20 +425,6 @@ public class PeerManager {
   public void tasks() {
     Log.v(TAG, "Started PeerManager tasks.");
 
-    mBluetoothSpeaker.tasks();
-    
-    for (Peer peer : mCurrentPeers) {
-      try {
-        if (thisDeviceSpeaksTo(peer)) {
-          mBluetoothSpeaker.connectAndStartExchange(peer);
-        }
-      } catch (IOException e) {
-        Log.e(TAG, String.format("Couldn't have exchange with peer %s: %s", peer, e));
-      } catch (NoSuchAlgorithmException e) {
-        Log.wtf(TAG, "No algorithm for hashing peer addresses... " + e);
-      }
-    } 
-
     garbageCollectPeers();
     
     Log.v(TAG, "Finished with PeerManager tasks.");

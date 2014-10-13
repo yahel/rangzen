@@ -304,6 +304,13 @@ public class BluetoothSpeaker {
     return new String(charArray, 0, 10);
   }
 
+  public void connect(Peer peer, PeerConnectionCallback callback) {
+    // Start connecting in a new thread, passing the callback and peer.
+    // Return.
+    (new Thread(new ConnectionRunnable(peer, callback))).start();
+    return;
+  }
+
   /**
    * Equivalent to calling connectAndStartExchange with the MAC address
    * of the given peer.
@@ -495,6 +502,68 @@ public class BluetoothSpeaker {
       return null;
     } else {
       return UUID.nameUUIDFromBytes(address.getBytes());
+    }
+  }
+
+  /**
+   * A thread which attempts to connect to the given peer and return a Bluetooth
+   * Socket to that peer through the success() method of the connection callback.
+   */
+  private class ConnectionRunnable implements Runnable {
+    /** The peer to which we're attempting to connect. */
+    private Peer mPeer;
+
+    /** A callback to report success (and the open socket) or failure. */
+    private PeerConnectionCallback mCallback;
+
+    /**
+     * Create a new ConnectionRunnable which will connect to the given peer
+     * and report success or failure on the given callback.
+     *
+     * @param peer A remote peer to connect to.
+     * @param callback A PeerConnectionCallback to report success or failure.
+     */
+    public ConnectionRunnable(Peer peer, PeerConnectionCallback callback) {
+      this.mPeer = peer;
+      this.mCallback = callback;
+    }
+    
+    /**
+     * Connect to the peer and report success or failure.
+     */
+    public void run() {
+      BluetoothDevice device = mPeer.getNetwork().getBluetoothDevice();
+      if (device == null) {
+        mCallback.failure("No bluetooth device for peer " + mPeer.toString());
+        return;
+      }
+      UUID remoteUUID = getUUIDFromMACAddress(device.getAddress()); 
+      BluetoothSocket socket;
+      try {
+        socket = device.createInsecureRfcommSocketToServiceRecord(remoteUUID);
+      } catch (IOException e) {
+        mCallback.failure(
+            String.format("Failed to create insecure RFCOMM socket to %s on peer %s. IOException: %s", 
+                           remoteUUID, mPeer, e)
+        );
+        return;
+      }
+
+      try {
+        socket.connect();
+      } catch (IOException e) {
+        mCallback.failure(
+            String.format("Exception connceting to %s on peer %s. IOException: %s", 
+                           remoteUUID, mPeer, e)
+        );
+        return;
+      }
+      if (socket.isConnected()) {
+        mCallback.success(socket);
+      } else {
+        mCallback.failure(String.format("Socket to %s on %s wasn't connected after connection attempt.",
+                                        remoteUUID, mPeer));
+      }
     }
   }
 }

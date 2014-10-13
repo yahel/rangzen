@@ -31,6 +31,7 @@
 package org.denovogroup.rangzen;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothSocket;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.content.Context;
@@ -40,11 +41,15 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.IBinder;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Core service of the Rangzen app. Started at startup, remains alive
@@ -77,6 +82,9 @@ public class RangzenService extends Service {
 
     /** Wifi Direct Speaker used for Wifi Direct name based RSVP. */
     private WifiDirectSpeaker mWifiDirectSpeaker;
+
+    /** Whether we're currently attempting a connection to another device over BT. */
+    private boolean connecting = false;
 
     /** The BluetoothSpeaker for the app. */
     private static BluetoothSpeaker mBluetoothSpeaker;
@@ -165,13 +173,66 @@ public class RangzenService extends Service {
     public void backgroundTasks() {
         Log.v(TAG, "Background Tasks Started");
 
-        PeerManager.getInstance(getApplicationContext()).tasks();
+        PeerManager peerManager = PeerManager.getInstance(getApplicationContext());
+        peerManager.tasks();
+        mBluetoothSpeaker.tasks();
         mWifiDirectSpeaker.tasks();
 
+        List<Peer> peers = peerManager.getPeers();
+        if (!connecting && peers.size() > 0) {
+          Peer peer = peers.get(0);
+          connectTo(peer);
+        }
         mBackgroundTaskRunCount++;
 
 
         Log.v(TAG, "Background Tasks Finished");
+    }
+
+    /**
+     * Demo method for how we might use the BluetoothSpeaker.connect() call.
+     *
+     * @param peer The peer we want to talk to.
+     */
+    public void connectTo(Peer peer) {
+      // Based on MAC addresses, only one device starts exchanges bewteen any
+      // pair of devices. Don't start one if we're not the chosen one in this pair.
+      PeerManager peerManager = PeerManager.getInstance(this);
+      try {
+        if (!peerManager.thisDeviceSpeaksTo(peer)) {
+          return; 
+        }
+      } catch (NoSuchAlgorithmException e) {
+        Log.e(TAG, "No such algorithm for hashing in thisDeviceSpeaksTo!? " + e);
+        return;
+      } catch (UnsupportedEncodingException e) {
+        Log.e(TAG, "Unsupported encoding exception in thisDeviceSpeaksTo!?" + e);
+        return;
+      }
+      connecting = true;
+      Log.i(TAG, "Starting to connect to " + peer.toString());
+      mBluetoothSpeaker.connect(peer, new PeerConnectionCallback() {
+        @Override
+        public void success(BluetoothSocket socket) {
+          Log.i(TAG, "Callback says we're connected to " + socket.getRemoteDevice().toString());
+          if (socket.isConnected()) {
+            Log.i(TAG, "In fact, the socket says it's connected.");
+          } else {
+            Log.w(TAG, "But the socket claims not to be connected!");
+          }
+          try {
+            socket.close();
+          } catch (IOException e) {
+            Log.e(TAG, "IOException while closing BluetoothSocket: " + e);
+          }
+          connecting = false;
+        }
+        @Override
+        public void failure(String reason) {
+          Log.i(TAG, "Callback says we failed to connect: " + reason);
+          connecting = false;
+        }
+      });
     }
 
     /**

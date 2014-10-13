@@ -10,6 +10,7 @@ android_library(
            'LocationStore.java',
            'MessageStore.java',
            'Peer.java',
+           'PeerConnectionCallback.java',
            'PeerManager.java',
            'PeerNetwork.java',
            'RangzenService.java',
