@@ -30,9 +30,6 @@
  */
 package org.denovogroup.rangzen;
 
-import org.denovogroup.rangzen.Peer;
-import org.denovogroup.rangzen.PeerNetwork;
-
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.ScanResult;
 import android.bluetooth.BluetoothDevice;
@@ -71,9 +68,9 @@ import java.util.Date;
 /**
  * Unit tests for Rangzen's Peer class
  */
-@Config(manifest="./apps/rangzen/AndroidManifest.xml", 
+@Config(manifest="./apps/experimentalApp/AndroidManifest.xml", 
         emulateSdk=18,
-        resourceDir="../../res/org/denovogroup/rangzen/res")
+        resourceDir="../../ui/Rangzen/res/")
 @RunWith(RobolectricTestRunner.class)
 public class PeerTest {
   private Peer peer;

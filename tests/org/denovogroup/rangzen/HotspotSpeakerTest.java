@@ -30,9 +30,6 @@
  */
 package org.denovogroup.rangzen;
 
-import org.denovogroup.rangzen.MainActivity;
-import org.denovogroup.rangzen.HotspotSpeaker;
-
 import android.content.Context;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -66,22 +63,22 @@ import java.util.Random;
 /**
  * Unit tests for Rangzen's HotspotSpeaker class.
  */
-@Config(manifest="./apps/rangzen/AndroidManifest.xml", 
+@Config(manifest="./apps/experimentalApp/AndroidManifest.xml", 
         emulateSdk=18, 
-        resourceDir="../../res/org/denovogroup/rangzen/res")
+        resourceDir="../../ui/Rangzen/res/")
 @RunWith(RobolectricTestRunner.class)
 public class HotspotSpeakerTest {
   /** The instance of HotspotSpeaker we're testing. */
   private HotspotSpeaker speaker;
 
   /**
-   * An instance of MainActivity, used as a context to get an instance
+   * An instance of SlidingPageIndicator, used as a context to get an instance
    * of HotspotSpeaker.
    */
-  private MainActivity activity;
+  private SlidingPageIndicator activity;
 
   /**
-   * Create a MainActivity, use it as a context to create an instance HotspotSpeaker.
+   * Create a SlidingPageIndicator, use it as a context to create an instance HotspotSpeaker.
    */
   @Before
   public void setUp() {

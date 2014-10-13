@@ -74,16 +74,6 @@ import java.util.Random;
         resourceDir="../../res/org/denovogroup/rangzen/res")
 @RunWith(RobolectricTestRunner.class)
 public class MacOrderingTests {
-
-  /**
-   * Create a MainActivity, use it as a context to fetch an instance of
-   * PeerManager.
-   */
-  @Before
-  public void setUp() {
-  }
-
-
   /**
    * Test that PeerManager.startsWithAOneBit() works correctly.
    */

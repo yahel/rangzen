@@ -30,10 +30,6 @@
  */
 package org.denovogroup.rangzen;
 
-import org.denovogroup.rangzen.MainActivity;
-import org.denovogroup.rangzen.Peer;
-import org.denovogroup.rangzen.PeerNetwork;
-
 import android.content.Context;
 import android.net.wifi.p2p.WifiP2pDevice;
 
@@ -70,9 +66,9 @@ import java.util.Random;
 /**
  * Unit tests for Rangzen's PeerManager class
  */
-@Config(manifest="./apps/rangzen/AndroidManifest.xml", 
-        emulateSdk=18, 
-        resourceDir="../../res/org/denovogroup/rangzen/res")
+@Config(manifest="./apps/experimentalApp/AndroidManifest.xml", 
+        emulateSdk=18,
+        resourceDir="../../ui/Rangzen/res/")
 @RunWith(RobolectricTestRunner.class)
 public class PeerManagerTest {
   /** The instance of PeerManager we're testing. */
@@ -83,19 +79,19 @@ public class PeerManagerTest {
   private static int secondToLastOctet = 0; 
 
   /**
-   * An instance of MainActivity, used as a context to get an instance
+   * An instance of SlidingPageIndicator, used as a context to get an instance
    * of PeerManager
    */
-  private MainActivity activity;
+  private SlidingPageIndicator activity;
 
 
   /**
-   * Create a MainActivity, use it as a context to fetch an instance of
+   * Create a SlidingPageIndicator, use it as a context to fetch an instance of
    * PeerManager.
    */
   @Before
   public void setUp() {
-    activity = Robolectric.buildActivity(MainActivity.class).create().get();
+    activity = Robolectric.buildActivity(SlidingPageIndicator.class).create().get();
     manager = PeerManager.getInstance(activity);
   }
 
@@ -224,8 +220,8 @@ public class PeerManagerTest {
     d1.deviceAddress = addr;
     WifiP2pDevice d2 = new WifiP2pDevice();
     d2.deviceAddress = addr;
-    Peer p1 = new Peer(new PeerNetwork(d1));
-    Peer p2 = new Peer(new PeerNetwork(d2));
+    Peer p1 = new Peer(new WifiDirectPeerNetwork(d1));
+    Peer p2 = new Peer(new WifiDirectPeerNetwork(d2));
     assertTrue("2 peers with same MAC aren't .equals()!", p1.equals(p2));
 
     // Check that p2 is known if p1 is added.
@@ -255,25 +251,31 @@ public class PeerManagerTest {
     d1.deviceAddress = addr;
     WifiP2pDevice d2 = new WifiP2pDevice();
     d2.deviceAddress = addr;
-    Peer newPeer = new Peer(new PeerNetwork(d1));
-    Peer dupePeer = new Peer(new PeerNetwork(d2));
+    Peer newPeer = new Peer(new WifiDirectPeerNetwork(d1));
+    Peer dupePeer = new Peer(new WifiDirectPeerNetwork(d2));
+    assertEquals(d1, d2);
+    // Using equals(Peer) instead of equals(Object)
+    assertTrue(newPeer.equals(dupePeer));
 
     boolean added = manager.addPeer(newPeer);
-    Date timeAdded = new Date();
 
-    Thread.sleep(200); 
     manager.addPeer(newPeer);
-    List<Peer> peers = manager.getPeers();
     Peer retrievedPeer = manager.getCanonicalPeer(newPeer);
+    assertEquals(retrievedPeer, newPeer);
+    assertTrue(retrievedPeer.equals(dupePeer));
     assertFalse("Peer last seen out of date after adding same peer object.",
-            retrievedPeer.getLastSeen().before(new Date()));
+            retrievedPeer.getLastSeen().after(new Date()));
 
+    // Wait a moment, then try using a duplicate version of the peer,
+    // which should touch the same canonical peer in the manager.
     Thread.sleep(200); 
     manager.addPeer(dupePeer);
-    peers = manager.getPeers();
     retrievedPeer = manager.getCanonicalPeer(newPeer);
+    assertEquals(retrievedPeer, newPeer);
+    // Using equals(Peer) instead of equals(Object)
+    assertTrue(retrievedPeer.equals(dupePeer));
     assertFalse("Peer last seen out of date after adding dupe peer.",
-            retrievedPeer.getLastSeen().before(new Date()));
+            retrievedPeer.getLastSeen().after(new Date()));
   }
    
   /**
@@ -309,7 +311,7 @@ public class PeerManagerTest {
   private Peer randomWifiP2pPeer() {
     WifiP2pDevice d = new WifiP2pDevice();
     d.deviceAddress = distinctMACAddress();
-    return new Peer(new PeerNetwork(d));
+    return new Peer(new WifiDirectPeerNetwork(d));
   }
 
   /**

@@ -856,9 +856,9 @@ public class MapsActivity extends Fragment implements
                     polyline = new PolylineOptions();
                     mSizeofPolyline = 0;
                 }
-                ExchangeStore exchangeStore = new ExchangeStore(getActivity(),
-                        StorageBase.ENCRYPTION_DEFAULT);
-                ownExchanges = exchangeStore.getAllExchanges();
+                // This used to retrieve exchanges from the ExchangeStore,
+                // which has been removed from the app.
+                ownExchanges = new ArrayList<Exchange>();
                 Log.d(TAG, "size of own exchanges" + ownExchanges.size());
 
             } catch (ClassNotFoundException | IOException e) {

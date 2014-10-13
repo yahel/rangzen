@@ -77,12 +77,6 @@ public class PeerManager {
   /** Handle to the app's BluetoothSpeaker. */
   private BluetoothSpeaker mBluetoothSpeaker;
 
-  /** Handle to the app's LocationStore. */
-  private LocationStore mLocationStore;
-
-  /** Handle to the app's ExchangeStore. */
-  private ExchangeStore mExchangeStore;
-
   /** Remembers the last time we successfully had an exchange with a peer. */
   private Map<String, Date> exchangeTimes = new HashMap<String, Date>();
 
@@ -165,7 +159,12 @@ public class PeerManager {
    * @see org.denovogroup.rangzen.Peer
    */
   public synchronized boolean isKnownPeer(Peer peer) {
-    return mCurrentPeers.contains(peer);
+    for (Peer peerInList : mCurrentPeers) {
+      if (peer.equals(peerInList)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -207,7 +206,7 @@ public class PeerManager {
         return peerInList;
       }
     }
-    // Add the peer to make it actually canonical.
+    // If not already known, add the peer to make it actually canonical.
     addPeer(peerDesired);
     return peerDesired;
   }
@@ -301,24 +300,6 @@ public class PeerManager {
    */
   public void setBluetoothSpeaker(BluetoothSpeaker speaker) {
     mBluetoothSpeaker = speaker;
-  }
-
-  /**
-   * Sets the location store to use.
-   *
-   * @param locationStore The location store to use.
-   */
-  /* package */ void setLocationStore(LocationStore locationStore) {
-    this.mLocationStore = locationStore;
-  }
-
-  /**
-   * Sets the exchange store to use.
-   *
-   * @param exchangeStore The exchange store to use.
-   */
-  /* package */ void setExchangeStore(ExchangeStore exchangeStore) {
-    this.mExchangeStore = exchangeStore;
   }
 
   /**
@@ -457,6 +438,7 @@ public class PeerManager {
         Log.wtf(TAG, "No algorithm for hashing peer addresses... " + e);
       }
     } 
+
     garbageCollectPeers();
     
     Log.v(TAG, "Finished with PeerManager tasks.");

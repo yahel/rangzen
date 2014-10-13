@@ -35,9 +35,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.denovogroup.rangzen.MainActivity;
-import org.denovogroup.rangzen.MessageStore;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -62,16 +59,16 @@ import org.robolectric.shadows.ShadowIntent;
 /**
  * Unit tests for Rangzen's MessageStore class
  */
-@Config(manifest="./apps/rangzen/AndroidManifest.xml", 
+@Config(manifest="./apps/experimentalApp/AndroidManifest.xml", 
         emulateSdk=18, 
-        resourceDir="../../res/org/denovogroup/rangzen/res")
+        resourceDir="../../ui/Rangzen/res/")
 @RunWith(RobolectricTestRunner.class)
 public class MessageStoreTest {
   /** The instance of MessageStore we're using for tests. */
   private MessageStore store;
 
   /** The app instance we're using to pass to MessageStore. */
-  private MainActivity activity;
+  private SlidingPageIndicator activity;
 
   /** Test strings we're writing into the storage system. */
   private static final String TEST_MSG_1 = "message 1";
@@ -90,7 +87,7 @@ public class MessageStoreTest {
 
   @Before
   public void setUp() {
-    activity = Robolectric.buildActivity(MainActivity.class).create().get();
+    activity = Robolectric.buildActivity(SlidingPageIndicator.class).create().get();
     store = new MessageStore(activity, StorageBase.ENCRYPTION_NONE);
   }
 

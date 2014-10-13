@@ -30,9 +30,6 @@
  */
 package org.denovogroup.rangzen;
 
-import org.denovogroup.rangzen.MainActivity;
-import org.denovogroup.rangzen.WifiDirectSpeaker;
-
 import android.content.Context;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
@@ -68,22 +65,22 @@ import java.util.Random;
 /**
  * Unit tests for Rangzen's PeerManager class
  */
-@Config(manifest="./apps/rangzen/AndroidManifest.xml", 
+@Config(manifest="./apps/experimentalApp/AndroidManifest.xml", 
         emulateSdk=18, 
-        resourceDir="../../res/org/denovogroup/rangzen/res")
+        resourceDir="../../ui/Rangzen/res/")
 @RunWith(RobolectricTestRunner.class)
 public class WifiDirectSpeakerTest {
   /** The instance of WifiDirectSpeaker we're testing. */
   private WifiDirectSpeaker speaker;
 
   /**
-   * An instance of MainActivity, used as a context to get an instance
+   * An instance of SlidingPageIndicator, used as a context to get an instance
    * of WifiDirectSpeaker.
    */
-  private MainActivity activity;
+  private SlidingPageIndicator activity;
 
   /**
-   * Create a MainActivity, use it as a context to create an instance of
+   * Create a SlidingPageIndicator, use it as a context to create an instance of
    * WifiDirectSpeaker.
    */
   @Before

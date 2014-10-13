@@ -1,5 +1,4 @@
 [alias]
-    rangzen = //apps/rangzen:rangzen
     experimentalApp = //apps/experimentalApp:experimentalApp
     WifiDirectSpeakerTest = //tests/org/denovogroup/rangzen:wifiDirectSpeakerTest
 

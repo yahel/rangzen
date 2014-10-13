@@ -30,8 +30,6 @@
  */
 package org.denovogroup.rangzen;
 
-import org.denovogroup.rangzen.MainActivity;
-
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;

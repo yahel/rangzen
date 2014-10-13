@@ -18,29 +18,14 @@ robolectric_test(
   source_under_test = [ '//java/org/denovogroup/rangzen:experimentalBackend' ],
   visibility = [ 'PUBLIC' ],
   resources = [
-    '//res/org/denovogroup/rangzen:res',
+    '//ui/Rangzen:experimentalUIRes',
   ],
   deps = [
     '//libs:robolectric-2.3',
     '//libs:junit-4.11',
     '//libs:hamcrest-core-1.3',
     '//java/org/denovogroup/rangzen:experimentalBackend',
-  ],
-)
-
-robolectric_test(
-  name = 'exchangeStoreTest',
-  srcs = ['ExchangeStoreTest.java'],
-  source_under_test = [ '//java/org/denovogroup/rangzen:experimentalBackend' ],
-  visibility = [ 'PUBLIC' ],
-  resources = [
-    '//res/org/denovogroup/rangzen:res',
-  ],
-  deps = [
-    '//libs:robolectric-2.3',
-    '//libs:junit-4.11',
-    '//libs:hamcrest-core-1.3',
-    '//java/org/denovogroup/rangzen:experimentalBackend',
+    '//ui/Rangzen/src/org/denovogroup/rangzen:experimentalUI',
   ],
 )
 
@@ -50,13 +35,14 @@ robolectric_test(
   source_under_test = [ '//java/org/denovogroup/rangzen:experimentalBackend' ],
   visibility = [ 'PUBLIC' ],
   resources = [
-    '//res/org/denovogroup/rangzen:res',
+    '//ui/Rangzen:experimentalUIRes',
   ],
   deps = [
     '//libs:robolectric-2.3',
     '//libs:junit-4.11',
     '//libs:hamcrest-core-1.3',
     '//java/org/denovogroup/rangzen:experimentalBackend',
+    '//ui/Rangzen/src/org/denovogroup/rangzen:experimentalUI',
   ],
 )
 
@@ -91,32 +77,32 @@ robolectric_test(
 #   source_under_test = [ '//java/org/denovogroup/rangzen:experimentalBackend' ],
 #   visibility = [ 'PUBLIC' ],
 #   resources = [
-#     '//res/org/denovogroup/rangzen:res',
+#      '//ui/Rangzen:experimentalUIRes',
 #   ],
 #   deps = [
 #     '//java/org/denovogroup/rangzen:experimentalBackend',
 #     '//libs:robolectric-2.3',
 #     '//libs:junit-4.11',
 #     '//libs:hamcrest-core-1.3',
-#     '//res/org/denovogroup/rangzen:res',
 #   ],
 # )
 
-# robolectric_test(
-#   name = 'peerManagerTest',
-#   srcs = ['PeerManagerTest.java'],
-#   source_under_test = [ '//java/org/denovogroup/rangzen:experimentalBackend' ],
-#   visibility = [ 'PUBLIC' ],
-#   resources = [
-#     '//res/org/denovogroup/rangzen:res',
-#   ],
-#   deps = [
-#     '//libs:robolectric-2.3',
-#     '//libs:junit-4.11',
-#     '//libs:hamcrest-core-1.3',
-#     '//java/org/denovogroup/rangzen:experimentalBackend',
-#   ],
-# )
+robolectric_test(
+  name = 'peerManagerTest',
+  srcs = ['PeerManagerTest.java'],
+  source_under_test = [ '//java/org/denovogroup/rangzen:experimentalBackend' ],
+  visibility = [ 'PUBLIC' ],
+  resources = [
+    '//ui/Rangzen:experimentalUIRes',
+  ],
+  deps = [
+    '//libs:robolectric-2.3',
+    '//libs:junit-4.11',
+    '//libs:hamcrest-core-1.3',
+    '//java/org/denovogroup/rangzen:experimentalBackend',
+    '//ui/Rangzen/src/org/denovogroup/rangzen:experimentalUI',
+  ],
+)
 
 robolectric_test(
   name = 'storageBaseTest',
@@ -124,29 +110,14 @@ robolectric_test(
   source_under_test = [ '//java/org/denovogroup/rangzen:experimentalBackend' ],
   visibility = [ 'PUBLIC' ],
   resources = [
-    '//res/org/denovogroup/rangzen:res',
+    '//ui/Rangzen:experimentalUIRes',
   ],
   deps = [
     '//libs:robolectric-2.3',
     '//libs:junit-4.11',
     '//libs:hamcrest-core-1.3',
     '//java/org/denovogroup/rangzen:experimentalBackend',
-  ],
-)
-
-robolectric_test(
-  name = 'contactsGetterStorerTest',
-  srcs = ['ContactsGetterStorerTest.java'],
-  source_under_test = [ '//java/org/denovogroup/rangzen:experimentalBackend' ],
-  visibility = [ 'PUBLIC' ],
-  resources = [
-    '//res/org/denovogroup/rangzen:res',
-  ],
-  deps = [
-    '//libs:robolectric-2.3',
-    '//libs:junit-4.11',
-    '//libs:hamcrest-core-1.3',
-    '//java/org/denovogroup/rangzen:experimentalBackend',
+    '//ui/Rangzen/src/org/denovogroup/rangzen:experimentalUI',
   ],
 )
 
@@ -156,13 +127,14 @@ robolectric_test(
   source_under_test = [ '//java/org/denovogroup/rangzen:experimentalBackend' ],
   visibility = [ 'PUBLIC' ],
   resources = [
-    '//res/org/denovogroup/rangzen:res',
+    '//ui/Rangzen:experimentalUIRes',
   ],
   deps = [
     '//libs:robolectric-2.3',
     '//libs:junit-4.11',
     '//libs:hamcrest-core-1.3',
     '//java/org/denovogroup/rangzen:experimentalBackend',
+    '//ui/Rangzen/src/org/denovogroup/rangzen:experimentalUI',
   ],
 )
 

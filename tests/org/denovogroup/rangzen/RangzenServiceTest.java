@@ -30,9 +30,6 @@
  */
 package org.denovogroup.rangzen;
 
-import org.denovogroup.rangzen.MainActivity;
-import org.denovogroup.rangzen.RangzenService;
-
 import android.content.Intent;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -62,7 +59,7 @@ import org.robolectric.shadows.ShadowIntent;
 import java.lang.Thread;
 import java.util.Date;
 
-@Config(manifest="./apps/rangzen/AndroidManifest.xml", emulateSdk=18)
+@Config(manifest="./apps/experimentalApp/AndroidManifest.xml", emulateSdk=18)
 @RunWith(RobolectricTestRunner.class)
 public class RangzenServiceTest {
   /** A Date before the service is started in setUp(). */

@@ -55,7 +55,9 @@ import org.robolectric.shadows.ShadowIntent;
  * A class with simple tests that always pass to demonstrate that Robolectric
  * tests can be run.
  */
-@Config(manifest="./apps/rangzen/AndroidManifest.xml", emulateSdk=18)
+@Config(manifest="./apps/experimentalApp/AndroidManifest.xml", 
+        emulateSdk=18,
+        resourceDir="../../ui/Rangzen/res/")
 @RunWith(RobolectricTestRunner.class)
 public class NullRoboTest {
   /** Used to check that setUp ran. */

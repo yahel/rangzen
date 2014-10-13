@@ -82,6 +82,7 @@ public class WifiDirectPeerNetwork implements PeerNetwork {
    *
    * @return True if the PeerNetworks are equal, false otherwise.
    */
+  @Override
   public boolean equals(PeerNetwork other) {
     if (other == null) {
       return false;

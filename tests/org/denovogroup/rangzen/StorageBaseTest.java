@@ -35,9 +35,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.denovogroup.rangzen.MainActivity;
-import org.denovogroup.rangzen.StorageBase;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -63,16 +60,16 @@ import org.robolectric.shadows.ShadowIntent;
 /**
  * Unit tests for Rangzen's StorageBase class
  */
-@Config(manifest="./apps/rangzen/AndroidManifest.xml", 
+@Config(manifest="./apps/experimentalApp/AndroidManifest.xml", 
         emulateSdk=18, 
-        resourceDir="../../res/org/denovogroup/rangzen/res")
+        resourceDir="../../ui/Rangzen/res")
 @RunWith(RobolectricTestRunner.class)
 public class StorageBaseTest {
   /** The instance of StorageBase we're using for tests. */
   private StorageBase store;
 
   /** The app instance we're using to pass to StorageBase. */
-  private MainActivity activity;
+  private SlidingPageIndicator activity;
 
   /** Test strings we're writing into the storage system. */
   private static final String TEST_KEY = "k";
@@ -111,7 +108,7 @@ public class StorageBaseTest {
 
   @Before
   public void setUp() {
-    activity = Robolectric.buildActivity(MainActivity.class).create().get();
+    activity = Robolectric.buildActivity(SlidingPageIndicator.class).create().get();
     store = new StorageBase(activity, StorageBase.ENCRYPTION_NONE);
   }
 
