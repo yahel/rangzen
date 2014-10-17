@@ -37,7 +37,7 @@ final class CameraConfigurationManager {
     //parameters.setPreviewSize(1920, 1080);
     configureAdvanced(parameters);
     camera.setParameters(parameters);
-    //logAllParameters(parameters);
+    logAllParameters(parameters);
   }
 
   private static void configureAdvanced(Camera.Parameters parameters) {
@@ -46,6 +46,8 @@ final class CameraConfigurationManager {
     CameraConfigurationUtils.setVideoStabilization(parameters);
     CameraConfigurationUtils.setMetering(parameters);
     CameraConfigurationUtils.setZoom(parameters, ZOOM);
+//    CameraConfigurationUtils.setBestExposure(parameters, true);
+//    CameraConfigurationUtils.setFocus(parameters, true, false, false);
   }
 
   private static void logAllParameters(Camera.Parameters parameters) {
