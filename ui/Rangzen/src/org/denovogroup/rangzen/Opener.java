@@ -190,24 +190,44 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
         mDrawerListener.syncState();
-        if (mFirstTime) {
-            Log.d("Opener", "first time post create");
-            Fragment needAdd = new ListFragmentOrganizer();
-            Bundle b = new Bundle();
-            b.putSerializable("whichScreen",
-                    ListFragmentOrganizer.FragmentType.FEED);
-            needAdd.setArguments(b);
-            FragmentManager fragmentManager = getSupportFragmentManager();
+        // if (mFirstTime) {
+        //     Log.d("Opener", "first time post create");
+        //     Fragment needAdd = new ListFragmentOrganizer();
+        //     Bundle b = new Bundle();
+        //     b.putSerializable("whichScreen",
+        //             ListFragmentOrganizer.FragmentType.FEED);
+        //     needAdd.setArguments(b);
+        //     FragmentManager fragmentManager = getSupportFragmentManager();
 
-            FragmentTransaction ft = fragmentManager.beginTransaction();
+        //     FragmentTransaction ft = fragmentManager.beginTransaction();
 
-            ft.replace(R.id.mainContent, needAdd);
+        //     ft.replace(R.id.mainContent, needAdd);
 
-            ft.commit();
-            mFirstTime = false;
-            selectItem(0);
-            mPosition = 0;
-        }
+        //     ft.commit();
+        //     mFirstTime = false;
+        //     selectItem(0);
+        //     mPosition = 0;
+        // }
+        switchToFeed();
+    }
+
+    public void switchToFeed() {
+        Log.d("Opener", "first time post create");
+        Fragment needAdd = new ListFragmentOrganizer();
+        Bundle b = new Bundle();
+        b.putSerializable("whichScreen",
+                ListFragmentOrganizer.FragmentType.FEED);
+        needAdd.setArguments(b);
+        FragmentManager fragmentManager = getSupportFragmentManager();
+
+        FragmentTransaction ft = fragmentManager.beginTransaction();
+
+        ft.replace(R.id.mainContent, needAdd);
+
+        ft.commitAllowingStateLoss();
+        mFirstTime = false;
+        selectItem(0);
+        mPosition = 0;
     }
 
     @Override
@@ -307,6 +327,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             abTitle.setTextColor(Color.WHITE);
             mPosition = 0;
             makeTitleBold(0);
+
+            switchToFeed();
             break;
         }
     }
