@@ -77,22 +77,6 @@ public class HotspotPeerNetwork implements PeerNetwork {
   }
 
   /**
-   * Two PeerNetworks are equal if they communicate with the same network
-   * devices.
-   *
-   * @return True if the PeerNetworks are equal, false otherwise.
-   */
-  public boolean equals(PeerNetwork other) {
-    if (other == null) {
-      return false;
-    } else if (scanResult != null) {
-      return scanResultsEqual(scanResult, other.getScanResult());
-    } else {
-      return scanResult == other.getScanResult();
-    }
-  }
-
-  /**
    * Return true if the ScanResults are the same (all fields equal),
    * false otherwise.
    *
@@ -184,5 +168,40 @@ public class HotspotPeerNetwork implements PeerNetwork {
    */
   public int getNetworkType() {
     return PeerNetwork.HOTSPOT_TYPE;
+  }
+
+  /**
+   * Overrides .equals().
+   *
+   * @param other Another object to compare this PeerNetwork to.
+   */
+  @Override
+  public boolean equals(Object other) {
+    if (other == null) {
+      return false;
+    } else if (!(other instanceof PeerNetwork)){
+      return false;
+    } else if (other.getClass() != this.getClass()) {
+      return false;
+    } else if (((PeerNetwork) other).getScanResult() == null) {
+      return this.getScanResult() == null;
+    } 
+    return ((PeerNetwork) other).getScanResult().equals(this.getScanResult());
+  }
+
+  /**
+   * Return a hash code unique-ish to this object.
+   *
+   * @return An integer hash code.
+   */
+  @Override
+  public int hashCode() {
+    // The only thing distinct about a HotspotPeerNetwork is its underlying
+    // ScanResult.
+    if (scanResult == null) {
+      // TODO(lerner): Return something more reasonable here.
+      return 0;
+    }
+    return scanResult.hashCode();
   }
 }

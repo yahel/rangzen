@@ -197,10 +197,10 @@ public class PeerTest {
     bluetoothLEPeer.touch(dateToSet);
     bluetoothPeer.touch(dateToSet);
 
-    assertTrue(peer.getLastSeen().equals(dateToSet));
-    assertTrue(hotspotPeer.getLastSeen().equals(dateToSet));
-    assertTrue(bluetoothLEPeer.getLastSeen().equals(dateToSet));
-    assertTrue(bluetoothPeer.getLastSeen().equals(dateToSet));
+    assertEquals(peer.getLastSeen(), dateToSet);
+    assertEquals(hotspotPeer.getLastSeen(), dateToSet);
+    assertEquals(bluetoothLEPeer.getLastSeen(), dateToSet);
+    assertEquals(bluetoothPeer.getLastSeen(), dateToSet);
   }
 
   /**
@@ -208,22 +208,22 @@ public class PeerTest {
    */
   @Test
   public void peerEquality() {
-    assertTrue("Same network device but peers wifi direct  not equal.", 
-            peer.equals(sameDevicePeer));
-    assertFalse("Different network device but wifi direct peers equal.", 
-            peer.equals(differentDevicePeer));
-    assertTrue("Same network device but peers hotspot not equal.", 
-            hotspotPeer.equals(sameHotspotPeer));
-    assertFalse("Different network device but hotspot peers equal.", 
-            hotspotPeer.equals(differentHotspotPeer));
-    assertTrue("Same network device but peers hotspot not equal.", 
-            bluetoothLEPeer.equals(sameBluetoothLEPeer));
-    assertFalse("Different network device but bluetoothLE peers equal.", 
-            bluetoothLEPeer.equals(differentBluetoothLEPeer));
-    assertTrue("Same network device but peers hotspot not equal.", 
-            bluetoothPeer.equals(sameBluetoothPeer));
-    assertFalse("Different network device but bluetooth peers equal.", 
-            bluetoothPeer.equals(differentBluetoothPeer));
+    assertEquals("Same network device but peers wifi direct  not equal.", 
+        peer, sameDevicePeer);
+    assertNotEquals("Different network device but wifi direct peers equal.", 
+        peer, differentDevicePeer);
+    assertEquals("Same network device but peers hotspot not equal.", 
+        hotspotPeer, sameHotspotPeer);
+    assertNotEquals("Different network device but hotspot peers equal.", 
+        hotspotPeer, differentHotspotPeer);
+    assertEquals("Same network device but peers hotspot not equal.", 
+        bluetoothLEPeer, sameBluetoothLEPeer);
+    assertNotEquals("Different network device but bluetoothLE peers equal.", 
+        bluetoothLEPeer, differentBluetoothLEPeer);
+    assertEquals("Same network device but peers hotspot not equal.", 
+        bluetoothPeer, sameBluetoothPeer);
+    assertNotEquals("Different network device but bluetooth peers equal.", 
+        bluetoothPeer, differentBluetoothPeer);
   }
 
   /**
@@ -231,22 +231,22 @@ public class PeerTest {
    */
   @Test
   public void cloneEquality() {
-    assertTrue("Peer not .equals() to its clone.", 
-            peer.equals(peer.clone()));
-    assertTrue("Same network device peer not equal to clone of peer.",
-            sameDevicePeer.equals(peer.clone()));
-    assertTrue("Peer not .equals() to its clone.", 
-            hotspotPeer.equals(hotspotPeer.clone()));
-    assertTrue("Same network device peer not equal to clone of peer.",
-            sameHotspotPeer.equals(hotspotPeer.clone()));
-    assertTrue("Peer not .equals() to its clone.", 
-            bluetoothLEPeer.equals(bluetoothLEPeer.clone()));
-    assertTrue("Same network device peer not equal to clone of peer.",
-            sameBluetoothLEPeer.equals(bluetoothLEPeer.clone()));
-    assertTrue("Peer not .equals() to its clone.", 
-            bluetoothPeer.equals(bluetoothPeer.clone()));
-    assertTrue("Same network device peer not equal to clone of peer.",
-            sameBluetoothPeer.equals(bluetoothPeer.clone()));
+    assertEquals("Peer not , ) to its clone.", 
+            peer, peer.clone());
+    assertEquals("Same network device peer not equal to clone of peer.",
+            sameDevicePeer, peer.clone());
+    assertEquals("Peer not , ) to its clone.", 
+            hotspotPeer, hotspotPeer.clone());
+    assertEquals("Same network device peer not equal to clone of peer.",
+            sameHotspotPeer, hotspotPeer.clone());
+    assertEquals("Peer not , ) to its clone.", 
+            bluetoothLEPeer, bluetoothLEPeer.clone());
+    assertEquals("Same network device peer not equal to clone of peer.",
+            sameBluetoothLEPeer, bluetoothLEPeer.clone());
+    assertEquals("Peer not , ) to its clone.", 
+            bluetoothPeer, bluetoothPeer.clone());
+    assertEquals("Same network device peer not equal to clone of peer.",
+            sameBluetoothPeer, bluetoothPeer.clone());
 
   }
 }

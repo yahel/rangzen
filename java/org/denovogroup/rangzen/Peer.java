@@ -111,6 +111,40 @@ public class Peer {
   } 
 
   /**
+   * Overrides .equals().
+   *
+   * @param other Another object to compare this Peer to.
+   */
+  @Override
+  public boolean equals(Object other) {
+    if (other == null) {
+      return false;
+    } else if (other.getClass() != this.getClass()) {
+      return false;
+    } else if (((Peer) other).getNetwork() == null) {
+      return this.getNetwork() == null;
+    } 
+    return ((Peer) other).getNetwork().equals(this.getNetwork());
+  }
+
+  /**
+   * Returns a hash code representing the object. Required for reimplementing
+   * .equals(), and must return the same hash code iff two objects are equal.
+   *
+   * @return An integer hash code.
+   */
+  @Override
+  public int hashCode() {
+    // Since the only thing distinguishing peers is their PeerNetwork objects,
+    // we simply report the hashcode of the underlying peer network object.
+    if (this.getNetwork() == null) {
+      // TODO(lerner): Return something more reasonable here.
+      return 0;
+    }
+    return this.getNetwork().hashCode();
+  }
+
+  /**
    * Create a deep copy of the Peer which references the same remote peer 
    * but whose PeerNetwork is a distinct object.
    *

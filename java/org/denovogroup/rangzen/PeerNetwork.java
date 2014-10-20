@@ -62,14 +62,6 @@ public interface PeerNetwork {
   public byte[] receive();
 
   /**
-   * Two PeerNetworks are equal if they communicate with the same network
-   * devices.
-   *
-   * @return True if the PeerNetworks are equal, false otherwise.
-   */
-  public boolean equals(PeerNetwork other);
-
-  /**
    * Return a copy of the PeerNetwork, referring to the same network locations.
    *
    * @return A deep copy of the PeerNetwork.

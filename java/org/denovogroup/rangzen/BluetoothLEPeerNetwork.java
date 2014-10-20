@@ -80,21 +80,6 @@ public class BluetoothLEPeerNetwork implements PeerNetwork {
   }
 
   /**
-   * Two PeerNetworks are equal if they communicate with the same network devices.
-   *
-   * @return True if the PeerNetworks are equal, false otherwise.
-   */
-  public boolean equals(PeerNetwork other) {
-    if (other == null) {
-      return false;
-    } else if (mBluetoothLEDevice != null) {
-      return mBluetoothLEDevice.equals(other.getBluetoothLEDevice());
-    } else {
-      return mBluetoothLEDevice == other.getBluetoothLEDevice();
-    }
-  }
-
-  /**
    * Return a copy of the PeerNetwork, referring to the same network locations.
    *
    * @return A deep copy of the PeerNetwork.
@@ -156,6 +141,41 @@ public class BluetoothLEPeerNetwork implements PeerNetwork {
    */
   public int getNetworkType() {
     return PeerNetwork.BLUETOOTH_LOW_ENERGY_TYPE;
+  }
+
+  /**
+   * Overrides .equals().
+   *
+   * @param other Another object to compare this PeerNetwork to.
+   */
+  @Override
+  public boolean equals(Object other) {
+    if (other == null) {
+      return false;
+    } else if (!(other instanceof PeerNetwork)) {
+      return false;
+    } else if (other.getClass() != this.getClass()) {
+      return false;
+    } else if (((PeerNetwork) other).getBluetoothLEDevice() == null) {
+      return this.getBluetoothLEDevice() == null;
+    } 
+    return ((PeerNetwork) other).getBluetoothLEDevice().equals(this.getBluetoothLEDevice());
+  }
+
+  /**
+   * Return a hash code unique-ish to this object.
+   *
+   * @return An integer hash code.
+   */
+  @Override
+  public int hashCode() {
+    // The only thing distinct about a BluetoothLEPeerNetwork is its underlying
+    // BluetoothLEDevice.
+    if (mBluetoothLEDevice == null) {
+      // TODO(lerner): Return something more reasonable here.
+      return 0;
+    }
+    return mBluetoothLEDevice.hashCode();
   }
 
 }

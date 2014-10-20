@@ -77,23 +77,6 @@ public class WifiDirectPeerNetwork implements PeerNetwork {
   }
 
   /**
-   * Two PeerNetworks are equal if they communicate with the same network
-   * devices.
-   *
-   * @return True if the PeerNetworks are equal, false otherwise.
-   */
-  @Override
-  public boolean equals(PeerNetwork other) {
-    if (other == null) {
-      return false;
-    } else if (wifiP2pDevice != null) {
-      return wifiP2pDevice.equals(other.getWifiP2pDevice());
-    } else {
-      return wifiP2pDevice == other.getWifiP2pDevice();
-    }
-  }
-
-  /**
    * Return a copy of the PeerNetwork, referring to the same network locations.
    *
    * @return A deep copy of the PeerNetwork.
@@ -154,5 +137,40 @@ public class WifiDirectPeerNetwork implements PeerNetwork {
    */
   public int getNetworkType() {
     return PeerNetwork.WIFI_DIRECT_TYPE;
+  }
+
+  /**
+   * Overrides .equals().
+   *
+   * @param other Another object to compare this PeerNetwork to.
+   */
+  @Override
+  public boolean equals(Object other) {
+    if (other == null) {
+      return false;
+    } else if (!(other instanceof PeerNetwork)) {
+      return false;
+    } else if (other.getClass() != this.getClass()) {
+      return false;
+    } else if (((PeerNetwork) other).getWifiP2pDevice() == null) {
+      return this.getWifiP2pDevice() == null;
+    } 
+    return ((PeerNetwork) other).getWifiP2pDevice().equals(this.getWifiP2pDevice());
+  }
+
+  /**
+   * Return a hash code unique-ish to this object.
+   *
+   * @return An integer hash code.
+   */
+  @Override
+  public int hashCode() {
+    // The only thing distinct about a WifiDirectPeerNetwork is its underlying
+    // WifiP2pDevice.
+    if (wifiP2pDevice == null) {
+      // TODO(lerner): Return something more reasonable here.
+      return 0;
+    }
+    return wifiP2pDevice.hashCode();
   }
 }
