@@ -878,15 +878,16 @@ public class MapsActivity extends Fragment implements
                     polylines.add(mMap.addPolyline(poly));
                 }
                 for (Exchange exchange : ownExchanges) {
-                    if (exchange.start_time > lowerTimeBound
-                            && exchange.end_time < upperTimeBound) {
-                        MarkerOptions marker = new MarkerOptions();
-                        LatLng exStart = new LatLng(
-                                exchange.start_location.latitude,
-                                exchange.start_location.longitude);
-                        marker.position(exStart);
-                        ownMarkers.add(mMap.addMarker(marker));
-                    }
+                  //TODO(lerner): Remove this stuff about the old exchanges.
+                    // if (exchange.start_time > lowerTimeBound
+                    //         && exchange.end_time < upperTimeBound) {
+                    //     MarkerOptions marker = new MarkerOptions();
+                    //     LatLng exStart = new LatLng(
+                    //             exchange.start_location.latitude,
+                    //             exchange.start_location.longitude);
+                    //     marker.position(exStart);
+                    //     ownMarkers.add(mMap.addMarker(marker));
+                    // }
                 }
                 if (!isArrow) {
                     for (Polyline poly : mPolylineArray) {

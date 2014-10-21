@@ -30,94 +30,272 @@
  */
 package org.denovogroup.rangzen;
 
-import java.io.Serializable;
+import android.os.AsyncTask;
+import android.util.Log;
+
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Set;
 
 /**
- * Represents a single exchange between Rangzen peers.
+ * Performs a single exchange between Rangzen peers as an AsyncTask.
  */
-public class Exchange implements Serializable {
-  /** Indicates backwards compatibility of serializability. */
-  private static final long serialVersionUID = 1L;
-
-  /** Local phone ID. */
-  public String phoneid;
-
-  /** Remote peer's phone ID. */
-  public String peer_phone_id;
-
-  /** Protocol used, e.g. Bluetooth or Wifi Direct. */
-  public String protocol;
-
-  /** The time at the start of the exchange. */
-  public long start_time;
-
-  /** The time at the end of the exchange. */
-  public long end_time;
-
-  /** Location at the start of the exchange. */
-  public SerializableLocation start_location;
-
-  /** Location at the end of the exchange. */
-  public SerializableLocation end_location;
-
-  /** String representing the Bluetooth protocol. */
-  public static final String PROTOCOL_BLUETOOTH = "BluetoothProtocol";
-
-  /**
-   * Create a new exchange with the given values.
-   *
-   * @param start The Location at the start of the exchange.
-   * @param end The Location at the end of the exchange.
+public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
+  /** Store of friends to use in this exchange. */
+  private FriendStore friendStore;
+  /** Store of messages to use in this exchange. */
+  private MessageStore messageStore;
+  /** Input stream connected to the remote communication partner. */
+  private InputStream in;
+  /** Character stream that wraps the input stream. */
+  private InputStreamReader inReader;
+  /** Output stream connected to the remote communication partner. */
+  private OutputStream out;
+  /** A callback to report the result of an exchange. */
+  private ExchangeCallback callback;
+  /** 
+   * Whether to start the exchange with the first message or wait for the other side
+   * to begin the exchange.
    */
-  public Exchange(String phoneid, String peer_phone_id, String protocol, long start_time,
-      long end_time, SerializableLocation start_location, SerializableLocation end_location) {
-    this.phoneid = phoneid;
-    this.peer_phone_id = peer_phone_id;
-    this.protocol = protocol;
-    this.start_time = start_time;
-    this.end_time = end_time;
-    this.start_location = start_location;
-    this.end_location = end_location;
+  private boolean asInitiator;
+
+  /** The messages received from the remote peer. */
+  private Set<MessageStore.Message> receivedMessages = null;
+  
+  /** The number of friends in common with the remote peer. */
+  private int commonFriends = -1;
+
+  /** First message received from Alice, if we're not the initiator. */
+  private String firstMessageReceived;
+  /** Message received from Bob, if we're the initiator. */
+  private String secondMessageReceived;
+
+  /** Messages used in demonstration of this class for testing. */
+  /* package */ static final String FIRST_DEMO_MESSAGE  = "I'm the initiator";
+  /* package */ static final String SECOND_DEMO_MESSAGE = "Not the initiator";
+
+  /** Enum indicating status of the Exchange. */
+  enum Status {
+    IN_PROGRESS,
+    SUCCESS,
+    ERROR
+  }
+  /**
+   * Whether the exchange has completed successfully. Starts false and remains
+   * false until the exchange completes, if it ever does. Remains true thereafter.
+   * Set in doInBackground and checked in onPostExecute().
+   */
+  private Status status = Status.IN_PROGRESS;
+
+  /** 
+   * An error message, if any, explaning why the exchange isn't successful.
+   * Set to null upon success.
+   */
+  private String errorMessage = "Not yet complete.";
+
+  /** Included with Android log messages. */
+  private static final String TAG = "Exchange";
+
+  /** Synchronized getter for status. */
+  private synchronized Status getExchangeStatus() {
+    return status;
+  }
+  /** Synchronized setter for status. */
+  private synchronized void setExchangeStatus(Status status) {
+    this.status = status;
   }
 
   /**
-   * Two Exchanges are equal if they were between the same local and peer phones,
-   * used the same protocol, their start locations were the same, and their
-   * end locations were the same.
+   * Create a new exchange which will communicate over the given Input/Output
+   * streams and use the given context to access storage for messages/friends.
    *
-   * Note that we consider the same exchange from each perspective to be distinct
-   * exchanges, according to this .equals() method.
-   *
-   * @return True if the exchanges seem to represent the same exchange from the
-   * same perspective.
+   * @param in An input stream which delivers a stream of data from the remote peer.
+   * @param in An output stream which delivers a stream of data to the remote peer.
+   * @param friendStore A store of friends to use in the friend-exchange protocol.
+   * @param messageStore A store of messages to exchange with the remote peer.
    */
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Exchange)) {
-      return false;
-    } else {
-      Exchange e = (Exchange) o;
-      boolean startsEqual = start_location == null ? 
-                            e.start_location == null : 
-                            start_location.equals(e.start_location);
-      boolean endsEqual = end_location == null ? 
-                          e.end_location == null : 
-                          end_location.equals(e.end_location);
-      boolean IDsEqual = peer_phone_id == null ? 
-                         e.peer_phone_id == null : 
-                         peer_phone_id.equals(e.peer_phone_id);
-      boolean timesEqual = start_time == e.start_time &&
-                           end_time == e.end_time;
+  public Exchange(InputStream in, OutputStream out, boolean asInitiator, 
+                  FriendStore friendStore, MessageStore messageStore, 
+                  ExchangeCallback callback) throws IllegalArgumentException {
+    this.in = in;
+    this.inReader = new InputStreamReader(in);
+    this.out = out;
+    this.friendStore = friendStore;
+    this.messageStore = messageStore;
+    this.asInitiator = asInitiator;
+    this.callback = callback;
 
-      return startsEqual && endsEqual && IDsEqual && timesEqual;
+    // TODO(lerner): Probalby best to throw exceptions here, since these are fatal.
+    // There's no point in trying to have an exchange without someone to talk to
+    // or friends/messages to talk about.
+    
+    if (in == null) {
+      throw new IllegalArgumentException("Input stream for exchange is null.");
+    }
+    if (out == null) {
+      throw new IllegalArgumentException("Output stream for exchange is null.");
+    }
+    if (friendStore == null) {
+      throw new IllegalArgumentException("Friend store for exchange is null.");
+    }
+    if (messageStore == null) {
+      throw new IllegalArgumentException("Message store for exchange is null.");
+    }
+    if (callback == null) {
+      // I log this as a warning because not providing callbacks is a thing, it's
+      // just an illogical thing here in all likelihood.
+      // But I throw an exception because it simply isn't reasonable to pass null
+      // unless we change the architecture of exchanges.
+      Log.w(TAG, "No callback provided for exchange - nothing would happen locally!");
+      throw new IllegalArgumentException("No callback provided for exchange.");
     }
   }
-  
+
   /**
-   * Return a string representing this exchange.
+   * Initiate the exchange (as Alice) by sending the first protocol message.
    */
-  public String toString() {
-    return String.format("Exchange | [phoneid=%s, other=%s, protocol=%s start_time=%s end_time=%s start=%s end=%s]",
-                         phoneid, peer_phone_id, protocol, start_time, end_time, start_location, end_location);
+  private void sendFirstMessage() throws IOException {
+    // TODO(lerner): Send an actual message with friends and messages in it.
+    out.write(FIRST_DEMO_MESSAGE.getBytes());
+  }
+
+  /**
+   * Reply to Alice as Bob with the second protocol message.
+   */
+  private void sendSecondMessage() throws IOException {
+    // TODO(lerner): Send an actual message with friends and messages in it.
+    out.write(SECOND_DEMO_MESSAGE.getBytes());
+  }
+
+  /**
+   * Wait for Alice's first message, parsing it when received.
+   */
+  private void waitForFirstMessage() throws IOException {
+    // TODO(lerner): Use an actually reasonable message format, or implement
+    // an RPC interface (might be too cumbersome).
+    // TODO(lerner): Use a StringBuilder style thing here.
+    String receivedSoFar = "";
+    int charsReceived = 0;
+    char[] received = new char[FIRST_DEMO_MESSAGE.length()];
+    do {
+      charsReceived += inReader.read(received);
+      receivedSoFar += new String(received);
+    } while (charsReceived != FIRST_DEMO_MESSAGE.length());
+    Log.i(TAG, "Received " + charsReceived + " characters: " + receivedSoFar);
+    firstMessageReceived = receivedSoFar;
+  }
+
+  /**
+   * Wait for Bob's reply, parsing it when received. 
+   */
+  private void waitForSecondMessage() throws IOException {
+    // TODO(lerner): Use an actually reasonable message format, or implement
+    // an RPC interface (might be too cumbersome).
+    // TODO(lerner): Use a StringBuilder style thing here.
+    String receivedSoFar = "";
+    int charsReceived = 0;
+    char[] received = new char[SECOND_DEMO_MESSAGE.length()];
+    do {
+      charsReceived += inReader.read(received);
+      receivedSoFar += new String(received);
+    } while (charsReceived != SECOND_DEMO_MESSAGE.length());
+    Log.i(TAG, "Received " + charsReceived + " characters: " + receivedSoFar);
+    secondMessageReceived = receivedSoFar;
+  }
+
+  @Override
+  protected Status doInBackground(Boolean... UNUSED) {
+    // In this version of the exchange there's no crypto, so the messages don't
+    // depend on each other at all.
+    try {
+      if (asInitiator) {
+        sendFirstMessage();
+        waitForSecondMessage();
+      } else {
+        waitForFirstMessage();
+        sendSecondMessage();
+      }
+    } catch (IOException e) {
+      Log.e(TAG, "Error having exchange: " + e);
+      errorMessage = e.toString();
+      setExchangeStatus(Status.ERROR);
+      return status;
+    }
+    
+    setExchangeStatus(Status.SUCCESS);
+    return status; // onPostExecute will now be called().
+  }
+
+  /**
+   * Intended to provide updates on the progress of an asynchronous task.
+   * Unimplemented.
+   *
+   * TODO(lerner): Implement this for the sake of internals (user probably doesn't
+   * need to see a progress bar or anything).
+   */
+  @Override
+  protected void onProgressUpdate(Integer... progress) { 
+    // Unimplemented.
+  }
+
+  /**
+   * After the exchange is complete, whether success or failure, this method handles
+   * calling back to the callback with the results.
+   */
+  @Override
+  protected void onPostExecute(Status success) {
+    if (callback == null) {
+      Log.w(TAG, "No callback provided to exchange.");
+      return;
+    }
+    if (getExchangeStatus() == Status.SUCCESS) {
+      callback.success(this);
+      return;
+
+    } else {
+      callback.failure(this, errorMessage);
+      return;
+    }
+  }
+
+  /**
+   * Get the number of friends in common with the other peer in the exchange.
+   * -1 if the number of common friends is not yet known.
+   *
+   * Returns -1 until the exchange has completed, since it seems to me that exchanges
+   * should probably be viewed as atomic by outside code.
+   *
+   * @return The number of friends in common with the remote peer, or -1 if the
+   * number is not yet known because the exchage hasn't completed yet or has failed.
+   */
+  public int getCommonFriends() {
+    if (getExchangeStatus() == Status.SUCCESS) {
+      return commonFriends;
+    } else {
+      return -1;
+    }
+  }
+
+  /**
+   * Get the messages we received from the remote peer. 
+   *
+   * Returns null until the exchange has completed, since it seems to me that exchanges
+   * should probably be viewed as atomic by outside code.
+   *
+   * TODO(lerner): Are there any attacks involving giving multiple copies of the
+   * same message? Do we take the one with the highest or lowest priority? Or 
+   * abandon the exchange?
+   *
+   * @return The set of messages received from the remote peer, or null if we
+   * the exchange hasn't completed yet or the exchange failed.
+   */ 
+  public Set<MessageStore.Message> getReceivedMessages() {
+    if (getExchangeStatus() == Status.SUCCESS) {
+      return receivedMessages;
+    } else {
+      return null;
+    }
   }
 }
