@@ -1,5 +1,11 @@
 <resources>
 
+    <item name="decode_start" type="id"/>
+    <item name="decode" type="id"/>
+    <item name="decode_failed" type="id"/>
+    <item name="decode_succeeded" type="id"/>
+    <item name="quit" type="id"/>
+
     <string name="app_name">Rangzen</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
@@ -53,7 +59,6 @@
         <item>1/1</item>
         <item>1/3</item>
     </string-array>
-
     <string-array name="messages">
         <item>Come on and Slam</item>
         <item>and Welcome to the Jam</item>
@@ -68,16 +73,15 @@
         <item>to the beginning</item>
         <item>What do you mean Cocomon?</item>
     </string-array>
-
     <string-array name="sidebar">
         <item>Feed</item>
         <item>New Post</item>
         <item>Add Friend</item>
-        <item>Map</item>
         <item>Info</item>
     </string-array>
 
     <color name="whitish">#D7D7D7</color>
+    <color name="purple">#6d0094</color>
 
     <string name="hint">Get the word out</string>
     <string name="app_id">254046681454257</string>

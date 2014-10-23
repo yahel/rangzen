@@ -91,9 +91,6 @@ public class ListFragmentOrganizer extends ListFragment {
         // TODO (Jesus) A lot of getting the correct hashtags... this may be
         // intensive? Idk how else to do it.
         super.onListItemClick(l, v, position, id);
-        Toast.makeText(getActivity(), "position = " + position,
-                Toast.LENGTH_SHORT).show();
-
     }
     
     @Override
@@ -109,5 +106,4 @@ public class ListFragmentOrganizer extends ListFragment {
         }
         super.onDestroyView();
     }
-
 }

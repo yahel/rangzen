@@ -52,3 +52,10 @@ prebuilt_jar(
   visibility = [ 'PUBLIC' ],
 )
 
+prebuilt_jar(
+  name = 'core',
+  binary_jar = 'core-3.1.1-SNAPSHOT.jar',
+  visibility = [ 'PUBLIC' ],
+)
+
+

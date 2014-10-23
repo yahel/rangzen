@@ -43,7 +43,25 @@
         <item name="android:windowNoTitle">true</item>
         <item name="android:backgroundDimEnabled">false</item>
         <item name="android:windowActionBar">false</item>
-        <item name="android:windowNoTitle">true</item>
+    </style>
+
+    <style name="MyTheme1" parent="@style/Theme.AppCompat.Light">
+
+        <!-- Setting values in the android namespace affects API levels 11+ -->
+        <item name="android:actionBarStyle">@style/Widget.Styled.ActionBar</item>
+        <item name="android:titleTextStyle">@style/TitleTextStyle</item>
+    </style>
+
+    <style name="Widget.Styled.ActionBar" parent="@style/Widget.AppCompat.Light.ActionBar">
+
+        <!-- Setting values in the android namespace affects API levels 11+ -->
+        <item name="android:background">@color/purple</item>
+    </style>
+
+    <style name="TitleTextStyle" parent="@style/TextAppearance.AppCompat.Widget.ActionBar.Title">
+
+        <!-- <item name="android:textColor">#FFFFFF</item> -->
+        <item name="android:textColor">@color/whitish</item>
     </style>
 
 </resources>
