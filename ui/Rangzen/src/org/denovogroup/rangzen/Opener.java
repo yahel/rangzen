@@ -190,35 +190,30 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
         mDrawerListener.syncState();
-        if (mFirstTime) {
-            Log.d("Opener", "first time post create");
-            Fragment needAdd = new ListFragmentOrganizer();
-            Bundle b = new Bundle();
-            b.putSerializable("whichScreen",
-                    ListFragmentOrganizer.FragmentType.FEED);
-            needAdd.setArguments(b);
-            FragmentManager fragmentManager = getSupportFragmentManager();
-
-            FragmentTransaction ft = fragmentManager.beginTransaction();
-
-            ft.replace(R.id.mainContent, needAdd);
-
-            ft.commit();
-            mFirstTime = false;
-            selectItem(0);
-            mPosition = 0;
-        }
+        switchToFeed();
     }
 
-    @Override
-    public void onBackPressed() {
-        // if (!mPrevPosition.empty()) {
-        // mPosition = mPrevPosition.pop();
-        // setTitle(mPosition);
-        // } else {
-        // mFirstTime = true;
-        // }
-        super.onBackPressed();
+    /**
+     * Switches current open fragment to feed fragment. Call this method after
+     *  closing an activity.
+     */
+    public void switchToFeed() {
+        Log.d("Opener", "Switching to feed fragment.");
+        Fragment needAdd = new ListFragmentOrganizer();
+        Bundle b = new Bundle();
+        b.putSerializable("whichScreen",
+                ListFragmentOrganizer.FragmentType.FEED);
+        needAdd.setArguments(b);
+        FragmentManager fragmentManager = getSupportFragmentManager();
+
+        FragmentTransaction ft = fragmentManager.beginTransaction();
+
+        ft.replace(R.id.mainContent, needAdd);
+
+        ft.commitAllowingStateLoss();
+        mFirstTime = false;
+        selectItem(0);
+        mPosition = 0;
     }
 
     /**
@@ -307,6 +302,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             abTitle.setTextColor(Color.WHITE);
             mPosition = 0;
             makeTitleBold(0);
+
+            switchToFeed();
             break;
         }
     }
