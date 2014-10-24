@@ -381,6 +381,31 @@ public class FragmentOrganizer extends Fragment {
 			}
 		});
 		Button send = (Button) view7.findViewById(R.id.button2);
+		send.setOnClickListener(new View.OnClickListener() {
+
+            /**
+             * Stores the text of the TextView in the MessageStore with
+             * default priority 1.0f. Displays a Toast upon completion and
+             * exits the Activity.
+             * 
+             * @param v
+             *            The view which is clicked - in this case, the Button.
+             */
+            @Override
+            public void onClick(View v) {
+                MessageStore messageStore = new MessageStore(getActivity(),
+                        StorageBase.ENCRYPTION_DEFAULT);
+                String message = ((TextView) getActivity().findViewById(
+                        R.id.editText1)).getText().toString();
+                float priority = 1.0f;
+                messageStore.addMessage(message, priority);
+                Toast.makeText(getActivity(), "Message sent!",
+                        Toast.LENGTH_SHORT).show();
+                getActivity().setResult(1);
+                getActivity().finish();
+            }
+
+        });
 		return view7;
 	}
 

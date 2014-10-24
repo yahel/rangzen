@@ -36,15 +36,10 @@ import java.util.Stack;
 import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
@@ -52,23 +47,14 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
-import android.text.Html;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.WebView.FindListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -89,6 +75,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private static int mPosition = 0;
     private static boolean mFirstTime = true;
     private static Stack<Integer> mPrevPosition = new Stack<Integer>();
+    private static final String TAG = "Opener";
 
     /** Initialize the contents of the activities menu. */
     @Override
@@ -169,16 +156,16 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                         "#occupy @occupy happening right now by sproul on UCB campus berkeley ",
                         .5f);
 
-        Log.d("Opener", "seventh " + messageStore.addMessage("Test7s", .5f));
-        Log.d("Opener", "eighth " + messageStore.addMessage("Test8", .5f));
-        Log.d("Opener", "9 " + messageStore.addMessage("test9", .5f));
+        Log.d(TAG, "seventh " + messageStore.addMessage("Test7s", .5f));
+        Log.d(TAG, "eighth " + messageStore.addMessage("Test8", .5f));
+        Log.d(TAG, "9 " + messageStore.addMessage("test9", .5f));
 
         messageStore
                 .addMessage(
                         "Pentagon Supplies School Districts with Assault Rifles, Grenade Launchers, M.R.A.P.'s",
                         2);
-        Log.d("Opener", "11 " + messageStore.addMessage("Test11", .5f));
-        Log.d("Opener", "12 " + messageStore.addMessage("Test12", .5f));
+        Log.d(TAG, "11 " + messageStore.addMessage("Test11", .5f));
+        Log.d(TAG, "12 " + messageStore.addMessage("Test12", .5f));
         mHasStored = true;
     }
 
@@ -298,15 +285,27 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        setTitle("Feed");
+        int titleId = getResources().getIdentifier("action_bar_title",
+                "id", "android");
+        TextView abTitle = (TextView) findViewById(titleId);
+        abTitle.setTextColor(Color.WHITE);
+        mPosition = 0;
+        makeTitleBold(0);
         switch (requestCode) {
+        case 1:
+            Log.d(TAG, "Post activity closed");
+            if (resultCode == 1) {
+                Log.d(TAG, "result was a 1");
+                mListView = (ListView) findViewById(R.id.drawerList);
+                mSidebarAdapter.notifyDataSetChanged();
+                ListView listView = (ListView) findViewById(android.R.id.list);
+                FeedListAdapter adapt = (FeedListAdapter) listView.getAdapter();
+                adapt.notifyDataSetChanged();                
+            }
+            break;
         case 2:
-            setTitle("Feed");
-            int titleId = getResources().getIdentifier("action_bar_title",
-                    "id", "android");
-            TextView abTitle = (TextView) findViewById(titleId);
-            abTitle.setTextColor(Color.WHITE);
-            mPosition = 0;
-            makeTitleBold(0);
+            //will need to handle the input of a qr code of the Rangzen format
             break;
         }
     }
@@ -340,7 +339,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         } else if (position == 1) {
             Intent intent = new Intent();
             intent.setClass(this, PostActivity.class);
-            startActivityForResult(intent, 2);
+            startActivityForResult(intent, 1);
             return;
         } else if (position == 2) {
             Intent intent = new Intent();
@@ -371,4 +370,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         ft.commit();
     }
 
+    public SidebarListAdapter getSidebarAdapter() {
+        return mSidebarAdapter;
+    }
 }

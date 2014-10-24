@@ -58,6 +58,7 @@ public class PostActivity extends FragmentActivity {
             EditText mEditText = (EditText) findViewById(R.id.editText1);
             mgr.hideSoftInputFromWindow(mEditText.getWindowToken(), 0);
             getActionBar().setTitle("Feed");
+            //setResult(0);
             finish();
             return true;
         }

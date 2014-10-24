@@ -112,5 +112,4 @@ public class SidebarListAdapter extends BaseAdapter {
         rowImage.setImageResource(mSidebarImages[position]);
         return row;
     }
-
 }
