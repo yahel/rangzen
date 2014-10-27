@@ -58,4 +58,22 @@ prebuilt_jar(
   visibility = [ 'PUBLIC' ],
 )
 
+prebuilt_jar(
+  name = 'wire-compiler',
+  binary_jar = 'wire-compiler-1.5.2-jar-with-dependencies.jar',
+  visibility = [ 'PUBLIC' ],
+)
+
+prebuilt_jar(
+  name = 'wire-runtime',
+  binary_jar = 'wire-runtime-1.5.2.jar',
+  visibility = [ 'PUBLIC' ],
+)
+
+prebuilt_jar(
+  name = 'okio',
+  binary_jar = 'okio-1.0.1.jar',
+  visibility = [ 'PUBLIC' ],
+)
+
 

@@ -56,6 +56,7 @@ import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 /**
  * Tests for the Exchange class.
@@ -172,5 +173,23 @@ public class ExchangeTest {
       recvBuffer.put((byte)b);
     } while (recvBuffer.position() != Exchange.SECOND_DEMO_MESSAGE.length());
     assertEquals(Exchange.SECOND_DEMO_MESSAGE, new String(recvBuffer.array()));
+  }
+
+  /**
+   * Test the static utility method that grabs the first four bytes from an
+   * input stream and returns their value as an int.
+   */
+  @Test
+  public void testPopLength() throws IOException {
+    int testValue = 42;
+    PipedInputStream inputStream = new PipedInputStream();
+    PipedOutputStream outputStream = new PipedOutputStream();
+    outputStream.connect(inputStream);
+    
+    ByteBuffer b = ByteBuffer.allocate(4);
+    b.order(ByteOrder.BIG_ENDIAN);   // Network byte order.
+    b.putInt(testValue);
+    outputStream.write(b.array());
+    assertEquals(testValue, Exchange.popLength(inputStream));
   }
 }

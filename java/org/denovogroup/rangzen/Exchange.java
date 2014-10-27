@@ -30,6 +30,9 @@
  */
 package org.denovogroup.rangzen;
 
+import com.squareup.wire.Wire;
+import com.squareup.wire.Message;
+
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -37,6 +40,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Set;
 
 /**
@@ -297,5 +302,94 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
     } else {
       return null;
     }
+  }
+
+  /** Instance of Wire to encode/decode messages. */
+  private static Wire wire = new Wire();
+
+  /**
+   * Take a Wire protobuf Message and encode it in a byte[] as:
+   *
+   * [length, value]
+   *
+   * where length is the length in bytes encoded as a 4 byte integer
+   * and value are the bytes produced by Message.toByteArray().
+   * 
+   * @param m A message to encode in length/value format.
+   * @return A ByteBuffer containing the encoded bytes of the message and its length.
+   */
+  /* package */ static ByteBuffer lengthValueEncode(Message m) {
+    byte[] value = m.toByteArray();
+
+    ByteBuffer encoded = ByteBuffer.allocate(Integer.SIZE/Byte.SIZE + value.length);
+    encoded.order(ByteOrder.BIG_ENDIAN);   // Network byte order.
+    encoded.putInt(value.length);
+    encoded.put(value);
+
+    return encoded;
+  }
+
+  /**
+   * Send the given message, encoded as length-value, on the given output stream.
+   *
+   * @param outputStream The output stream to write the Message to.
+   * @param m A message to write.
+   * @return True if the write succeeds, false otherwise.
+   */
+  public static boolean lengthValueWrite(OutputStream outputStream, Message m) {
+    if (outputStream == null || m == null) {
+      return false;
+    }
+    try {
+      byte[] encodedMessage = Exchange.lengthValueEncode(m).array();
+      outputStream.write(encodedMessage);
+      return true;
+    } catch (IOException e) {
+      Log.e(TAG, "Length/value write failed with exception: " + e);
+      return false;
+    }
+  }
+
+  /**
+   * Decode a Message of the given type from the input stream and return it.
+   * This method is much like a delimited read from Google's Protobufs.
+   *
+   * @param inputStream An input stream to read a Message from.
+   * @param messageClass The type of Message to read.
+   * @return The message recovered from the stream, or null if an error occurs.
+   */
+  public static <T extends Message> T lengthValueRead(InputStream inputStream, 
+                                                      Class<T> messageClass) {
+    int length = popLength(inputStream);
+    if (length <= 0) {
+      return null;
+    }
+    byte[] messageBytes = new byte[length];
+    T recoveredMessage;
+    try {
+      inputStream.read(messageBytes);
+      recoveredMessage = wire.parseFrom(messageBytes, messageClass);
+    } catch (IOException e) {
+      Log.e(TAG, "IOException parsing message bytes: " + e);
+      return null;
+    }
+    return recoveredMessage;
+  }
+
+  /**
+   * Take the output of lengthValueEncode() and decode it to a Message of the
+   * given type.
+   */
+  /* package */ static int popLength(InputStream stream) {
+    byte[] lengthBytes = new byte[Integer.SIZE/Byte.SIZE];
+    try {
+      stream.read(lengthBytes);
+    } catch (IOException e) {
+      Log.e(TAG, "IOException popping length from input stream: " + e);
+      return -1;
+    }
+    ByteBuffer buffer = ByteBuffer.wrap(lengthBytes);
+    buffer.order(ByteOrder.BIG_ENDIAN);   // Network byte order.
+    return buffer.getInt();
   }
 }
