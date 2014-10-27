@@ -80,6 +80,24 @@ robolectric_test(
   ],
 )
 
+robolectric_test(
+  name = 'wireTest',
+  srcs = [
+    'WireTest.java', 
+  ],
+  source_under_test = [ '//java/org/denovogroup/rangzen:experimentalBackend' ],
+  visibility = [ 'PUBLIC' ],
+  deps = [
+    '//libs:junit-4.11',
+    '//libs:hamcrest-core-1.3',
+    '//libs:robolectric-2.3',
+    '//java/org/denovogroup/rangzen:experimentalBackend',
+    '//libs:wire-runtime',
+    '//libs:okio',
+    '//proto-repo:protobufs',
+  ],
+)
+
 java_test(
   name = 'nullTest',
   srcs = ['NullTest.java'],
@@ -203,3 +221,5 @@ robolectric_test(
     '//java/org/denovogroup/rangzen:experimentalBackend',
   ],
 )
+
+

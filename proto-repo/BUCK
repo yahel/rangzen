@@ -1,0 +1,27 @@
+genrule(
+  name = 'compile_protobufs',
+  visibility = ['PUBLIC'],
+  srcs = [
+    'protocompile.sh',
+    'CleartextFriends.proto',
+    'CleartextMessages.proto',
+    'Person.proto',
+  ],
+  bash = 'protocompile.sh $(location //libs:wire-compiler) $OUT',
+  out = 'protobufs.src.zip', 
+  deps = [
+    '//libs:wire-compiler',
+  ],
+)
+
+java_library(
+  name = 'protobufs',
+  srcs = [
+    ':compile_protobufs',
+  ], 
+  visibility = ['PUBLIC'],
+  deps = [
+    ':compile_protobufs',
+    '//libs:wire-runtime',
+  ]
+);

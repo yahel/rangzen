@@ -48,7 +48,9 @@
             android:name="org.denovogroup.rangzen.Opener"
             android:label="@string/app_name"
             android:theme="@style/MyTheme1"
-            android:windowSoftInputMode="adjustResize" >
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait" >
             <intent-filter>
                 <action android:name="android.intent.action.DEFAULT" />
 
@@ -59,7 +61,9 @@
             android:name="org.denovogroup.rangzen.QRCodeViewPager"
             android:label="@string/app_name"
             android:theme="@style/MyTheme1"
-            android:windowSoftInputMode="adjustResize" >
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait" >
             <intent-filter>
                 <action android:name="android.intent.action.DEFAULT" />
 
@@ -70,7 +74,9 @@
             android:name="org.denovogroup.rangzen.PostActivity"
             android:label="@string/app_name"
             android:theme="@style/MyTheme1"
-            android:windowSoftInputMode="adjustResize" >
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait" >
             <intent-filter>
                 <action android:name="android.intent.action.DEFAULT" />
 
