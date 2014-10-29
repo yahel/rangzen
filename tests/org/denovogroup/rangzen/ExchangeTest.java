@@ -35,6 +35,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Robolectric.clickOn;
@@ -57,6 +58,10 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
 
 /**
  * Tests for the Exchange class.
@@ -75,15 +80,28 @@ public class ExchangeTest {
   /** Input stream passed to exchange under test. */
   private PipedInputStream inputStream;
 
-  /** Attached to the output stream passed to the exchange so we hear it. */
+  /** Attached to the output stream passed to the exchange so we can talk to it. */
   private PipedOutputStream testOutputStream;
-  /** Attached to the input stream passed to the exchange so we can talk to it. */
+  /** Attached to the input stream passed to the exchange so we can hear it. */
   private PipedInputStream testInputStream;
 
   /** A message store to pass to the exchange. */
   private MessageStore messageStore;
   /** A friend store to pass to the exchange. */
   private FriendStore friendStore;
+
+  /** Number of friends to include. */
+  private static final int NUM_FRIENDS = 30;
+
+  /** A list of 0 friends to send. */
+  private CleartextFriends nullFriends = new CleartextFriends.Builder()
+                                                             .friends(new ArrayList<String>())
+                                                             .build();
+  /** A list of 0 messages to send. */
+  private CleartextMessages nullMessages = 
+    new CleartextMessages.Builder()
+                         .messages(new ArrayList<CleartextMessages.RangzenMessage>())
+                         .build();
 
   /** A callback to provide to the Exchange under test. */
   private ExchangeCallback callback ;
@@ -106,6 +124,7 @@ public class ExchangeTest {
     messageStore = new MessageStore(context, StorageBase.ENCRYPTION_DEFAULT); 
     friendStore = new FriendStore(context, StorageBase.ENCRYPTION_DEFAULT); 
 
+
     callback = new ExchangeCallback() {
       @Override
       public void success(Exchange exchange) {
@@ -115,64 +134,120 @@ public class ExchangeTest {
       public void failure(Exchange exchange, String reason) {
       }
     };
+
+    Robolectric.getBackgroundScheduler().pause();
+    // Robolectric.getUiThreadScheduler().pause();
   }   
 
-  @Test
-  public void asInitiatorOK() throws IOException {
+  /**
+   * Testing utility method that starts a new exchange.
+   *
+   * @param asInitiator Tell the exchange whether or not to speak first.
+   */
+  private void startExchange(boolean asInitiator) {
     exchange = new Exchange(inputStream,
                             outputStream,
-                            true,
+                            asInitiator,           // Tell Exchange it's speaking first.
                             friendStore,
                             messageStore,
                             callback);
-
-    // We send the second message now, but it won't be read until after 
-    // the exchange sends its first message as Alice.
-    testOutputStream.write(Exchange.SECOND_DEMO_MESSAGE.getBytes());
 
     // Start the exchange.
     exchange.execute(true);
-
-    // Read the message from the exchange. Expect to receive FIRST_DEMO_MESSAGE.
-    ByteBuffer recvBuffer = ByteBuffer.allocate(Exchange.FIRST_DEMO_MESSAGE.length());
-    do {
-      int b = testInputStream.read();
-      if (b == -1) {
-        assertNotEquals("Premature EOF, not enough bytes read from Exchange.",
-                    Exchange.FIRST_DEMO_MESSAGE.length(),
-                    recvBuffer.position());
-      }
-      recvBuffer.put((byte)b);
-    } while (recvBuffer.position() != Exchange.FIRST_DEMO_MESSAGE.length());
-    assertEquals(Exchange.FIRST_DEMO_MESSAGE, new String(recvBuffer.array()));
   }
 
-  @Test
-  public void notAsInitiatorOK() throws IOException {
-    exchange = new Exchange(inputStream,
-                            outputStream,
-                            false,
-                            friendStore,
-                            messageStore,
-                            callback);
-    // Send the initiating message along the pipe.
-    testOutputStream.write(Exchange.FIRST_DEMO_MESSAGE.getBytes());
+  /** 
+   * Utility method to read a CleartextFriends from testInputStream. Unfortunately,
+   * this method blocks if there's no data to the input stream.
+   * 
+   * @return A CleartextFriends object read from testInputStream.
+   */
+  private CleartextFriends readCleartextFriends() {
+    return Exchange.lengthValueRead(testInputStream, CleartextFriends.class);
+  }
+  /** 
+   * Utility method to read a CleartextMessages from testInputStream. 
+   * Unfortunately, this method blocks if there's no data to the input stream.
+   *
+   * @return A CleartextFriends object read from testInputStream.
+   */
+  private CleartextMessages readCleartextMessages() {
+    return Exchange.lengthValueRead(testInputStream, CleartextMessages.class);
+  }
 
-    // Start the exchange
-    exchange.execute(true);
+  @Test(timeout=2000)
+  public void asInitiatorEmptyLists() throws IOException {
+    // friendStore is empty, messageStore is empty.
+    assertTrue(friendStore.getAllFriends().isEmpty());
+    assertNull(messageStore.getKthMessage(0));
 
-    // Read the message from the exchange. Expect to receive SECOND_DEMO_MESSAGE.
-    ByteBuffer recvBuffer = ByteBuffer.allocate(Exchange.FIRST_DEMO_MESSAGE.length());
-    do {
-      int b = testInputStream.read();
-      if (b == -1) {
-        assertNotEquals("Premature EOF, not enough bytes read from Exchange.",
-                        Exchange.SECOND_DEMO_MESSAGE.length(),
-                        recvBuffer.position());
-      }
-      recvBuffer.put((byte)b);
-    } while (recvBuffer.position() != Exchange.SECOND_DEMO_MESSAGE.length());
-    assertEquals(Exchange.SECOND_DEMO_MESSAGE, new String(recvBuffer.array()));
+    // TODO(lerner): Figure out how to send these friends after receiving
+    // so we can prove that the Exchange is transmitting first.
+   
+    // Send some friends
+    Exchange.lengthValueWrite(testOutputStream, nullFriends);
+    // Send some messages
+    Exchange.lengthValueWrite(testOutputStream, nullMessages);
+     
+    startExchange(true);
+    Robolectric.runBackgroundTasks();
+
+    // // Receive friends (should be an empty list).
+    CleartextFriends friendsReceived = readCleartextFriends();
+    assertEquals(0, friendsReceived.friends.size());
+    // Receive messages (should be an empty list).
+    CleartextMessages messagesReceived = readCleartextMessages();
+    assertEquals(0, messagesReceived.messages.size());
+
+  }
+
+  @Test(timeout=2000)
+  public void notAsInitiatorEmptyLists() throws IOException {
+    // friendStore is empty, messageStore is empty.
+    assertTrue(friendStore.getAllFriends().isEmpty());
+    assertNull(messageStore.getKthMessage(0));
+
+    // Send some friends
+    assertTrue(Exchange.lengthValueWrite(testOutputStream, nullFriends));
+    // Send some messages
+    assertTrue(Exchange.lengthValueWrite(testOutputStream, nullMessages));
+
+    startExchange(false);
+    Robolectric.runBackgroundTasks();
+  
+    // Receive friends (should be an empty list).
+    CleartextFriends friendsReceived = readCleartextFriends();
+    assertNotNull(friendsReceived);
+    assertEquals(0, friendsReceived.friends.size());
+
+    // Receive messages (should be an empty list).
+    CleartextMessages messagesReceived = readCleartextMessages();
+    assertNotNull(messagesReceived);
+    assertEquals(0, messagesReceived.messages.size());
+  }
+
+  @Test(timeout=2000)
+  public void notAsInitiatorWithFriends() throws IOException {
+    for (int i=0; i<NUM_FRIENDS; i++) {
+      friendStore.addFriend("FRIEND" + i);
+    }
+
+    // Send no friends
+    Exchange.lengthValueWrite(testOutputStream, nullFriends);
+    // Send no messages
+    Exchange.lengthValueWrite(testOutputStream, nullMessages);
+
+    startExchange(false);
+    Robolectric.runBackgroundTasks();
+
+    // Receive friends (should be the friends added above)
+    CleartextFriends friendsReceived = readCleartextFriends();
+    assertNotNull(friendsReceived);
+    assertEquals(NUM_FRIENDS, friendsReceived.friends.size());
+    assertEquals(friendStore.getAllFriends(), new HashSet<String>(friendsReceived.friends));
+    // Receive messages (should be an empty list).
+    CleartextMessages messagesReceived = readCleartextMessages();
+    assertEquals(0, messagesReceived.messages.size());
   }
 
   /**

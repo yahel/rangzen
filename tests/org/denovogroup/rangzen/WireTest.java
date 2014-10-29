@@ -84,6 +84,9 @@ public class WireTest {
   /** An instance of CleartextMessages, a type of message. */
   private CleartextMessages cleartextMessages;
 
+  /** An empty list of friends. */
+  private CleartextFriends nullFriends;
+
   /** A list of friends to include in CleartextMessages. */
   private List<CleartextMessages.RangzenMessage> messages = 
                         new ArrayList<CleartextMessages.RangzenMessage>();
@@ -104,6 +107,9 @@ public class WireTest {
     cleartextFriends = new CleartextFriends.Builder()
                                            .friends(friends)
                                            .build();
+    nullFriends = new CleartextFriends.Builder()
+                                           .friends(new ArrayList<String>())
+                                           .build();
                                           
     messages.add(new CleartextMessages.RangzenMessage.Builder()
                                                      .text("foo")
@@ -116,6 +122,8 @@ public class WireTest {
     cleartextMessages = new CleartextMessages.Builder()
                                              .messages(messages)
                                              .build();
+
+
   }
 
   /**
@@ -183,8 +191,9 @@ public class WireTest {
    */
   @Test
   public void testCleartextFriends() {
-    List<String> recoveredFriends = cleartextFriends.friends;
-    assertEquals(recoveredFriends, friends);
+    assertEquals(cleartextFriends.friends, friends);
+
+    assertEquals(nullFriends.friends, new ArrayList<String>());
   }
 
   /**

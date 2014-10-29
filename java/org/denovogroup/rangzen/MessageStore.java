@@ -348,6 +348,9 @@ public class MessageStore {
 				}
 			}
 		});
+    if (topk.size() <= k) {
+      return null;
+    }
 		return topk.get(k);
 	}
 

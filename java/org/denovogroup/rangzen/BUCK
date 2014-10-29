@@ -22,7 +22,6 @@ android_library(
            'WifiDirectFrameworkGetter.java',
            'WifiDirectPeerNetwork.java',
            'WifiDirectSpeaker.java',
-           '//proto-repo:compile_protobufs',
   ],
   visibility = [ 'PUBLIC' ],
   deps = [
@@ -33,6 +32,6 @@ android_library(
     '//java/com/github/kevinsawicki/http:httpRequest',
     '//libs:wire-runtime',
     '//libs:okio',
-    '//proto-repo:compile_protobufs',
+    '//proto-repo:protobufs',
   ],
 )

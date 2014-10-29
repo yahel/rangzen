@@ -42,6 +42,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -54,8 +57,6 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
   private MessageStore messageStore;
   /** Input stream connected to the remote communication partner. */
   private InputStream in;
-  /** Character stream that wraps the input stream. */
-  private InputStreamReader inReader;
   /** Output stream connected to the remote communication partner. */
   private OutputStream out;
   /** A callback to report the result of an exchange. */
@@ -65,21 +66,18 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
    * to begin the exchange.
    */
   private boolean asInitiator;
-
-  /** The messages received from the remote peer. */
-  private Set<MessageStore.Message> receivedMessages = null;
   
   /** The number of friends in common with the remote peer. */
   private int commonFriends = -1;
 
-  /** First message received from Alice, if we're not the initiator. */
-  private String firstMessageReceived;
-  /** Message received from Bob, if we're the initiator. */
-  private String secondMessageReceived;
+  /** Messages received from remote party. */
+  private CleartextMessages mMessagesReceived;
 
-  /** Messages used in demonstration of this class for testing. */
-  /* package */ static final String FIRST_DEMO_MESSAGE  = "I'm the initiator";
-  /* package */ static final String SECOND_DEMO_MESSAGE = "Not the initiator";
+  /** Friends received from remote party. */
+  private CleartextFriends mFriendsReceived;
+
+  /** Send up to this many messages (top priority) from the message store. */
+  private static final int NUM_MESSAGES_TO_SEND = 100;
 
   /** Enum indicating status of the Exchange. */
   enum Status {
@@ -125,7 +123,6 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
                   FriendStore friendStore, MessageStore messageStore, 
                   ExchangeCallback callback) throws IllegalArgumentException {
     this.in = in;
-    this.inReader = new InputStreamReader(in);
     this.out = out;
     this.friendStore = friendStore;
     this.messageStore = messageStore;
@@ -159,76 +156,79 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
   }
 
   /**
-   * Initiate the exchange (as Alice) by sending the first protocol message.
+   * Get friends from the FriendStore, encode them as a CleartextFriends protobuf
+   * object, and write that Message out to the output stream.
+   *
+   * TODO(lerner): Limit the number of friends used.
    */
-  private void sendFirstMessage() throws IOException {
-    // TODO(lerner): Send an actual message with friends and messages in it.
-    out.write(FIRST_DEMO_MESSAGE.getBytes());
+  private void sendFriends() {
+    List<String> friends = new ArrayList<String>();
+    friends.addAll(friendStore.getAllFriends());
+    CleartextFriends friendsMessage = new CleartextFriends.Builder()
+                                                          .friends(friends)
+                                                          .build();
+    lengthValueWrite(out, friendsMessage); 
   }
 
   /**
-   * Reply to Alice as Bob with the second protocol message.
+   * Get messages from the MessageSTore, encode them as a CleartextMessages protobuf
+   * object, and write that Message out to the output stream.
    */
-  private void sendSecondMessage() throws IOException {
-    // TODO(lerner): Send an actual message with friends and messages in it.
-    out.write(SECOND_DEMO_MESSAGE.getBytes());
+  private void sendMessages() {
+    // TODO(lerner): This is really ugly. I think we should add a Message protobuf
+    // that is independent of CleartextMessages and have MessageStore return those.
+    List<CleartextMessages.RangzenMessage> messages = 
+                      new ArrayList<CleartextMessages.RangzenMessage>();
+    for (int k=0; k<NUM_MESSAGES_TO_SEND; k++) {
+      MessageStore.Message messageFromStore = messageStore.getKthMessage(k);
+      if (messageFromStore == null) {
+        break;
+      }
+      CleartextMessages.RangzenMessage messageForProtobuf;
+      messageForProtobuf = new CleartextMessages.RangzenMessage
+        .Builder()
+        .text(messageFromStore.getMessage())
+        .priority((double) messageFromStore.getPriority())
+        .build();
+      messages.add(messageForProtobuf);
+    }
+    CleartextMessages messagesMessage = new CleartextMessages.Builder()
+                                                             .messages(messages)
+                                                             .build();
+    lengthValueWrite(out, messagesMessage); 
   }
 
   /**
-   * Wait for Alice's first message, parsing it when received.
+   * Receive friends from the remote device.
    */
-  private void waitForFirstMessage() throws IOException {
-    // TODO(lerner): Use an actually reasonable message format, or implement
-    // an RPC interface (might be too cumbersome).
-    // TODO(lerner): Use a StringBuilder style thing here.
-    String receivedSoFar = "";
-    int charsReceived = 0;
-    char[] received = new char[FIRST_DEMO_MESSAGE.length()];
-    do {
-      charsReceived += inReader.read(received);
-      receivedSoFar += new String(received);
-    } while (charsReceived != FIRST_DEMO_MESSAGE.length());
-    Log.i(TAG, "Received " + charsReceived + " characters: " + receivedSoFar);
-    firstMessageReceived = receivedSoFar;
+  private void receiveFriends() {
+    CleartextFriends mFriendsReceived = lengthValueRead(in, CleartextFriends.class);
+    this.mFriendsReceived = mFriendsReceived;
   }
 
   /**
-   * Wait for Bob's reply, parsing it when received. 
+   * Receive messages from the remote device.
    */
-  private void waitForSecondMessage() throws IOException {
-    // TODO(lerner): Use an actually reasonable message format, or implement
-    // an RPC interface (might be too cumbersome).
-    // TODO(lerner): Use a StringBuilder style thing here.
-    String receivedSoFar = "";
-    int charsReceived = 0;
-    char[] received = new char[SECOND_DEMO_MESSAGE.length()];
-    do {
-      charsReceived += inReader.read(received);
-      receivedSoFar += new String(received);
-    } while (charsReceived != SECOND_DEMO_MESSAGE.length());
-    Log.i(TAG, "Received " + charsReceived + " characters: " + receivedSoFar);
-    secondMessageReceived = receivedSoFar;
+  private void receiveMessages() {
+    CleartextMessages mMessagesReceived = lengthValueRead(in, CleartextMessages.class);
+    this.mMessagesReceived = mMessagesReceived;
   }
 
   @Override
   protected Status doInBackground(Boolean... UNUSED) {
     // In this version of the exchange there's no crypto, so the messages don't
     // depend on each other at all.
-    try {
-      if (asInitiator) {
-        sendFirstMessage();
-        waitForSecondMessage();
-      } else {
-        waitForFirstMessage();
-        sendSecondMessage();
-      }
-    } catch (IOException e) {
-      Log.e(TAG, "Error having exchange: " + e);
-      errorMessage = e.toString();
-      setExchangeStatus(Status.ERROR);
-      return status;
+    if (asInitiator) {
+      sendFriends();
+      sendMessages();
+      receiveFriends();
+      receiveMessages();
+    } else {
+      receiveFriends();
+      receiveMessages();
+      sendFriends();
+      sendMessages();
     }
-    
     setExchangeStatus(Status.SUCCESS);
     return status; // onPostExecute will now be called().
   }
@@ -296,9 +296,29 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
    * @return The set of messages received from the remote peer, or null if we
    * the exchange hasn't completed yet or the exchange failed.
    */ 
-  public Set<MessageStore.Message> getReceivedMessages() {
+  public CleartextMessages getReceivedMessages() {
     if (getExchangeStatus() == Status.SUCCESS) {
-      return receivedMessages;
+      return mMessagesReceived;
+    } else {
+      return null;
+    }
+  }
+
+  /**
+   * Get the friends we received from the remote peer. 
+   *
+   * Returns null until the exchange has completed, since it seems to me that exchanges
+   * should probably be viewed as atomic by outside code.
+   *
+   * TODO(lerner): This is only a thing with cleartext friends. Later, with crypto
+   * there's no way to know who the friends are.
+   *
+   * @return The set of friends received from the remote peer, or null if we
+   * the exchange hasn't completed yet or the exchange failed.
+   */ 
+  public CleartextFriends getReceivedFriends() {
+    if (getExchangeStatus() == Status.SUCCESS) {
+      return mFriendsReceived;
     } else {
       return null;
     }
@@ -361,7 +381,7 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
   public static <T extends Message> T lengthValueRead(InputStream inputStream, 
                                                       Class<T> messageClass) {
     int length = popLength(inputStream);
-    if (length <= 0) {
+    if (length < 0) {
       return null;
     }
     byte[] messageBytes = new byte[length];
