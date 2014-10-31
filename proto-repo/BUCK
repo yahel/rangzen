@@ -7,7 +7,7 @@ genrule(
     'CleartextMessages.proto',
     'Person.proto',
   ],
-  bash = 'protocompile.sh $(location //libs:wire-compiler) $OUT',
+  bash = './protocompile.sh $(location //libs:wire-compiler) $OUT',
   out = 'protobufs.src.zip', 
   deps = [
     '//libs:wire-compiler',
