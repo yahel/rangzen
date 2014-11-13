@@ -89,9 +89,12 @@ class QRPagesAdapter extends FragmentPagerAdapter implements IconPagerAdapter {
             registeredFragments.put(position, fragment);
             return fragment;
         } else {
-            Fragment cam = new CameraFragment();
-            registeredFragments.put(position, cam);
-            return cam;
+            return new Fragment();
+            //Fragment cam = new CameraFragment();
+            //CaptureFragment cam = new CaptureFragment();
+//            Fragment fragmenty = (Fragment) fr;
+//            registeredFragments.put(position, fragmenty);
+//            return fragmenty;
         }
     }
 

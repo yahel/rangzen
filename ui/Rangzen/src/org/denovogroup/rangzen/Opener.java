@@ -287,7 +287,17 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         abTitle.setTextColor(Color.WHITE);
         mPosition = 0;
         makeTitleBold(0);
+        
         switch (requestCode) {
+        case 0:
+            if (resultCode == RESULT_OK) {
+                String contents = intent.getStringExtra("SCAN_RESULT");
+                String format = intent.getStringExtra("SCAN_RESULT_FORMAT");
+                // Handle successful scan
+             } else if (resultCode == RESULT_CANCELED) {
+                // Handle cancel
+             }
+        
         case 1:
             Log.d(TAG, "Post activity closed");
             if (resultCode == 1) {
@@ -300,7 +310,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             }
             break;
         case 2:
-            //will need to handle the input of a qr code of the Rangzen format
             break;
         }
     }
@@ -337,9 +346,14 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             startActivityForResult(intent, 1);
             return;
         } else if (position == 2) {
-            Intent intent = new Intent();
-            intent.setClass(this, QRCodeViewPager.class);
-            startActivityForResult(intent, 2);
+            Intent intent = new Intent("com.google.zxing.client.android.SCAN");
+            intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
+            startActivityForResult(intent, 0);
+            
+//            Intent intent = new Intent();
+//            intent.setClass(this, com.google.zxing.client.android.CaptureActivity.class);
+            //intent.setClass(this, QRCodeViewPager.class);
+            startActivity(intent);
             return;
             // } else if (position == 3) {
             // needAdd = new MapsActivity();

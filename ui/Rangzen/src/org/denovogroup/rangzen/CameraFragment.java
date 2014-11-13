@@ -82,10 +82,11 @@ public final class CameraFragment extends Fragment implements
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
 
-//        SharedPreferences settings = getActivity().getSharedPreferences(
-//                QRCodeViewPager.INTENT, 0);
-//        settings.getBoolean("returnResult", true);
-        StorageBase mStore = new StorageBase(getActivity(), StorageBase.ENCRYPTION_DEFAULT);
+        // SharedPreferences settings = getActivity().getSharedPreferences(
+        // QRCodeViewPager.INTENT, 0);
+        // settings.getBoolean("returnResult", true);
+        StorageBase mStore = new StorageBase(getActivity(),
+                StorageBase.ENCRYPTION_DEFAULT);
         if (mStore.getInt("CameraIntent", 0) == 1) {
             returnResult = true;
         }
@@ -193,7 +194,7 @@ public final class CameraFragment extends Fragment implements
         } catch (IOException e) {
             Log.e(TAG, "Cannot start preview", e);
         }
-
+        
         decodeRunnable = new DecodeRunnable(this, camera);
         new Thread(decodeRunnable).start();
         reset();
@@ -208,16 +209,16 @@ public final class CameraFragment extends Fragment implements
      *            The result of reading a QR code.
      */
     void setResult(Result result) {
-        if (returnResult) {
-            Intent scanResult = new Intent(
-                    "com.google.zxing.client.android.SCAN");
-            scanResult.putExtra("SCAN_RESULT", result.getText());
-            getActivity().setResult(Activity.RESULT_OK, scanResult);
-            getActivity().finish();
-        } else {
+        if (result.getText().substring(0, 10).equals("Rangzen://")) {
+            FriendStore friendStore = new FriendStore(getActivity(), StorageBase.ENCRYPTION_DEFAULT);
+            
+            //add this friend to the message store
+            String friendCode = result.getText().substring(10);
+            friendStore.addFriend(friendCode);
+
             TextView statusView = (TextView) getActivity().findViewById(
                     R.id.status_view);
-            String text = result.getText();
+            String text = "Friend Added Successfully";
             statusView.setText(text);
             statusView.setTextSize(TypedValue.COMPLEX_UNIT_SP,
                     Math.max(14, 56 - text.length() / 4));

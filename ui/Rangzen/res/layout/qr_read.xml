@@ -29,6 +29,7 @@
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:layout_gravity="bottom|center_horizontal"
+        android:gravity="center"
         android:background="#b0000000"
         android:padding="10dip"
         android:textColor="#FFFFFF"

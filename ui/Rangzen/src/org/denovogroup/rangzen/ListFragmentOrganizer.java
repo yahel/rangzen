@@ -94,17 +94,18 @@ public class ListFragmentOrganizer extends ListFragment {
         // intensive? Idk how else to do it.
         super.onListItemClick(l, v, position, id);
     }
-    
+
     @Override
     public void onDestroyView() {
-        ListFragmentOrganizer f = (ListFragmentOrganizer) getFragmentManager().findFragmentById(R.layout.feed);
+        ListFragmentOrganizer f = (ListFragmentOrganizer) getFragmentManager()
+                .findFragmentById(R.layout.feed);
         if (f != null) {
             try {
                 getFragmentManager().beginTransaction().remove(f).commit();
-                
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
         super.onDestroyView();
     }

@@ -188,10 +188,13 @@ public class FragmentOrganizer extends Fragment {
 		View view3 = inflater.inflate(R.layout.qr, container,
 				false);
 		TextView qrInput = (TextView) view3.findViewById(R.id.textView1);
+		StringBuilder bob = new StringBuilder();
 		String qrInputText = qrInput.getText().toString();
+		bob.append("Rangzen://");
+		bob.append(qrInputText);
 		// Log.v(LOG_TAG, qrInputText);
 
-		new CreateQRCode().execute(qrInputText);
+		new CreateQRCode().execute(bob.substring(0));
 		
 		return view3;
 	}

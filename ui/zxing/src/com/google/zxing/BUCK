@@ -1,0 +1,10 @@
+android_library(
+  name = 'zxing',
+  srcs = glob(['src/**/*.java']),
+  deps = [
+    '//ui/zxing:res',
+    '//libs:zxing-android',
+    '//libs:android-support-v4',
+  ],
+  visibility = [ 'PUBLIC' ],
+)
