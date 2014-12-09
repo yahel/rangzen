@@ -72,9 +72,7 @@ import android.widget.Toast;
 public class FragmentOrganizer extends Fragment {
 	private RelativeLayout mCurrentRelativeLayout;
 	private ImageView iv;
-	private static final String TAG = "MainFragment";
-
-	// Typeface zwodTypeFace;
+	private static final String TAG = "FragmentOrganizer";
 
 	enum FragmentType {
 		FIRSTINTRO, SECONDINTRO, THIRDINTRO, SECONDABOUT, TRANSPARENT, POST, QRWrite

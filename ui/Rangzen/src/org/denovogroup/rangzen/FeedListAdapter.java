@@ -31,25 +31,15 @@
 
 package org.denovogroup.rangzen;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.TreeMap;
-import java.util.Map.Entry;
+import org.denovogroup.rangzen.MessageStore.Message;
+
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Typeface;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.ImageView;
 import android.widget.TextView;
-import java.util.NavigableMap;
-
-import org.denovogroup.rangzen.MessageStore.Message;
 
 public class FeedListAdapter extends BaseAdapter {
 
@@ -57,14 +47,12 @@ public class FeedListAdapter extends BaseAdapter {
     private Context mContext;
     /** Message store to be used to get the messages and trust score. */
     private MessageStore mMessageStore;
+
     /**
      * Holds references to views so that findViewById() is not needed to be
      * called so many times.
      */
     private ViewHolder mViewHolder;
-
-    /** Maximum number of characters that can be sent in a message. */
-    private int mMaxCharacters = 140;
 
     /**
      * Sets the feed text fields to be their values from messages from memory.
@@ -123,8 +111,6 @@ public class FeedListAdapter extends BaseAdapter {
             convertView = inflater.inflate(R.layout.feed_row, parent, false);
 
             mViewHolder = new ViewHolder();
-            mViewHolder.mDateView = (TextView) convertView
-                    .findViewById(R.id.dateView);
             mViewHolder.mUpvoteView = (TextView) convertView
                     .findViewById(R.id.upvoteView);
             mViewHolder.mHashtagView = (TextView) convertView
@@ -148,11 +134,6 @@ public class FeedListAdapter extends BaseAdapter {
     static class ViewHolder {
         /** The view object that holds the hashtag for this current row item. */
         private TextView mHashtagView;
-        /**
-         * The view object that holds the date of creation for this current row
-         * item.
-         */
-        private TextView mDateView;
         /**
          * The view object that holds the trust score for this current row item.
          */

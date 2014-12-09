@@ -36,7 +36,10 @@ import java.util.Stack;
 import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -72,10 +75,20 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private SidebarListAdapter mSidebarAdapter;
     private static TextView mCurrentTextView;
     private static boolean mHasStored = false;
-    private static int mPosition = 0;
     private static boolean mFirstTime = true;
-    private static Stack<Integer> mPrevPosition = new Stack<Integer>();
     private static final String TAG = "Opener";
+
+    // Create reciever object
+    private BroadcastReceiver receiver = new NewMessageReceiver();
+
+    // Set When broadcast event will fire.
+    private IntentFilter filter;
+
+    /** Action for new message */
+    private final String NEW_MESSAGE = "org.denovogroup.rangzen.NEW_MESSAGE_ACTION";
+
+    private final static int QR = 10;
+    private final static int Message = 20;
 
     /** Initialize the contents of the activities menu. */
     @Override
@@ -124,6 +137,9 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, Gravity.LEFT);
+
+        filter = new IntentFilter(NEW_MESSAGE);
+        registerReceiver(receiver, filter);
     }
 
     private void storeTempMessages() {
@@ -182,7 +198,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
 
     /**
      * Switches current open fragment to feed fragment. Call this method after
-     *  closing an activity.
+     * closing an activity.
      */
     public void switchToFeed() {
         Log.d("Opener", "Switching to feed fragment.");
@@ -200,7 +216,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         ft.commitAllowingStateLoss();
         mFirstTime = false;
         selectItem(0);
-        mPosition = 0;
     }
 
     /**
@@ -214,16 +229,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         }
         if (item.getItemId() == R.id.new_post) {
             showFragment(1);
-        }
-        if (item.getItemId() == R.id.refresh) {
-            MessageStore messageStore = new MessageStore(this,
-                    StorageBase.ENCRYPTION_DEFAULT);
-
-            messageStore
-                    .addMessage(
-                            "This is a test of the refresh button",
-                            2);
-            refreshFeed();
         }
         return super.onOptionsItemSelected(item);
     }
@@ -290,37 +295,10 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        setTitle("Feed");
         int titleId = getResources().getIdentifier("action_bar_title", "id",
                 "android");
         TextView abTitle = (TextView) findViewById(titleId);
         abTitle.setTextColor(Color.WHITE);
-        mPosition = 0;
-        makeTitleBold(0);
-        switch (requestCode) {
-        case 1:
-            Log.d(TAG, "Post activity closed");
-            if (resultCode == 1) {
-                Log.d(TAG, "result was a 1");
-                refreshFeed();
-            }
-            break;
-        case 2:
-            // will need to handle the input of a qr code of the Rangzen format
-            break;
-        }
-    }
-
-    /**
-     * Method called to notify the feed that its data set has changed and to
-     * update.
-     */
-    private void refreshFeed() {
-        mListView = (ListView) findViewById(R.id.drawerList);
-        mSidebarAdapter.notifyDataSetChanged();
-        ListView listView = (ListView) findViewById(android.R.id.list);
-        FeedListAdapter adapt = (FeedListAdapter) listView.getAdapter();
-        adapt.notifyDataSetChanged();
     }
 
     /**
@@ -334,14 +312,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      */
     public void showFragment(int position) {
         Fragment needAdd = null;
-        if (mPosition == position) {
-            return;
-        }
-        // To not mess up the stack with other activities vs fragments
-        if (position != 1 || position != 2) {
-            // mPrevPosition.add(mPosition);
-            mPosition = position;
-        }
         if (position == 0) {
             needAdd = new ListFragmentOrganizer();
             Bundle b = new Bundle();
@@ -352,16 +322,13 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         } else if (position == 1) {
             Intent intent = new Intent();
             intent.setClass(this, PostActivity.class);
-            startActivityForResult(intent, 1);
+            startActivityForResult(intent, Message);
             return;
         } else if (position == 2) {
             Intent intent = new Intent();
             intent.setClass(this, QRCodeViewPager.class);
-            startActivityForResult(intent, 2);
+            startActivityForResult(intent, QR);
             return;
-            // } else if (position == 3) {
-            // needAdd = new MapsActivity();
-            // return;
         } else {
             needAdd = new FragmentOrganizer();
             Bundle b = new Bundle();
@@ -385,5 +352,63 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
 
     public SidebarListAdapter getSidebarAdapter() {
         return mSidebarAdapter;
+    }
+
+    /**
+     * Overriden in order to unregister the receiver, if this is not done then
+     * the app crashes.
+     */
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(receiver);
+    }
+
+    /**
+     * Creates a new instance of the NewMessageReceiver and registers it every
+     * time that the app is available/brought to the user.
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        filter = new IntentFilter(NEW_MESSAGE);
+        receiver = new NewMessageReceiver();
+        registerReceiver(receiver, filter);
+    }
+
+    /**
+     * This is the broadcast receiver object that I am registering. I created a
+     * new class in order to override onReceive functionality.
+     * 
+     * @author jesus
+     * 
+     */
+    public class NewMessageReceiver extends BroadcastReceiver {
+
+        /**
+         * When the receiver is activated then that means a message has been
+         * added to the message store, (either by the user or by the active
+         * services). The reason that the instanceof check is necessary is
+         * because there are two possible routes of activity:
+         * 
+         * 1) The previous/current fragment viewed could have been the about
+         * fragment, if it was then the focused fragment is not a
+         * ListFragmentOrganizer and when the user returns to the feed then the
+         * feed will check its own data set and not crash.
+         * 
+         * 2) The previous/current fragment is the feed, it needs to be notified
+         * immediately that there was a change in the underlying dataset.
+         */
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Fragment feed = getSupportFragmentManager().findFragmentById(
+                    R.id.mainContent);
+            if (feed instanceof ListFragmentOrganizer) {
+                ListFragmentOrganizer org = (ListFragmentOrganizer) feed;
+                FeedListAdapter adapt = (FeedListAdapter) org.getListView()
+                        .getAdapter();
+                adapt.notifyDataSetChanged();
+            }
+        }
     }
 }

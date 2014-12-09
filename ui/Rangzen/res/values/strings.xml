@@ -27,7 +27,7 @@
 
     <color name="whitish">#D7D7D7</color>
     <color name="purple">#6d0094</color>
-    <color name="grey">#E9EAEE</color>
+    <color name="grey">#FFFEFF</color>
 
     <string name="hint">Get the word out</string>
     <string name="app_id">254046681454257</string>
