@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android" 
-    xmlns:compat="http://schemas.android.com/apk/res-auto">
-    
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:compat="http://schemas.android.com/apk/res-auto" >
+
     <item
         android:id="@+id/new_post"
         android:icon="@drawable/ic_action_new_event_light"
-        compat:showAsAction="ifRoom"
-        android:title="@string/new_post"/>
+        android:title="@string/new_post"
+        compat:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/refresh"
+        android:icon="@drawable/ic_action_refresh"
+        android:title="@string/refresh"
+        compat:showAsAction="ifRoom"/>
 
 </menu>

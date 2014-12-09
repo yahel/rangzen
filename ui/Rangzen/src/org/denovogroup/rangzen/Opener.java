@@ -215,6 +215,16 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         if (item.getItemId() == R.id.new_post) {
             showFragment(1);
         }
+        if (item.getItemId() == R.id.refresh) {
+            MessageStore messageStore = new MessageStore(this,
+                    StorageBase.ENCRYPTION_DEFAULT);
+
+            messageStore
+                    .addMessage(
+                            "This is a test of the refresh button",
+                            2);
+            refreshFeed();
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -281,8 +291,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
 
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         setTitle("Feed");
-        int titleId = getResources().getIdentifier("action_bar_title",
-                "id", "android");
+        int titleId = getResources().getIdentifier("action_bar_title", "id",
+                "android");
         TextView abTitle = (TextView) findViewById(titleId);
         abTitle.setTextColor(Color.WHITE);
         mPosition = 0;
@@ -292,17 +302,25 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             Log.d(TAG, "Post activity closed");
             if (resultCode == 1) {
                 Log.d(TAG, "result was a 1");
-                mListView = (ListView) findViewById(R.id.drawerList);
-                mSidebarAdapter.notifyDataSetChanged();
-                ListView listView = (ListView) findViewById(android.R.id.list);
-                FeedListAdapter adapt = (FeedListAdapter) listView.getAdapter();
-                adapt.notifyDataSetChanged();                
+                refreshFeed();
             }
             break;
         case 2:
-            //will need to handle the input of a qr code of the Rangzen format
+            // will need to handle the input of a qr code of the Rangzen format
             break;
         }
+    }
+
+    /**
+     * Method called to notify the feed that its data set has changed and to
+     * update.
+     */
+    private void refreshFeed() {
+        mListView = (ListView) findViewById(R.id.drawerList);
+        mSidebarAdapter.notifyDataSetChanged();
+        ListView listView = (ListView) findViewById(android.R.id.list);
+        FeedListAdapter adapt = (FeedListAdapter) listView.getAdapter();
+        adapt.notifyDataSetChanged();
     }
 
     /**

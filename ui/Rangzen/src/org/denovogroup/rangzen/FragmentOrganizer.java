@@ -32,23 +32,11 @@
 package org.denovogroup.rangzen;
 
 import com.google.zxing.BarcodeFormat;
-import com.google.zxing.EncodeHintType;
 import com.google.zxing.WriterException;
-import com.google.zxing.common.BitArray;
 import com.google.zxing.common.BitMatrix;
-import com.google.zxing.common.CharacterSetECI;
-import com.google.zxing.common.reedsolomon.GenericGF;
-import com.google.zxing.common.reedsolomon.ReedSolomonEncoder;
-import com.google.zxing.qrcode.QRCodeReader;
 import com.google.zxing.qrcode.QRCodeWriter;
-import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
-import com.google.zxing.qrcode.decoder.Mode;
-import com.google.zxing.qrcode.decoder.Version;
-import com.google.zxing.qrcode.encoder.Encoder;
 
 import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -70,9 +58,7 @@ import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -91,7 +77,7 @@ public class FragmentOrganizer extends Fragment {
 	// Typeface zwodTypeFace;
 
 	enum FragmentType {
-		FIRSTINTRO, SECONDINTRO, THIRDINTRO, FIRSTABOUT, SECONDABOUT, TRANSPARENT, POST, QRRead, QRWrite
+		FIRSTINTRO, SECONDINTRO, THIRDINTRO, SECONDABOUT, TRANSPARENT, POST, QRWrite
 	}
 
 	/**
@@ -130,9 +116,6 @@ public class FragmentOrganizer extends Fragment {
 		case THIRDINTRO:
 			return thirdIntro(inflater, container);
 
-		case FIRSTABOUT:
-			return firstAbout(inflater, container);
-
 		case SECONDABOUT:
 
 			View view5 = (View) inflater.inflate(R.layout.info, container,
@@ -148,9 +131,6 @@ public class FragmentOrganizer extends Fragment {
 
 		case POST:
 			return post(inflater, container);
-
-		case QRRead:
-			return makeQRRead(inflater, container);
 			
 		case QRWrite:
 			return makeQRWrite(inflater, container);
@@ -170,30 +150,15 @@ public class FragmentOrganizer extends Fragment {
 	 * @return Completed, formatted view (what the fragment will look like).
 	 */
 	private View makeQRWrite(LayoutInflater inflater, ViewGroup container) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+        View view3 = inflater.inflate(R.layout.qr, container,
+                false);
+        TextView qrInput = (TextView) view3.findViewById(R.id.textView1);
+        String qrInputText = qrInput.getText().toString();
+        // Log.v(LOG_TAG, qrInputText);
 
-	/**
-	 * This will create the fragment for the first slide for the QR section.
-	 * 
-	 * @param inflater
-	 *            LayoutInflater object that creates a java object from xml.
-	 * @param container
-	 *            The parent ViewGroup to the current view.
-	 * @return Completed, formatted view (what the fragment will look like).
-	 */
-	private View makeQRRead(LayoutInflater inflater, ViewGroup container) {
-		// TODO (Jesus) Finish the friends page.
-		View view3 = inflater.inflate(R.layout.qr, container,
-				false);
-		TextView qrInput = (TextView) view3.findViewById(R.id.textView1);
-		String qrInputText = qrInput.getText().toString();
-		// Log.v(LOG_TAG, qrInputText);
-
-		new CreateQRCode().execute(qrInputText);
-		
-		return view3;
+        new CreateQRCode().execute(qrInputText);
+        
+        return view3;
 	}
 	
 	/**
@@ -228,8 +193,7 @@ public class FragmentOrganizer extends Fragment {
 		mCurrentRelativeLayout = (RelativeLayout) view
 				.findViewById(R.id.firstIntro);
 		iv = (ImageView) view.findViewById(R.id.imageView1);
-
-		showFullScreenImage(R.drawable.newyorkyyyyy);
+		showFullScreenImage(R.drawable.hands);
 		makeRanzenTextView();
 		TextView tv = (TextView) view.findViewById(R.id.textView1);
 		tv.bringToFront();
@@ -255,7 +219,7 @@ public class FragmentOrganizer extends Fragment {
 		mCurrentRelativeLayout = (RelativeLayout) view1
 				.findViewById(R.id.secondIntro);
 		iv = (ImageView) view1.findViewById(R.id.imageView2);
-		showFullScreenImage(R.drawable.hands);
+		showFullScreenImage(R.drawable.newyorkyyyyy);
 
 		makeRanzenTextView();
 
@@ -297,38 +261,6 @@ public class FragmentOrganizer extends Fragment {
 		mCurrentRelativeLayout.bringToFront();
 
 		return view2;
-	}
-
-	/**
-	 * This will create the fragment for the first about slide.
-	 * 
-	 * @param inflater
-	 *            LayoutInflater object that creates a java object from xml.
-	 * @param container
-	 *            The parent ViewGroup to the current view.
-	 * @return Completed, formatted view (what the fragment will look like).
-	 */
-	private View firstAbout(LayoutInflater inflater, ViewGroup container) {
-		View view3 = inflater.inflate(R.layout.modifiedabout, container, false);
-		Button button = (Button) view3.findViewById(R.id.continueBeforeMaps);
-		button.setText("Continue");
-		button.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				Intent intent = new Intent();
-				intent.setClass(v.getContext(), Opener.class);
-				startActivity(intent);
-				SharedPreferences settings = getActivity()
-						.getSharedPreferences(SlidingPageIndicator.PREFS_NAME,
-								0);
-				SharedPreferences.Editor editor = settings.edit();
-
-				editor.putBoolean("hasLoggedIn", true);
-				editor.commit();
-				getActivity().finish();
-			}
-		});
-		return view3;
 	}
 
 	/**

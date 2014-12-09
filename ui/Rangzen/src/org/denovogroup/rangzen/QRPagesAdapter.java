@@ -80,7 +80,7 @@ class QRPagesAdapter extends FragmentPagerAdapter implements IconPagerAdapter {
         Enum type = null;
         Fragment fragment = null;
         if (position == 1) {
-            type = FragmentType.QRRead;
+            type = FragmentType.QRWrite;
             position = position % mCount;
             Bundle b = new Bundle();
             b.putSerializable("whichScreen", type);

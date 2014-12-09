@@ -31,27 +31,17 @@
 
 package org.denovogroup.rangzen;
 
-import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
 import org.denovogroup.rangzen.RangzenService;
 import org.denovogroup.rangzen.StorageBase;
 
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
-import android.view.ActionMode;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
 
 import com.viewpagerindicator.LinePageIndicator;
 import com.viewpagerindicator.PageIndicator;
@@ -67,13 +57,13 @@ public class SlidingPageIndicator extends FragmentActivity {
 
     /** Shown in Android log. */
     private static final String TAG = "SlidingPageIndicator";
-    
+
     /**
      * Give your SharedPreferences file a name and save it to a static variable.
      */
     public static final String PREFS_NAME = "rememberPagesSeen";
 
-    private StorageBase mStore; 
+    private StorageBase mStore;
 
     IntroductionFragmentAdapter mAdapter;
     ViewPager mPager;
@@ -89,7 +79,7 @@ public class SlidingPageIndicator extends FragmentActivity {
         super.onCreate(savedInstanceState);
 
         mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
-        
+
         // Start the RangzenService.
         Intent serviceIntent = new Intent(this, RangzenService.class);
         startService(serviceIntent);
@@ -126,23 +116,27 @@ public class SlidingPageIndicator extends FragmentActivity {
     }
 
     /**
-     * This is an onClickListener for a LinearLayout that covers the Facebook
-     * LoginButton, it detects a click on the Facebook Button and if there is
-     * internet service then the click will go through, if not then there will
-     * be no facebook activity created.
+     * This is the button that ends the slideshow of images in the introduction
+     * of the app. It uses finish() in order to not allow the back button to
+     * return to that activity.
      * 
      * @param v
-     *            The Linear Layout that holds the Facebook LoginButton
+     *            They view that contains the button being clicked.
      */
     public void linLayoutButton(View v) {
-        Fragment fragment = new FragmentOrganizer();
-        Bundle b = new Bundle();
-        b.putSerializable("whichScreen", FragmentType.FIRSTABOUT);
-        fragment.setArguments(b);
-        FragmentManager fm = (FragmentManager) getSupportFragmentManager();
-        fm.beginTransaction().add(R.id.firstAbout, fragment).addToBackStack("about").commit();
+
+        Intent intent = new Intent();
+        intent.setClass(v.getContext(), Opener.class);
+        startActivity(intent);
+        SharedPreferences settings = getSharedPreferences(
+                SlidingPageIndicator.PREFS_NAME, 0);
+        SharedPreferences.Editor editor = settings.edit();
+
+        editor.putBoolean("hasLoggedIn", true);
+        editor.commit();
+        finish();
     }
-    
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         return super.onOptionsItemSelected(item);
