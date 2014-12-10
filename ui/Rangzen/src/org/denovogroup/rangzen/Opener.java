@@ -82,7 +82,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private BroadcastReceiver receiver = new NewMessageReceiver();
 
     // Set When broadcast event will fire.
-    private IntentFilter filter;
+    private IntentFilter filter = new IntentFilter(NEW_MESSAGE);
 
     /** Action for new message */
     private final String NEW_MESSAGE = "org.denovogroup.rangzen.NEW_MESSAGE_ACTION";
@@ -137,9 +137,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, Gravity.LEFT);
-
-        filter = new IntentFilter(NEW_MESSAGE);
-        registerReceiver(receiver, filter);
     }
 
     private void storeTempMessages() {
@@ -362,6 +359,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     protected void onPause() {
         super.onPause();
         unregisterReceiver(receiver);
+        Log.i(TAG, "Unregistered receiver");
     }
 
     /**
@@ -371,9 +369,9 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     @Override
     protected void onResume() {
         super.onResume();
-        filter = new IntentFilter(NEW_MESSAGE);
-        receiver = new NewMessageReceiver();
+        notifyDataSetChanged();
         registerReceiver(receiver, filter);
+        Log.i(TAG, "Registered receiver");
     }
 
     /**
@@ -401,14 +399,21 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
          */
         @Override
         public void onReceive(Context context, Intent intent) {
-            Fragment feed = getSupportFragmentManager().findFragmentById(
-                    R.id.mainContent);
-            if (feed instanceof ListFragmentOrganizer) {
-                ListFragmentOrganizer org = (ListFragmentOrganizer) feed;
-                FeedListAdapter adapt = (FeedListAdapter) org.getListView()
-                        .getAdapter();
-                adapt.notifyDataSetChanged();
-            }
+          notifyDataSetChanged();
         }
+    }
+
+    /**
+     * Find the adapter and call its notifyDataSetChanged method.
+     */
+    private void notifyDataSetChanged() {
+      Fragment feed = getSupportFragmentManager().findFragmentById(
+          R.id.mainContent);
+      if (feed instanceof ListFragmentOrganizer) {
+        ListFragmentOrganizer org = (ListFragmentOrganizer) feed;
+        FeedListAdapter adapt = (FeedListAdapter) org.getListView()
+          .getAdapter();
+        adapt.notifyDataSetChanged();
+      }
     }
 }
