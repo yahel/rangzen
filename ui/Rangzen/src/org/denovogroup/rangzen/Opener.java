@@ -85,7 +85,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private IntentFilter filter = new IntentFilter(NEW_MESSAGE);
 
     /** Action for new message */
-    private final String NEW_MESSAGE = "org.denovogroup.rangzen.NEW_MESSAGE_ACTION";
+    private static final String NEW_MESSAGE = "org.denovogroup.rangzen.NEW_MESSAGE_ACTION";
 
     private final static int QR = 10;
     private final static int Message = 20;
