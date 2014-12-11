@@ -1,2 +1,2 @@
-java -jar $1 --java_out=out *.proto 2> /tmp/log
+java -jar $1 --java_out=out --files=protos.include 2> /tmp/log
 zip -r $2 out

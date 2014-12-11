@@ -77,13 +77,13 @@ public class MessageStoreTest {
 
   private static final String TEST_MSG_INVALID = "invalid";
 
-  private static final float TEST_PRIORITY_1 = 1.0f;
-  private static final float TEST_PRIORITY_2 = 0.2f;
-  private static final float TEST_PRIORITY_3 = 0.9f;
-  private static final float TEST_PRIORITY_4 = 0.8f;
-  private static final float TEST_PRIORITY_5 = 0.7f;
+  private static final double TEST_PRIORITY_1 = 1.0;
+  private static final double TEST_PRIORITY_2 = 0.2;
+  private static final double TEST_PRIORITY_3 = 0.9;
+  private static final double TEST_PRIORITY_4 = 0.8;
+  private static final double TEST_PRIORITY_5 = 0.7;
 
-  private static final float TEST_PRIORITY_INVALID = 1.1f;
+  private static final double TEST_PRIORITY_INVALID = 1.1;
 
   @Before
   public void setUp() {
@@ -96,9 +96,9 @@ public class MessageStoreTest {
    */
   @Test
   public void storeMessageGetPriority() {
-    assertEquals(store.getMessagePriority(TEST_MSG_1, -1.0f), -1.0f, 0.1f);
+    assertEquals(store.getMessagePriority(TEST_MSG_1, -1.0), -1.0, 0.1);
     store.addMessage(TEST_MSG_1, TEST_PRIORITY_1);
-    assertEquals(store.getMessagePriority(TEST_MSG_1, -1.0f), TEST_PRIORITY_1, 0.1f);
+    assertEquals(store.getMessagePriority(TEST_MSG_1, -1.0), TEST_PRIORITY_1, 0.1);
   }
 
   /**
@@ -110,7 +110,7 @@ public class MessageStoreTest {
     store.addMessage(TEST_MSG_2, TEST_PRIORITY_2);
     store.addMessage(TEST_MSG_3, TEST_PRIORITY_3);
 
-    TreeMap<Float, Collection<String>> topk = store.getTopK(0);
+    TreeMap<Double, Collection<String>> topk = store.getTopK(0);
     assertEquals(topk.size(), 0);
 
     topk = store.getTopK(1);
@@ -118,24 +118,24 @@ public class MessageStoreTest {
     assertTrue(flattenTopK(topk).contains(TEST_MSG_1));
     assertFalse(flattenTopK(topk).contains(TEST_MSG_2));
     assertFalse(flattenTopK(topk).contains(TEST_MSG_3));
-    assertEquals((Float) topk.lastKey(), TEST_PRIORITY_1, 0.01f);
+    assertEquals((Double) topk.lastKey(), TEST_PRIORITY_1, 0.01);
 
     topk = store.getTopK(2);
     assertEquals(2, flattenTopK(topk).size());
     assertTrue(flattenTopK(topk).contains(TEST_MSG_1));
     assertFalse(flattenTopK(topk).contains(TEST_MSG_2));
     assertTrue(flattenTopK(topk).contains(TEST_MSG_3));
-    assertEquals((Float) topk.lastKey(), TEST_PRIORITY_1, 0.01f);
-    assertEquals((Float) topk.lowerKey(topk.lastKey()), TEST_PRIORITY_3, 0.01f);
+    assertEquals((Double) topk.lastKey(), TEST_PRIORITY_1, 0.01);
+    assertEquals((Double) topk.lowerKey(topk.lastKey()), TEST_PRIORITY_3, 0.01);
 
     topk = store.getTopK(3);
     assertEquals(3, flattenTopK(topk).size());
     assertTrue(flattenTopK(topk).contains(TEST_MSG_1));
     assertTrue(flattenTopK(topk).contains(TEST_MSG_2));
     assertTrue(flattenTopK(topk).contains(TEST_MSG_3));
-    assertEquals((Float) topk.lastKey(), TEST_PRIORITY_1, 0.01f);
-    assertEquals((Float) topk.lowerKey(topk.lastKey()), TEST_PRIORITY_3, 0.01f);
-    assertEquals((Float) topk.lowerKey(topk.lowerKey(topk.lastKey())), TEST_PRIORITY_2, 0.01f);
+    assertEquals((Double) topk.lastKey(), TEST_PRIORITY_1, 0.01);
+    assertEquals((Double) topk.lowerKey(topk.lastKey()), TEST_PRIORITY_3, 0.01);
+    assertEquals((Double) topk.lowerKey(topk.lowerKey(topk.lastKey())), TEST_PRIORITY_2, 0.01);
 
     topk = store.getTopK(4);
     assertEquals(topk.size(), 3);
@@ -145,7 +145,7 @@ public class MessageStoreTest {
    * Utility method for storeMessages test that flattens a topk set into a set
    * of messages.
    */
-  private Set<String> flattenTopK(TreeMap<Float, Collection<String>> topk) {
+  private Set<String> flattenTopK(TreeMap<Double, Collection<String>> topk) {
     HashSet<String> topkMessages = new HashSet<String>();
     for (Collection<String> messages : topk.values()) {
       for (String m : messages) {
@@ -177,7 +177,7 @@ public class MessageStoreTest {
     // One collection of messages per distinct priority value (there are 5 above).
     assertEquals(5, store.getTopK(12).size());
     int messagesReturned = 0;
-    TreeMap<Float, Collection<String>> topk = store.getTopK(12);
+    TreeMap<Double, Collection<String>> topk = store.getTopK(12);
     for (Collection<String> messages : topk.values()) {
       for (String m : messages) {
         messagesReturned++;
@@ -227,5 +227,99 @@ public class MessageStoreTest {
 
     assertEquals(1, store.getTopK(MORE_THAN_3).size());
     assertEquals(1, flattenTopK(store.getTopK(MORE_THAN_3)).size());
+  }
+
+  /**
+   * Test the getPriority(String) method of MessageStore.
+   */
+  @Test
+  public void getPriorityTest() {
+    String TEST1 = "Test1";
+    assertEquals(MessageStore.NOT_FOUND, store.getPriority(TEST1), 0.1);
+    assertTrue(store.addMessage(TEST1, TEST_PRIORITY_1));
+    assertEquals(TEST_PRIORITY_1, store.getPriority(TEST1), 0.1);
+
+    // Re-adding the message fails and does not change its priority.
+    assertFalse(store.addMessage(TEST1, TEST_PRIORITY_2));
+    assertEquals(TEST_PRIORITY_1, store.getPriority(TEST1), 0.1);
+  }
+
+  /**
+   * Test the updatePriority(String, float) method of MessageStore.
+   */
+  @Test 
+  public void updatePriorityTest() {
+    String TEST1 = "Test1";
+
+    // No message in store and updating fails when that's the case.
+    assertEquals(MessageStore.NOT_FOUND, store.getPriority(TEST1), 0.1);
+    assertFalse(store.updatePriority(TEST1, TEST_PRIORITY_3));
+    assertEquals(MessageStore.NOT_FOUND, store.getPriority(TEST1), 0.1);
+
+    // Add the message to the store.
+    assertTrue(store.addMessage(TEST1, TEST_PRIORITY_1));
+    assertEquals(TEST_PRIORITY_1, store.getPriority(TEST1), 0.1);
+
+    // Update it and find its new priority is correct.
+    assertTrue(store.updatePriority(TEST1, TEST_PRIORITY_2));
+    assertEquals(TEST_PRIORITY_2, store.getPriority(TEST1), 0.1);
+  }
+
+  /**
+   * Test the contains(String) method of MessageStore.
+   */
+  @Test 
+  public void containsMessageTest() {
+    String TEST1 = "FooBarBaz";
+
+    // Message not contained initially.
+    assertFalse(store.contains(TEST1));
+
+    // Add it, now it's contained.
+    store.addMessage(TEST1, TEST_PRIORITY_1);
+    assertTrue(store.contains(TEST1));
+    
+    // Add it again, still contained.
+    store.addMessage(TEST1, TEST_PRIORITY_2);
+    assertTrue(store.contains(TEST1));
+
+    // Update its priority, still contained.
+    store.updatePriority(TEST1, TEST_PRIORITY_3);
+    assertTrue(store.contains(TEST1));
+    
+    // TODO(lerner): When delete message is implemented, show that after deletiong
+    // the message is no longer contained.
+  }
+
+  /**
+   * Utility method for testing check priority.
+   */
+  private boolean isValidPriority(double priority) {
+    try {
+      MessageStore.checkPriority(priority);
+      return true;
+    } catch (IllegalArgumentException e) {
+      return false;
+    }
+  }
+
+  /**
+   * Test that checkPriority bounds the right numbers.
+   */
+  @Test
+  public void checkPriorityTest() {
+    assertTrue(isValidPriority(1.0));
+    assertTrue(isValidPriority(1.2));
+    assertTrue(isValidPriority(1.2398023948234092384));
+    assertTrue(isValidPriority(0.5));
+    assertTrue(isValidPriority(0.0));
+    assertTrue(isValidPriority(0.000000000001));
+    assertFalse(isValidPriority(1000.0));
+    assertFalse(isValidPriority(-1.0));
+    assertFalse(isValidPriority(-2.0));
+    assertFalse(isValidPriority(-0.00000001));
+    assertFalse(isValidPriority(10.0));
+    assertFalse(isValidPriority(2.000001));
+  
   }
 }

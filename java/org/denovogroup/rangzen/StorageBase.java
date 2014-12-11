@@ -154,6 +154,22 @@ public class StorageBase {
   }
 
   /**
+   * Stores the given float in the Rangzen generic store.
+   *
+   * @param key The key under which to store the data.
+   * @param value The value to store.
+   */
+  public void putDouble(String key, double value) {
+    // TODO(barath): Change this storage approach once we are encrypting.
+    // Doubles can't be stored directly, so we have to store them as converted
+    // to longs, since longs have the same number of bits.
+    editor.putLong(key, Double.doubleToLongBits(value));
+
+    // TODO(barath): Consider whether we should use .commit() instead of apply().
+    editor.apply();
+  }
+
+  /**
    * Stores the given int in the Rangzen generic store.
    *
    * @param key The key under which to store the data.
@@ -162,6 +178,20 @@ public class StorageBase {
   public void putInt(String key, int value) {
     // TODO(barath): Change this storage approach once we are encrypting.
     editor.putInt(key, value);
+
+    // TODO(barath): Consider whether we should use .commit() instead of apply().
+    editor.apply();
+  }
+
+  /**
+   * Stores the given long in the Rangzen generic store.
+   *
+   * @param key The key under which to store the data.
+   * @param value The value to store.
+   */
+  public void putLong(String key, long value) {
+    // TODO(barath): Change this storage approach once we are encrypting.
+    editor.putLong(key, value);
 
     // TODO(barath): Consider whether we should use .commit() instead of apply().
     editor.apply();
@@ -216,6 +246,21 @@ public class StorageBase {
     // TODO(barath): Change this retrieval approach once we are encrypting.
     return store.getFloat(key, defvalue);
   }
+   
+  /**
+   * Retrieves the value associated with the given key.
+   *
+   * @param key The key under which to retrieve a value from the store.
+   * @param defvalue The default value to return if not found.
+   * @return The value requested or defvalue if not found.
+   */
+  public double getDouble(String key, double defvalue) {
+    // TODO(barath): Change this retrieval approach once we are encrypting.
+    // Stored as a long, so we have to convert it back to a double as we retrieve it.
+    // This is because SharedPreferences can't store doubles directly, but
+    // longs have the same number of bits as a double.
+    return Double.longBitsToDouble(store.getLong(key, Double.doubleToLongBits(defvalue)));
+  }
 
   /**
    * Retrieves the value associated with the given key.
@@ -227,5 +272,17 @@ public class StorageBase {
   public int getInt(String key, int defvalue) {
     // TODO(barath): Change this retrieval approach once we are encrypting.
     return store.getInt(key, defvalue);
+  }
+
+  /**
+   * Retrieves the value associated with the given key.
+   *
+   * @param key The key under which to retrieve a value from the store.
+   * @param defvalue The default value to return if not found.
+   * @return The value requested or defvalue if not found.
+   */
+  public long getLong(String key, long defvalue) {
+    // TODO(barath): Change this retrieval approach once we are encrypting.
+    return store.getLong(key, defvalue);
   }
 }

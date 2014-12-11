@@ -43,6 +43,7 @@ import android.os.IBinder;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.System;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -50,6 +51,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
+
 
 /**
  * Core service of the Rangzen app. Started at startup, remains alive
@@ -74,23 +78,44 @@ public class RangzenService extends Service {
     /** The time at which this instance of the service was started. */
     private Date mStartTime;
 
+    /** Random number generator for picking random peers. */
+    private Random mRandom = new Random();
+
     /** The number of times that backgroundTasks() has been called. */
     private int mBackgroundTaskRunCount = 0;
 
     /** Handle to Rangzen key-value storage provider. */
     private StorageBase mStore;
 
+    /** Storage for friends. */
+    private FriendStore mFriendStore;
+
     /** Wifi Direct Speaker used for Wifi Direct name based RSVP. */
     private WifiDirectSpeaker mWifiDirectSpeaker;
 
-    /** Whether we're currently attempting a connection to another device over BT. */
+    /** Whether we're attempting a connection to another device over BT. */
     private boolean connecting = false;
 
     /** The BluetoothSpeaker for the app. */
     private static BluetoothSpeaker mBluetoothSpeaker;
 
+    /** Message store. */
+    private MessageStore mMessageStore; 
+    /** Ongoing exchange. */
+    private Exchange mExchange;
+
+    /** Socket over which the ongoing exchange is taking place. */
+    private BluetoothSocket mSocket;
+
     /** When announcing our address over Wifi Direct name, prefix this string to our MAC. */
     public final static String RSVP_PREFIX = "RANGZEN-";
+
+    /** Key into storage to store the last time we had an exchange. */
+    private static final String LAST_EXCHANGE_TIME_KEY = 
+                            "org.denovogroup.rangzen.LAST_EXCHANGE_TIME_KEY";
+
+    /** Time to wait between exchanges, in milliseconds. */
+    private static final int TIME_BETWEEN_EXCHANGES_MILLIS = 10 * 1000;
 
     /** Android Log Tag. */
     private final static String TAG = "RangzenService";
@@ -137,11 +162,15 @@ public class RangzenService extends Service {
         mStartTime = new Date();
 
         mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
+        mFriendStore = new FriendStore(this, StorageBase.ENCRYPTION_DEFAULT);
 
         mWifiDirectSpeaker = new WifiDirectSpeaker(this, 
                                                    mPeerManager, 
                                                    mBluetoothSpeaker,
                                                    new WifiDirectFrameworkGetter());
+
+        mMessageStore = new MessageStore(RangzenService.this, StorageBase.ENCRYPTION_DEFAULT);
+
 
         String btAddress = mBluetoothSpeaker.getAddress();
         mWifiDirectSpeaker.setWifiDirectUserFriendlyName(RSVP_PREFIX + btAddress);
@@ -166,6 +195,41 @@ public class RangzenService extends Service {
       return;
     }
 
+
+    /**
+     * Check whether we can connect, according to our policies.
+     * Currently, checks that we've waited TIME_BETWEEN_EXCHANGES_MILLIS 
+     * milliseconds since the last exchange and that we're not already connecting.
+     *
+     * @return Whether or not we're ready to connect to a peer.
+     * @see TIME_BETWEEN_EXCHANGES_MILLIS
+     * @see getConnecting
+     */
+    private boolean readyToConnect() {
+      long now = System.currentTimeMillis();
+      long lastExchangeMillis = mStore.getLong(LAST_EXCHANGE_TIME_KEY, -1);
+
+      boolean timeSinceLastOK;
+      if (lastExchangeMillis == -1) {
+        timeSinceLastOK = true;
+      } else if (now - lastExchangeMillis < TIME_BETWEEN_EXCHANGES_MILLIS) {
+        timeSinceLastOK = false;
+      } else {
+        timeSinceLastOK = true;
+      }
+      Log.d(TAG, "Ready to connect? " + (timeSinceLastOK && !getConnecting()));
+      return timeSinceLastOK && !getConnecting(); 
+    }
+
+    /**
+     * Set the time of the last exchange, kept in storage, to the current time.
+     */
+    private void setLastExchangeTime() {
+      Log.i(TAG, "Setting last exchange time");
+      long now = System.currentTimeMillis();
+      mStore.putLong(LAST_EXCHANGE_TIME_KEY, now);
+    }
+
     /**
      * Method called periodically on a background thread to perform Rangzen's
      * background tasks.
@@ -173,67 +237,166 @@ public class RangzenService extends Service {
     public void backgroundTasks() {
         Log.v(TAG, "Background Tasks Started");
 
+        // TODO(lerner): Why not just use mPeerManager?
         PeerManager peerManager = PeerManager.getInstance(getApplicationContext());
         peerManager.tasks();
         mBluetoothSpeaker.tasks();
         mWifiDirectSpeaker.tasks();
 
         List<Peer> peers = peerManager.getPeers();
-        if (!connecting && peers.size() > 0) {
-          Peer peer = peers.get(0);
-          connectTo(peer);
+        // TODO(lerner): Don't just connect all willy-nilly every time we have
+        // an opportunity. Have some kind of policy for when to connect.
+        if (peers.size() > 0 && readyToConnect() ) {
+          Peer peer = peers.get(mRandom.nextInt(peers.size()));
+          try {
+            if (peerManager.thisDeviceSpeaksTo(peer)) {
+              // Connect to the peer, starting an exchange with the peer once
+              // connected. We only do this if thisDeviceSpeaksTo(peer), which
+              // checks whether we initiate conversations with this peer or
+              // it initiates with us (a function of our respective addresses).
+              connectTo(peer);
+            }
+          } catch (NoSuchAlgorithmException e) {
+            Log.e(TAG, "No such algorithm for hashing in thisDeviceSpeaksTo!? " + e);
+            return;
+          } catch (UnsupportedEncodingException e) {
+            Log.e(TAG, "Unsupported encoding exception in thisDeviceSpeaksTo!?" + e);
+            return;
+          }
+        } else {
+          Log.v(TAG, String.format("Not connecting (%d peers, ready to connect is %s)",
+                                   peers.size(), readyToConnect()));
         }
         mBackgroundTaskRunCount++;
-
 
         Log.v(TAG, "Background Tasks Finished");
     }
 
     /**
-     * Demo method for how we might use the BluetoothSpeaker.connect() call.
+     * Connect to the peer via Bluetooth. Upon success, start an exchange with
+     * the peer. If we're already connecting to someone, this method returns
+     * without doing anything.
      *
      * @param peer The peer we want to talk to.
      */
     public void connectTo(Peer peer) {
-      // Based on MAC addresses, only one device starts exchanges bewteen any
-      // pair of devices. Don't start one if we're not the chosen one in this pair.
-      PeerManager peerManager = PeerManager.getInstance(this);
-      try {
-        if (!peerManager.thisDeviceSpeaksTo(peer)) {
-          return; 
-        }
-      } catch (NoSuchAlgorithmException e) {
-        Log.e(TAG, "No such algorithm for hashing in thisDeviceSpeaksTo!? " + e);
-        return;
-      } catch (UnsupportedEncodingException e) {
-        Log.e(TAG, "Unsupported encoding exception in thisDeviceSpeaksTo!?" + e);
+      if (getConnecting()) {
+        Log.w(TAG, "connectTo() not connecting to " + peer + " -- already connecting to someone");
         return;
       }
-      connecting = true;
+
+      Log.i(TAG, "connecting to " + peer);
+      // TODO(lerner): Why not just use mPeerManager?
+      PeerManager peerManager = PeerManager.getInstance(this);
+
+      // This gets reset to false once an exchange is complete or when the 
+      // connect call below fails. Until then, no more connections will be
+      // attempted. (One at a time now!)
+      setConnecting(true);
+
       Log.i(TAG, "Starting to connect to " + peer.toString());
-      mBluetoothSpeaker.connect(peer, new PeerConnectionCallback() {
-        @Override
-        public void success(BluetoothSocket socket) {
-          Log.i(TAG, "Callback says we're connected to " + socket.getRemoteDevice().toString());
-          if (socket.isConnected()) {
-            Log.i(TAG, "In fact, the socket says it's connected.");
-          } else {
-            Log.w(TAG, "But the socket claims not to be connected!");
-          }
-          try {
-            socket.close();
-          } catch (IOException e) {
-            Log.e(TAG, "IOException while closing BluetoothSocket: " + e);
-          }
-          connecting = false;
-        }
-        @Override
-        public void failure(String reason) {
-          Log.i(TAG, "Callback says we failed to connect: " + reason);
-          connecting = false;
-        }
-      });
+      // The peer connection callback (defined elsewhere in the class) takes
+      // the connect bluetooth socket and uses it to create a new Exchange.
+      mBluetoothSpeaker.connect(peer, mPeerConnectionCallback);
     }
+
+    /**
+     * Handles connection to a peer by taking the connected bluetooth socket and
+     * using it in an Exchange.
+     */
+    /*package*/ PeerConnectionCallback mPeerConnectionCallback = new PeerConnectionCallback() {
+      @Override
+      public void success(BluetoothSocket socket) {
+        Log.i(TAG, "Callback says we're connected to " + socket.getRemoteDevice().toString());
+        if (socket.isConnected()) {
+          mSocket = socket;
+          Log.i(TAG, "Socket connected, attempting exchange");
+          try {
+            mExchange = new Exchange(
+                socket.getInputStream(),
+                socket.getOutputStream(),
+                true,
+                new FriendStore(RangzenService.this, StorageBase.ENCRYPTION_DEFAULT),
+                new MessageStore(RangzenService.this, StorageBase.ENCRYPTION_DEFAULT),
+                RangzenService.this.mExchangeCallback);
+            (new Thread(mExchange)).start();
+          } catch (IOException e) {
+            Log.e(TAG, "Getting input/output stream from socket failed: " + e);
+            Log.e(TAG, "Exchange not happening.");
+          }
+        } else {
+          Log.w(TAG, "But the socket claims not to be connected!");
+        }
+      }
+      @Override
+      public void failure(String reason) {
+        Log.i(TAG, "Callback says we failed to connect: " + reason);
+        setConnecting(false);
+        setLastExchangeTime();
+      }
+    };
+
+    /**
+     * Passed to an Exchange to be called back to when the exchange completes.
+     * Performs the integration of the information received from the exchange -
+     * adds new messages to the message store, weighting their priorities
+     * based upon the friends in common.
+     */
+    /* package */ ExchangeCallback mExchangeCallback = new ExchangeCallback() {
+      @Override
+      public void success(Exchange exchange) {
+        CleartextMessages newMessages = exchange.getReceivedMessages();
+        int friendOverlap = exchange.getCommonFriends();
+        Log.i(TAG, "Got " + newMessages.messages.size() + " messages in exchangeCallback");
+        Log.i(TAG, "Got " + friendOverlap + " common friends in exchangeCallback");
+        for (RangzenMessage message : newMessages.messages) {
+          Set<String> myFriends = mFriendStore.getAllFriends();
+          double stored = mMessageStore.getPriority(message.text);
+          double remote = message.priority;
+          double newPriority = Exchange.newPriority(remote, stored, friendOverlap, myFriends.size());
+          try {
+            if (mMessageStore.contains(message.text)) {
+              mMessageStore.updatePriority(message.text, newPriority);
+            } else {
+              mMessageStore.addMessage(message.text, newPriority);
+            }
+          } catch (IllegalArgumentException e) {
+            Log.e(TAG, String.format("Attempted to add/update message %s with priority (%f/%f)" +
+                                    ", %d friends, %d friends in common",
+                                    message.text, newPriority, message.priority, 
+                                    myFriends.size(), friendOverlap));
+          }
+        }
+        setConnecting(false);
+        setLastExchangeTime();
+        try {
+          if (mSocket != null) {
+            mSocket.close();
+          }
+          if (mBluetoothSpeaker.mSocket != null) {
+            mBluetoothSpeaker.mSocket.close();
+          }
+        } catch (IOException e) {
+          Log.w(TAG, "Couldn't close bt socket after exhange success: " + e);
+        }
+        mSocket = null;
+        mBluetoothSpeaker.mSocket = null;
+      }
+
+      @Override
+      public void failure(Exchange exchange, String reason) {
+        Log.e(TAG, "Exchange failed, reason: " + reason);
+        setConnecting(false);
+        setLastExchangeTime();
+        try { 
+          if (mSocket != null) {
+            mSocket.close();
+          }
+        } catch (IOException e) {
+          Log.i(TAG, "Couldn't close bt socket after exchange failure: " + e);
+        }
+      }
+    };
 
     /**
      * Check whether any network connection (Wifi/Cell) is available according
@@ -279,6 +442,16 @@ public class RangzenService extends Service {
      */
     public Date getServiceStartTime() {
         return mStartTime;
+    }
+
+    /** Synchronized accessor for connecting. */
+    private synchronized boolean getConnecting() {
+      return connecting;
+    }
+
+    /** Synchronized setter for connecting. */
+    private synchronized void setConnecting(boolean connecting) {
+      this.connecting = connecting;
     }
 
     /**

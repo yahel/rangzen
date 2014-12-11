@@ -33,7 +33,6 @@ package org.denovogroup.rangzen;
 import com.squareup.wire.Wire;
 import com.squareup.wire.Message;
 
-import android.os.AsyncTask;
 import android.util.Log;
 
 import java.io.InputStream;
@@ -48,9 +47,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Performs a single exchange between Rangzen peers as an AsyncTask.
+ * Performs a single exchange with a Rangzen peer.
+ * This class is given input and output streams and communicates over them,
+ * oblivious to the underlying network communications used.
  */
-public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
+public class Exchange implements Runnable { 
   /** Store of friends to use in this exchange. */
   private FriendStore friendStore;
   /** Store of messages to use in this exchange. */
@@ -79,6 +80,9 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
   /** Send up to this many messages (top priority) from the message store. */
   private static final int NUM_MESSAGES_TO_SEND = 100;
 
+  /** Minimum trust multiplier in the case of 0 shared friends. */
+  public static final double EPSILON_TRUST = .001;
+
   /** Enum indicating status of the Exchange. */
   enum Status {
     IN_PROGRESS,
@@ -90,24 +94,33 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
    * false until the exchange completes, if it ever does. Remains true thereafter.
    * Set in doInBackground and checked in onPostExecute().
    */
-  private Status status = Status.IN_PROGRESS;
+  private Status mStatus = Status.IN_PROGRESS;
 
   /** 
    * An error message, if any, explaning why the exchange isn't successful.
    * Set to null upon success.
    */
-  private String errorMessage = "Not yet complete.";
+  private String mErrorMessage = "Not yet complete.";
 
   /** Included with Android log messages. */
   private static final String TAG = "Exchange";
 
   /** Synchronized getter for status. */
   private synchronized Status getExchangeStatus() {
-    return status;
+    return mStatus;
   }
   /** Synchronized setter for status. */
   private synchronized void setExchangeStatus(Status status) {
-    this.status = status;
+    this.mStatus = status;
+  }
+
+  /** Synchronized getter for error message. */
+  private synchronized String getErrorMessage() {
+    return mErrorMessage;
+  }
+  /** Synchronized setter for error message. */
+  private synchronized void setErrorMessage(String errorMessage) {
+    this.mErrorMessage = errorMessage;
   }
 
   /**
@@ -171,26 +184,20 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
   }
 
   /**
-   * Get messages from the MessageSTore, encode them as a CleartextMessages protobuf
+   * Get messages from the MessageStore, encode them as a CleartextMessages protobuf
    * object, and write that Message out to the output stream.
    */
   private void sendMessages() {
-    // TODO(lerner): This is really ugly. I think we should add a Message protobuf
-    // that is independent of CleartextMessages and have MessageStore return those.
-    List<CleartextMessages.RangzenMessage> messages = 
-                      new ArrayList<CleartextMessages.RangzenMessage>();
+    List<RangzenMessage> messages = new ArrayList<RangzenMessage>();
     for (int k=0; k<NUM_MESSAGES_TO_SEND; k++) {
       MessageStore.Message messageFromStore = messageStore.getKthMessage(k);
       if (messageFromStore == null) {
         break;
       }
-      CleartextMessages.RangzenMessage messageForProtobuf;
-      messageForProtobuf = new CleartextMessages.RangzenMessage
-        .Builder()
-        .text(messageFromStore.getMessage())
-        .priority((double) messageFromStore.getPriority())
-        .build();
-      messages.add(messageForProtobuf);
+      messages.add(new RangzenMessage.Builder()
+                                     .text(messageFromStore.getMessage())
+                                     .priority(messageFromStore.getPriority())
+                                     .build());
     }
     CleartextMessages messagesMessage = new CleartextMessages.Builder()
                                                              .messages(messages)
@@ -202,8 +209,26 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
    * Receive friends from the remote device.
    */
   private void receiveFriends() {
-    CleartextFriends mFriendsReceived = lengthValueRead(in, CleartextFriends.class);
-    this.mFriendsReceived = mFriendsReceived;
+    CleartextFriends friendsReceived = lengthValueRead(in, CleartextFriends.class);
+    this.mFriendsReceived = friendsReceived;
+
+    if (mFriendsReceived != null && mFriendsReceived.friends != null) {
+      Set<String> myFriends = friendStore.getAllFriends();
+      Set<String> theirFriends = new HashSet(mFriendsReceived.friends);
+      Set<String> intersection = new HashSet(myFriends);
+      intersection.retainAll(theirFriends);
+      commonFriends = intersection.size();
+      Log.i(TAG, "Received " + theirFriends.size() + " friends. Overlap with my " +
+          myFriends.size() + " friends is " + commonFriends);
+    } else if (mFriendsReceived == null) {
+      Log.e(TAG, "Friends received is null: " + mFriendsReceived);
+      setExchangeStatus(Status.ERROR);
+      setErrorMessage("Failed receiving friends.");
+    } else {
+      Log.e(TAG, "Friends received.friends is null");
+      setExchangeStatus(Status.ERROR);
+      setErrorMessage("Failed receiving friends.");
+    }
   }
 
   /**
@@ -214,14 +239,21 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
     this.mMessagesReceived = mMessagesReceived;
   }
 
+  /**
+   * Perform the exchange.
+   */
   @Override
-  protected Status doInBackground(Boolean... UNUSED) {
+  public void run() {
     // In this version of the exchange there's no crypto, so the messages don't
     // depend on each other at all.
     if (asInitiator) {
+      Log.i(TAG, "About to send friends.");
       sendFriends();
+      Log.i(TAG, "Sent friends. About to send messages.");
       sendMessages();
+      Log.i(TAG, "Sent messages. About to receive friends.");
       receiveFriends();
+      Log.i(TAG, "Received friends. About to receive messages.");
       receiveMessages();
     } else {
       receiveFriends();
@@ -229,28 +261,12 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
       sendFriends();
       sendMessages();
     }
-    setExchangeStatus(Status.SUCCESS);
-    return status; // onPostExecute will now be called().
-  }
+    if (getExchangeStatus() == Status.IN_PROGRESS) {
+      setExchangeStatus(Status.SUCCESS);
+    }
 
-  /**
-   * Intended to provide updates on the progress of an asynchronous task.
-   * Unimplemented.
-   *
-   * TODO(lerner): Implement this for the sake of internals (user probably doesn't
-   * need to see a progress bar or anything).
-   */
-  @Override
-  protected void onProgressUpdate(Integer... progress) { 
-    // Unimplemented.
-  }
-
-  /**
-   * After the exchange is complete, whether success or failure, this method handles
-   * calling back to the callback with the results.
-   */
-  @Override
-  protected void onPostExecute(Status success) {
+    // We're done with the mechanics of the exchange - if there's a callback
+    // to report to, call its .success() or .failure() method as appropriate.
     if (callback == null) {
       Log.w(TAG, "No callback provided to exchange.");
       return;
@@ -260,7 +276,7 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
       return;
 
     } else {
-      callback.failure(this, errorMessage);
+      callback.failure(this, mErrorMessage);
       return;
     }
   }
@@ -412,4 +428,41 @@ public class Exchange extends AsyncTask<Boolean, Integer, Exchange.Status>{
     buffer.order(ByteOrder.BIG_ENDIAN);   // Network byte order.
     return buffer.getInt();
   }
+
+  /**
+   * Given an old priority and the number of friends in common, calculate the
+   * value of the new priority of a message.
+   *
+   * @param remote The priority of a message given by a peer.
+   * @param stored The priority of the message in our store.
+   * @param commonFriends The number of friends in common with the peer who sent
+   * this message.
+   */
+  public static double newPriority(double remote, double stored, 
+                                   int commonFriends, int myFriends) {
+    
+    // TODO(lerner): Add noise.
+    return Math.max(fractionOfFriendsPriority(remote, commonFriends, myFriends),
+                    stored);
+  }
+
+  /** Compute the priority score for a person normalized by his number of friends.
+   *
+   * @param priority The priority of the message before computing trust.
+   * @param sharedFriends Number of friends shared between this person and the message sender.
+   * @param myFriends The number of friends this person has.
+   */
+  public static double fractionOfFriendsPriority(double priority,
+                                                 int sharedFriends, 
+                                                 int myFriends) {
+    double trustMultiplier;
+    // We want to preserve trust ordering in the case of 0 shared friends, so
+    // we multiply by a non-0 number even when we have no shared friends.
+    if (sharedFriends == 0 || myFriends == 0) {
+      trustMultiplier = EPSILON_TRUST;
+    } else {
+      trustMultiplier = sharedFriends / (double) myFriends;
+    }
+    return priority * trustMultiplier;
+  } 
 }

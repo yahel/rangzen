@@ -82,6 +82,12 @@ public class StorageBaseTest {
   private static final String TEST_INT_KEY = "ik";
   private static final int TEST_INT_VALUE = 512;
 
+  private static final String TEST_LONG_KEY = "lk";
+  private static final int TEST_LONG_VALUE = 1024;
+
+  private static final String TEST_DOUBLE_KEY = "dk";
+  private static final double TEST_DOUBLE_VALUE = 99.99;
+
   private static final String TEST_KEY_OBJECT = "ok";
   private static final int TEST_OBJECT_INT_VALUE = 7;
   private static final String TEST_OBJECT_STRING_VALUE = "foo";
@@ -150,6 +156,24 @@ public class StorageBaseTest {
   public void storeInt() {
     store.putInt(TEST_INT_KEY, TEST_INT_VALUE);
     assertEquals(store.getInt(TEST_INT_KEY, -100), TEST_INT_VALUE);
+  }
+
+  /**
+   * Tests that we can store and retrieve a long.
+   */
+  @Test
+  public void storeLong() {
+    store.putLong(TEST_LONG_KEY, TEST_LONG_VALUE);
+    assertEquals(store.getLong(TEST_LONG_KEY, -100), TEST_LONG_VALUE);
+  }
+
+  /**
+   * Tests that we can store and retrieve a double.
+   */
+  @Test
+  public void storeDouble() {
+    store.putDouble(TEST_DOUBLE_KEY, TEST_DOUBLE_VALUE);
+    assertEquals(store.getDouble(TEST_DOUBLE_KEY, -100), TEST_DOUBLE_VALUE, 0.000001);
   }
 
   /**

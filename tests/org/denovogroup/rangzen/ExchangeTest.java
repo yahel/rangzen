@@ -100,7 +100,7 @@ public class ExchangeTest {
   /** A list of 0 messages to send. */
   private CleartextMessages nullMessages = 
     new CleartextMessages.Builder()
-                         .messages(new ArrayList<CleartextMessages.RangzenMessage>())
+                         .messages(new ArrayList<RangzenMessage>())
                          .build();
 
   /** A callback to provide to the Exchange under test. */
@@ -153,7 +153,7 @@ public class ExchangeTest {
                             callback);
 
     // Start the exchange.
-    exchange.execute(true);
+    (new Thread(exchange)).start();
   }
 
   /** 
@@ -175,6 +175,11 @@ public class ExchangeTest {
     return Exchange.lengthValueRead(testInputStream, CleartextMessages.class);
   }
 
+  /**
+   * Test when the exchange is told it speaks first that it sends the right
+   * things when the lists of things are empty (regression, empty lists broke 
+   * things at one time).
+   */
   @Test(timeout=2000)
   public void asInitiatorEmptyLists() throws IOException {
     // friendStore is empty, messageStore is empty.
@@ -201,6 +206,11 @@ public class ExchangeTest {
 
   }
 
+  /**
+   * Test when the exchange is told it speaks second that it sends the right
+   * things when the lists of things are empty (regression, empty lists broke 
+   * things at one time).
+   */
   @Test(timeout=2000)
   public void notAsInitiatorEmptyLists() throws IOException {
     // friendStore is empty, messageStore is empty.
@@ -226,6 +236,10 @@ public class ExchangeTest {
     assertEquals(0, messagesReceived.messages.size());
   }
 
+  /**
+   * Test when the exchange is told it speaks second that it sends the right
+   * things.
+   */
   @Test(timeout=2000)
   public void notAsInitiatorWithFriends() throws IOException {
     for (int i=0; i<NUM_FRIENDS; i++) {
@@ -266,5 +280,61 @@ public class ExchangeTest {
     b.putInt(testValue);
     outputStream.write(b.array());
     assertEquals(testValue, Exchange.popLength(inputStream));
+  }
+
+  /**
+   * Test that the method Exchange.newPriority computes priorities
+   * as we expect it should.
+   */
+  @Test
+  public void newPriorityTest() {
+    double TEST_REMOTE_PRIORITY = 0.8;
+    double TEST_LOCAL_PRIORITY = 1.0;
+    int COMMON_FRIENDS = 5;
+    int LOCAL_FRIENDS = 10;
+
+    // Test that newPriority uses the local priority if it's higher than the
+    // value calculated from the remote priority.
+    assertEquals(TEST_LOCAL_PRIORITY, Exchange.newPriority(TEST_REMOTE_PRIORITY,
+                                                           TEST_LOCAL_PRIORITY,
+                                                           COMMON_FRIENDS,
+                                                           LOCAL_FRIENDS), 0.001);
+
+    double TEST_PRIORITY = 1.0;
+    int NUM_FRIENDS = 10;
+
+    // Check that more friends yields more priority for unknown messages (-2.0 priority).
+    // More complicated for known messages due to the above check about using the
+    // max of the computed priority and the local priority.
+    for (int inCommon=0; inCommon<NUM_FRIENDS; inCommon++) {
+      assertTrue(Exchange.newPriority(TEST_PRIORITY, MessageStore.NOT_FOUND, inCommon, NUM_FRIENDS) <
+                 Exchange.newPriority(TEST_PRIORITY, MessageStore.NOT_FOUND, inCommon + 1, NUM_FRIENDS));
+    }
+    
+                                                                        
+
+  }
+
+  /**
+   * Test that the method Exchange.computeNewPriority_fractionOfFriends computes priorities
+   * as we expect it should.
+   */
+  @Test
+  public void fractionOfFriendsPriorityTest() {
+
+    double TEST_PRIORITY = 1.0;
+    int NUM_FRIENDS = 10;
+
+    // All friends in common = unchanged priority.
+    assertEquals(1.0, Exchange.fractionOfFriendsPriority(1.0, 10, 10), 0.0001); 
+
+    // No friends still has positive priority.
+    assertTrue(0 < Exchange.fractionOfFriendsPriority(0.0005, 0, 0));
+
+    // Check that more friends always yields higher priority.
+    for (int inCommon=0; inCommon<NUM_FRIENDS; inCommon++) {
+      assertTrue(Exchange.fractionOfFriendsPriority(TEST_PRIORITY, inCommon, NUM_FRIENDS) <
+                 Exchange.fractionOfFriendsPriority(TEST_PRIORITY, inCommon + 1, NUM_FRIENDS));
+    }
   }
 }

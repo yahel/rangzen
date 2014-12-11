@@ -88,8 +88,8 @@ public class WireTest {
   private CleartextFriends nullFriends;
 
   /** A list of friends to include in CleartextMessages. */
-  private List<CleartextMessages.RangzenMessage> messages = 
-                        new ArrayList<CleartextMessages.RangzenMessage>();
+  private List<RangzenMessage> messages = 
+                        new ArrayList<RangzenMessage>();
 
   @Before
   public void setup() throws IOException {
@@ -111,19 +111,17 @@ public class WireTest {
                                            .friends(new ArrayList<String>())
                                            .build();
                                           
-    messages.add(new CleartextMessages.RangzenMessage.Builder()
-                                                     .text("foo")
-                                                     .priority(0.25)
-                                                     .build());
-    messages.add(new CleartextMessages.RangzenMessage.Builder()
-                                                     .text("bar")
-                                                     .priority(0.75325)
-                                                     .build());
+    messages.add(new RangzenMessage.Builder()
+                                   .text("foo")
+                                   .priority(0.25)
+                                   .build());
+    messages.add(new RangzenMessage.Builder()
+                                   .text("bar")
+                                   .priority(0.75325)
+                                   .build());
     cleartextMessages = new CleartextMessages.Builder()
                                              .messages(messages)
                                              .build();
-
-
   }
 
   /**
@@ -201,7 +199,7 @@ public class WireTest {
    */
   @Test
   public void testCleartextMessages() {
-    List<CleartextMessages.RangzenMessage> recoveredMessages = cleartextMessages.messages;
+    List<RangzenMessage> recoveredMessages = cleartextMessages.messages;
     assertEquals(recoveredMessages, messages);
   }
 

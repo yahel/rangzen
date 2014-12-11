@@ -102,6 +102,16 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    */
   private boolean mSeeking = false;
 
+  /** Synchronized setter for mSeeking. */
+  private synchronized void setSeeking(boolean seeking) {
+    this.mSeeking = seeking;
+  }
+
+  /** Synchronized getter for mSeeking. */
+  private synchronized boolean getSeeking() {
+    return mSeeking;
+  }
+
   /** Whether the rest of the app would like us to look for peers. */
   private boolean mSeekingDesired = false;
 
@@ -280,10 +290,10 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     int discoveryStateCode = intent.getIntExtra(WifiP2pManager.EXTRA_DISCOVERY_STATE, -1);
     if (discoveryStateCode == WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED) {
       Log.d(TAG, "Device is seeking Wifi Direct peers.");
-      this.mSeeking = true;
+      setSeeking(true);
     } else if (discoveryStateCode == WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED) {
       Log.d(TAG, "Device is NOT seeking Wifi Direct peers.");
-      this.mSeeking = false;
+      setSeeking(false);
     } else {
       Log.wtf(TAG, "Discovery changed event didn't have an EXTRA_DISCOVERY_STATE?!");
     }
@@ -357,8 +367,8 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * level application code, call setSeekingDesired(true/false).
    */
   private void seekPeers() {
-    if (!mSeeking) {
-      mSeeking = true;
+    if (!getSeeking()) {
+      setSeeking(true);
       mWifiP2pManager.discoverPeers(mWifiP2pChannel, new WifiP2pManager.ActionListener() {
         @Override
         public void onSuccess() {
@@ -367,7 +377,7 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
       @Override
       public void onFailure(int reasonCode) {
         Log.d(TAG, "Discovery failed: " + reasonCode);
-        mSeeking = false;
+        setSeeking(false);
         stopSeekingPeers();
       }
       });
@@ -383,11 +393,11 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * level application code, call setSeekingDesired(true/false).
    */
   private void stopSeekingPeers() {
-    mSeeking = false;
     mWifiP2pManager.stopPeerDiscovery(mWifiP2pChannel, new WifiP2pManager.ActionListener() {
       @Override
       public void onSuccess() {
         Log.d(TAG, "Discovery stopped successfully.");
+        setSeeking(false);
       }
       @Override
       public void onFailure(int reasonCode) {

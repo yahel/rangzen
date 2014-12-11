@@ -1,6 +1,22 @@
 [alias]
     experimentalApp = //apps/experimentalApp:experimentalApp
     WifiDirectSpeakerTest = //tests/org/denovogroup/rangzen:wifiDirectSpeakerTest
+    bluetoothSpeakerTest = //tests/org/denovogroup/rangzen:bluetoothSpeakerTest
+    exchangeTest = //tests/org/denovogroup/rangzen:exchangeTest
+    friendStoreTest = //tests/org/denovogroup/rangzen:friendStoreTest
+    hotspotSpeakerTest = //tests/org/denovogroup/rangzen:hotspotSpeakerTest
+    locationStoreTest = //tests/org/denovogroup/rangzen:locationStoreTest
+    macOrderingTests = //tests/org/denovogroup/rangzen:macOrderingTests
+    messageStoreTest = //tests/org/denovogroup/rangzen:messageStoreTest
+    nullRoboTest = //tests/org/denovogroup/rangzen:nullRoboTest
+    nullTest = //tests/org/denovogroup/rangzen:nullTest
+    peerManagerTest = //tests/org/denovogroup/rangzen:peerManagerTest
+    peerTest = //tests/org/denovogroup/rangzen:peerTest
+    rangzenServiceTest = //tests/org/denovogroup/rangzen:rangzenServiceTest
+    storageBaseTest = //tests/org/denovogroup/rangzen:storageBaseTest
+    wifiDirectSpeakerTest = //tests/org/denovogroup/rangzen:wifiDirectSpeakerTest
+    wireTest = //tests/org/denovogroup/rangzen:wireTest
+
 
 [project]
   ignore = .git, bin/

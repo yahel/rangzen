@@ -73,11 +73,17 @@ public class BluetoothSpeaker {
   /** A handle to a server socket which receives connections from remote BT peers. */
   private BluetoothServerSocket mServerSocket;
 
+  /** Socket received from accepting on server socket. */
+  /* package */ BluetoothSocket mSocket;
+
   /** Thread which calls accept on the server socket. */
   private Thread mConnectionAcceptingThread;
 
+  /** Ongoing exchange. */
+  private Exchange mExchange;
+
   /** Context of the Rangzen Service. */
-  private Context mContext;
+  private RangzenService mContext;
 
   /** Receives Bluetooth related broadcasts. */
   private BluetoothBroadcastReceiver mBluetoothBroadcastReceiver;
@@ -86,7 +92,7 @@ public class BluetoothSpeaker {
    * @param context A context, from which to access the Bluetooth subsystem.
    * @param peerManager The app's PeerManager instance.
    */
-  public BluetoothSpeaker(Context context, PeerManager peerManager) {
+  public BluetoothSpeaker(RangzenService context, PeerManager peerManager) {
     super();
 
     mPayload = new byte[EXCHANGE_SIZE];
@@ -229,6 +235,12 @@ public class BluetoothSpeaker {
       public void run() {
         while (true) {
           try {
+            // Wait between accepting connections.
+            try {
+              Thread.sleep(10 * 1000);
+            } catch (InterruptedException e) {
+              Log.e(TAG, "Connection accepting thread was interrupted during sleep: " + e);
+            }
             acceptConnection();
           } catch (IOException e) {
             Log.e(TAG, "IOException while accepting/responding to a connection" + e);
@@ -264,13 +276,18 @@ public class BluetoothSpeaker {
       throw new IOException("Bluetooth adapter is disabled, not trying to accept().");
     }
     Log.i(TAG, "Calling mServerSocket.accept()");
-    BluetoothSocket socket = mServerSocket.accept();
-    Log.i(TAG, "Accepted socket from " + socket.getRemoteDevice());
-    Log.i(TAG, "Accepted socket connected? " + socket.isConnected());
-    // If accept() returns, we're connected!
-    //
-    // TODO(lerner): Provide a way to get this receiving socket and use it in
-    // an exchange.
+    mSocket = mServerSocket.accept();
+    Log.i(TAG, "Accepted socket from " + mSocket.getRemoteDevice());
+    Log.i(TAG, "Accepted socket connected? " + mSocket.isConnected());
+    mExchange = new Exchange(mSocket.getInputStream(),
+                             mSocket.getOutputStream(),
+                             false,
+                             new FriendStore(mContext, StorageBase.ENCRYPTION_DEFAULT),
+                             new MessageStore(mContext, StorageBase.ENCRYPTION_DEFAULT),
+                             mContext.mExchangeCallback);
+    //mExchange.execute((Boolean) null);
+    // Start the exchange.
+    (new Thread(mExchange)).start();
   }
 
   /**
