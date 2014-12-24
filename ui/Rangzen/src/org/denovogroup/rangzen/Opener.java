@@ -319,9 +319,9 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             startActivityForResult(intent, Message);
             return;
         } else if (position == 2) {
-            Intent intent = new Intent();
-            intent.setClass(this, QRCodeViewPager.class);
-            startActivityForResult(intent, QR);
+            Intent intent = new Intent("com.google.zxing.client.android.SCAN");
+            intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
+            startActivityForResult(intent, 0);
             return;
         } else {
             needAdd = new FragmentOrganizer();

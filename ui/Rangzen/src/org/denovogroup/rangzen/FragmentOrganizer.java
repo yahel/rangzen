@@ -155,7 +155,6 @@ public class FragmentOrganizer extends Fragment {
         // Log.v(LOG_TAG, qrInputText);
 
         new CreateQRCode().execute(qrInputText);
-        
         return view3;
 	}
 	

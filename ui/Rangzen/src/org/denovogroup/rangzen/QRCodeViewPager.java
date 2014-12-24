@@ -143,6 +143,7 @@ public class QRCodeViewPager extends FragmentActivity {
                             "action_bar_title", "id", "android");
                     TextView abTitle = (TextView) findViewById(titleId);
                     abTitle.setTextColor(Color.WHITE);
+                    finish();
                 }
             }
         }

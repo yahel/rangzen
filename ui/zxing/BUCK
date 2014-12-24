@@ -1,0 +1,7 @@
+android_resource(
+  name = 'res',
+  res = 'res',
+  package = 'com.google.zxing.client.android',
+  visibility = [ 'PUBLIC' ],
+)
+

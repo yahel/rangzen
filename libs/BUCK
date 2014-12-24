@@ -53,12 +53,6 @@ prebuilt_jar(
 )
 
 prebuilt_jar(
-  name = 'core',
-  binary_jar = 'core-3.1.1-SNAPSHOT.jar',
-  visibility = [ 'PUBLIC' ],
-)
-
-prebuilt_jar(
   name = 'wire-compiler',
   binary_jar = 'wire-compiler-1.5.2-jar-with-dependencies.jar',
   visibility = [ 'PUBLIC' ],
@@ -76,4 +70,9 @@ prebuilt_jar(
   visibility = [ 'PUBLIC' ],
 )
 
+prebuilt_jar(
+  name = 'zxing-android',
+  binary_jar = 'core-3.1.1-SNAPSHOT.jar',
+  visibility = [ 'PUBLIC' ],
+)
 
