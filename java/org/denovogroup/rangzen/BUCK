@@ -5,6 +5,7 @@ android_library(
            'BluetoothLEPeerNetwork.java',
            'BluetoothPeerNetwork.java',
            'BluetoothSpeaker.java',
+           'Crypto.java',
            'Exchange.java',
            'ExchangeCallback.java',
            'FriendStore.java', 
@@ -33,5 +34,8 @@ android_library(
     '//libs:wire-runtime',
     '//libs:okio',
     '//proto-repo:protobufs',
+    '//libs:spongycastle-core-1.51',
+    '//libs:spongycastle-pkix-1.51',
+    '//libs:spongycastle-prov-1.51'
   ],
 )

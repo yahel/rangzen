@@ -47,6 +47,24 @@ prebuilt_jar(
 )
 
 prebuilt_jar(
+  name = 'spongycastle-core-1.51',
+  binary_jar = 'spongycastle-core-1.51.0.0.jar',
+  visibility = [ 'PUBLIC' ],
+)
+
+prebuilt_jar(
+  name = 'spongycastle-pkix-1.51',
+  binary_jar = 'spongycastle-pkix-1.51.0.0.jar',
+  visibility = [ 'PUBLIC' ],
+)
+
+prebuilt_jar(
+  name = 'spongycastle-prov-1.51',
+  binary_jar = 'spongycastle-prov-1.51.0.0.jar',
+  visibility = [ 'PUBLIC' ],
+)
+
+prebuilt_jar(
   name = 'mockito',
   binary_jar = 'mockito-all-1.9.5.jar',
   visibility = [ 'PUBLIC' ],
