@@ -39,8 +39,10 @@ import android.content.Intent;
 import android.app.Service;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Environment;
 import android.os.IBinder;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.System;
@@ -116,6 +118,12 @@ public class RangzenService extends Service {
 
     /** Time to wait between exchanges, in milliseconds. */
     private static final int TIME_BETWEEN_EXCHANGES_MILLIS = 10 * 1000;
+
+    /** For recording the RTT of BT communications. */
+    private long exchangeStartTimeMillis;
+
+    /** Directory under <EXTERNAL DOCUMENTS> where benchmark data is stored. */
+    private static final String BENCHMARK_DIR = "RangzenBenchmarks";
 
     /** Android Log Tag. */
     private final static String TAG = "RangzenService";
@@ -321,13 +329,17 @@ public class RangzenService extends Service {
           mSocket = socket;
           Log.i(TAG, "Socket connected, attempting exchange");
           try {
-            mExchange = new CryptographicExchange(
+            mExchange = new NonceEchoExchange(
                 socket.getInputStream(),
                 socket.getOutputStream(),
                 true,
                 new FriendStore(RangzenService.this, StorageBase.ENCRYPTION_DEFAULT),
                 new MessageStore(RangzenService.this, StorageBase.ENCRYPTION_DEFAULT),
-                RangzenService.this.mExchangeCallback);
+                RangzenService.this.mLatencyBenchmarkCallback);
+
+            // Latency of communication: Start timer here.
+            exchangeStartTimeMillis = System.currentTimeMillis();
+
             (new Thread(mExchange)).start();
           } catch (IOException e) {
             Log.e(TAG, "Getting input/output stream from socket failed: " + e);
@@ -344,6 +356,84 @@ public class RangzenService extends Service {
         setLastExchangeTime();
       }
     };
+
+    /**
+     * Passed to an Exchange to be called back to when the exchange completes.
+     * Records the time since the exchange started for benchmarking.
+     */
+    /* package */ ExchangeCallback mLatencyBenchmarkCallback = new ExchangeCallback() {
+      @Override
+      public void success(Exchange exchange) {
+        // Latency of communication: Stop timer here.
+        long exchangeStopTimeMillis = System.currentTimeMillis();
+        // Latency of communication: Calculate RTT from # of round trips in exchange.
+        // In this case, we're using a NonceEchoExchange, which includes one round-trip,
+        // so the RTT time is just the time between the start and end of the exchange.
+        long rttMillis = exchangeStopTimeMillis - exchangeStartTimeMillis;
+
+        // Latency of communication: Record RTT and any other parameters.
+        // TODO(lerner): Record time.
+        Log.i(TAG, String.format("Exchange complete, took %d milliseconds", rttMillis));
+
+      }
+      @Override
+      public void failure(Exchange exchange, String reason) {
+        long exchangeStopTimeMillis = System.currentTimeMillis();
+        long rttMillis = exchangeStopTimeMillis - exchangeStartTimeMillis;
+        Log.e(TAG, String.format("Exchange failed, latency benchmark took %d milliseconds", rttMillis));
+      }
+    };
+
+    /** 
+     * Checks if external storage is available for read and write. If it's mounted
+     * by a computer or it may not be.
+     *
+     * @return True if external storage is writable, false otherwise.
+     */
+    /* package */ boolean isExternalStorageWritable() {
+      String state = Environment.getExternalStorageState();
+      if (Environment.MEDIA_MOUNTED.equals(state)) {
+        return true;
+      }
+      return false;
+    }
+
+    /**
+     * Checks if external storage is available to at least read.
+     *
+     * @return True if external storage is readable, false otherwise.
+     */
+    /* package */ boolean isExternalStorageReadable() {
+      String state = Environment.getExternalStorageState();
+      if (Environment.MEDIA_MOUNTED.equals(state) ||
+          Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
+        return true;
+      }
+      return false;
+    }
+
+    /**
+     * Get the directory where we store our benchmark data.
+     * This directory is in external storage where it's accessible over USB
+     * and by other apps.
+     *
+     * @return A file object pointing to a directory where we'll store benchmark
+     * data files.
+     */
+    private File getBenchmarkDataDir() {
+      File file = new File(Environment.getExternalStorageDirectory(), BENCHMARK_DIR);
+      if (!file.exists()) {
+        if (!file.mkdirs()) {
+          Log.e(TAG, "Benchmark data dir not created: " + file);
+          return null;
+        }
+      } else if (file.exists() && !file.isDirectory()) {
+        Log.e(TAG, "Benchmark data dir " + file + " exists but isn't a directory!");
+        return null;
+      }
+
+      return file;
+    }
 
     /**
      * Passed to an Exchange to be called back to when the exchange completes.
