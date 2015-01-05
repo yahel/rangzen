@@ -18,6 +18,7 @@ android_library(
            'PeerManager.java',
            'PeerNetwork.java',
            'RangzenService.java',
+           'RandomEchoExchange.java',
            'SerializableLocation.java',
            'StartupIntentReceiver.java',
            'StorageBase.java',
