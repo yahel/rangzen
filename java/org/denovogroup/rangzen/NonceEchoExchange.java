@@ -42,14 +42,14 @@ import java.util.Random;
  * This class is given input and output streams and communicates over them,
  * oblivious to the underlying network communications used.
  */
-public class RandomEchoExchange extends Exchange {
+public class NonceEchoExchange extends Exchange {
 
   /**
    * Pass-through constructor to super-class Exchange.
    *
    * @see org.denovogroup.rangzen.Exchange
    */
-  public RandomEchoExchange(InputStream in, OutputStream out, boolean asInitiator, 
+  public NonceEchoExchange(InputStream in, OutputStream out, boolean asInitiator, 
                             FriendStore friendStore, MessageStore messageStore, 
                             ExchangeCallback callback) throws IllegalArgumentException {
     super(in, out, asInitiator, friendStore, messageStore, callback);
@@ -75,11 +75,11 @@ public class RandomEchoExchange extends Exchange {
     } else {
       try {
         int r = receiveNonce();
+        sendNonce(r);
       } catch (IOException e) {
         setErrorMessage("Error receiving nonce");
         setExchangeStatus(Status.ERROR);
       }
-      sendNonce(r);
       setExchangeStatus(Status.SUCCESS);
     }
 
