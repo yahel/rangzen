@@ -120,7 +120,7 @@ public class RangzenService extends Service {
     private static final int TIME_BETWEEN_EXCHANGES_MILLIS = 10 * 1000;
 
     /** For recording the RTT of BT communications. */
-    private long exchangeStartTimeMillis;
+    public long exchangeStartTimeMillis;
 
     /** Directory under <EXTERNAL DOCUMENTS> where benchmark data is stored. */
     private static final String BENCHMARK_DIR = "RangzenBenchmarks";
@@ -373,14 +373,18 @@ public class RangzenService extends Service {
 
         // Latency of communication: Record RTT and any other parameters.
         // TODO(lerner): Record time.
-        Log.i(TAG, String.format("Exchange complete, took %d milliseconds", rttMillis));
+        String init = exchange.asInitiator ? "initiator" : "listener";
+        Log.i(TAG, String.format("Exchange complete as %s, took %d milliseconds", rttMillis, init));
 
+        RangzenService.this.cleanupAfterExchange();
       }
       @Override
       public void failure(Exchange exchange, String reason) {
         long exchangeStopTimeMillis = System.currentTimeMillis();
         long rttMillis = exchangeStopTimeMillis - exchangeStartTimeMillis;
         Log.e(TAG, String.format("Exchange failed, latency benchmark took %d milliseconds", rttMillis));
+
+        RangzenService.this.cleanupAfterExchange();
       }
     };
 
@@ -436,6 +440,28 @@ public class RangzenService extends Service {
     }
 
     /**
+     * Cleans up sockets and connecting state after an exchange, including recording
+     * that an exchange was just attempted, that we're no longer currently connecting,
+     * closing sockets and setting socket variables to null, etc.
+     */
+    /* package */ void cleanupAfterExchange() {
+      setConnecting(false);
+      setLastExchangeTime();
+      try {
+        if (mSocket != null) {
+          mSocket.close();
+        }
+        if (mBluetoothSpeaker.mSocket != null) {
+          mBluetoothSpeaker.mSocket.close();
+        }
+      } catch (IOException e) {
+        Log.w(TAG, "Couldn't close bt socket after exhange success: " + e);
+      }
+      mSocket = null;
+      mBluetoothSpeaker.mSocket = null;
+    }
+
+    /**
      * Passed to an Exchange to be called back to when the exchange completes.
      * Performs the integration of the information received from the exchange -
      * adds new messages to the message store, weighting their priorities
@@ -466,34 +492,13 @@ public class RangzenService extends Service {
                                     myFriends.size(), friendOverlap));
           }
         }
-        setConnecting(false);
-        setLastExchangeTime();
-        try {
-          if (mSocket != null) {
-            mSocket.close();
-          }
-          if (mBluetoothSpeaker.mSocket != null) {
-            mBluetoothSpeaker.mSocket.close();
-          }
-        } catch (IOException e) {
-          Log.w(TAG, "Couldn't close bt socket after exhange success: " + e);
-        }
-        mSocket = null;
-        mBluetoothSpeaker.mSocket = null;
+        RangzenService.this.cleanupAfterExchange();
       }
 
       @Override
       public void failure(Exchange exchange, String reason) {
         Log.e(TAG, "Exchange failed, reason: " + reason);
-        setConnecting(false);
-        setLastExchangeTime();
-        try { 
-          if (mSocket != null) {
-            mSocket.close();
-          }
-        } catch (IOException e) {
-          Log.i(TAG, "Couldn't close bt socket after exchange failure: " + e);
-        }
+        RangzenService.this.cleanupAfterExchange();
       }
     };
 

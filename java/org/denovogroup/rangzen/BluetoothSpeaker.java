@@ -279,14 +279,15 @@ public class BluetoothSpeaker {
     mSocket = mServerSocket.accept();
     Log.i(TAG, "Accepted socket from " + mSocket.getRemoteDevice());
     Log.i(TAG, "Accepted socket connected? " + mSocket.isConnected());
-    mExchange = new CryptographicExchange(mSocket.getInputStream(),
+    mExchange = new NonceEchoExchange(mSocket.getInputStream(),
                              mSocket.getOutputStream(),
                              false,
                              new FriendStore(mContext, StorageBase.ENCRYPTION_DEFAULT),
                              new MessageStore(mContext, StorageBase.ENCRYPTION_DEFAULT),
-                             mContext.mExchangeCallback);
+                             mContext.mLatencyBenchmarkCallback);
     //mExchange.execute((Boolean) null);
     // Start the exchange.
+    mContext.exchangeStartTimeMillis = System.currentTimeMillis();
     (new Thread(mExchange)).start();
   }
 
