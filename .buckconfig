@@ -12,6 +12,7 @@
     messageStoreTest = //tests/org/denovogroup/rangzen:messageStoreTest
     nullRoboTest = //tests/org/denovogroup/rangzen:nullRoboTest
     nullTest = //tests/org/denovogroup/rangzen:nullTest
+    openCSVTest = //tests/org/denovogroup/rangzen:openCSVTest
     peerManagerTest = //tests/org/denovogroup/rangzen:peerManagerTest
     peerTest = //tests/org/denovogroup/rangzen:peerTest
     rangzenServiceTest = //tests/org/denovogroup/rangzen:rangzenServiceTest

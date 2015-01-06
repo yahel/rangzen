@@ -261,3 +261,13 @@ java_test(
   ],
 )
 
+robolectric_test(
+  name = 'openCSVTest',
+  srcs = ['OpenCSVTest.java'],
+  visibility = [ 'PUBLIC' ],
+  deps = [
+    '//libs:opencsv',
+    '//libs:junit-4.11',
+    '//libs:hamcrest-core-1.3',
+  ],
+)
