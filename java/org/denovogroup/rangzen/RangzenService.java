@@ -358,6 +358,16 @@ public class RangzenService extends Service {
     };
 
     /**
+     * Logs events to a CSV file on external storage.
+     * TODO(lerner): Log to file instead of just to console!
+     *
+     * @param row String array of column values for the CSV.
+     */
+    private void logEventToCSV(String[] row) {
+      Log.i(TAG, row.toString());
+    }
+
+    /**
      * Passed to an Exchange to be called back to when the exchange completes.
      * Records the time since the exchange started for benchmarking.
      */
@@ -375,6 +385,14 @@ public class RangzenService extends Service {
         // TODO(lerner): Record time.
         String init = exchange.asInitiator ? "initiator" : "listener";
         Log.i(TAG, String.format("Exchange complete as %s, took %d milliseconds", rttMillis, init));
+
+        BluetoothSocket activeSocket = (mSocket != null) ? mSocket : mBluetoothSpeaker.mSocket;
+        RangzenService.this.logEventToCSV(new String[]{
+          activeSocket.getRemoteDevice().getAddress(),
+          init,
+          Long.toString(System.currentTimeMillis()),
+          Long.toString(rttMillis)
+        });
 
         RangzenService.this.cleanupAfterExchange();
       }
