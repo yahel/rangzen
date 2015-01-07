@@ -26,6 +26,7 @@ import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.hardware.Camera;
+import android.hardware.Camera.CameraInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -170,6 +171,44 @@ public final class CameraFragment extends Fragment implements
     }
 
     /**
+     * Check each cameraid between 0 and cameraCount-1, looking for rear-facing
+     * cameras. As soon as one is found, return it. If no rear-facing cameras are
+     * found, returns null.
+     *
+     * @param cameraCount The number of cameras
+     */
+    private Camera getFirstRearFacingCamera() {
+      int cameraCount = Camera.getNumberOfCameras();
+      CameraInfo info = new CameraInfo();
+      for (int i=0; i < cameraCount; i++) {
+        Camera.getCameraInfo(i, info);
+        if (info.facing == CameraInfo.CAMERA_FACING_BACK) {
+          return Camera.open(i);
+        }
+      }
+      return null;
+    }
+
+    /**
+     * Check each cameraid between 0 and cameraCount-1, looking for front-facing
+     * cameras. As soon as one is found, return it. If no front-facing cameras are
+     * found, returns null.
+     *
+     * @param cameraCount The number of cameras
+     */
+    private Camera getFirstFrontFacingCamera() {
+      int cameraCount = Camera.getNumberOfCameras();
+      CameraInfo info = new CameraInfo();
+      for (int i=0; i < cameraCount; i++) {
+        Camera.getCameraInfo(i, info);
+        if (info.facing == CameraInfo.CAMERA_FACING_FRONT) {
+          return Camera.open(i);
+        }
+      }
+      return null;
+    }
+
+    /**
      * For some reason the camera begins tilted 90 degrees so I have it set to
      * counteract that. This also begins running a decoder on the camera stream.
      * 
@@ -178,11 +217,16 @@ public final class CameraFragment extends Fragment implements
      */
     private void initCamera(SurfaceHolder holder) {
         if (camera != null) {
-            throw new IllegalStateException("Camera not null on initialization");
+          throw new IllegalStateException("Camera not null on initialization");
         }
-        camera = Camera.open();
+
+        Camera camera = getFirstRearFacingCamera();
         if (camera == null) {
-            throw new IllegalStateException("Camera is null");
+          camera = getFirstFrontFacingCamera();
+        }
+        // If camera is still null, there aren't any cameras at all. 
+        if (camera == null) {
+          throw new IllegalStateException("Camera is null");
         }
 
         CameraConfigurationManager.configure(camera);
