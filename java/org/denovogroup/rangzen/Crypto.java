@@ -198,7 +198,14 @@ public class Crypto {
      */
     public PrivateSetIntersection(ArrayList<byte[]> values) throws NoSuchAlgorithmException {
       this.blindedItems = new ArrayList<BigInteger>();
-      this.x = new BigInteger(DH_SUBGROUP_SIZE, random);
+
+      // Pick a random value in the subgroup.
+      BigInteger rand;
+      do {
+        rand = new BigInteger(DH_SUBGROUP_SIZE, random);
+      } while (rand.equals(BigInteger.ZERO) || rand.equals(BigInteger.ONE));
+
+      this.x = DH_GROUP_PARAMETERS.getG().modPow(rand, DH_GROUP_PARAMETERS.getP());
 
       MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
       for (byte[] v : values) {
@@ -208,7 +215,7 @@ public class Crypto {
         // Generate a positive BigInteger (signum == 1) from the bytes.
         BigInteger val = new BigInteger(1, itemHash);
 
-        // Raise the group's generator to the hash value, to land on a value in Z^*_p.
+        // Raise the group's generator to the hash value, to land on a value in the subgroup.
         BigInteger item = DH_GROUP_PARAMETERS.getG().modPow(val, DH_GROUP_PARAMETERS.getP());
 
         // Blind the item using the key.
