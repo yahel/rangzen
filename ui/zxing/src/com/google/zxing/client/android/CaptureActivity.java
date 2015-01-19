@@ -32,6 +32,7 @@ import com.google.zxing.client.android.result.ResultHandlerFactory;
 import com.google.zxing.client.android.result.supplement.SupplementalInfoRetriever;
 import com.google.zxing.client.android.share.ShareActivity;
 
+import android.R.raw;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -40,12 +41,14 @@ import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.util.Base64;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
@@ -452,7 +455,15 @@ public final class CaptureActivity extends Activity implements
      * @param barcode
      *            A greyscale bitmap of the camera data which was decoded.
      */
-    public void handleDecode(Result rawResult, Bitmap barcode, float scaleFactor) {
+     public void handleDecode(Result rawResult, Bitmap barcode, float scaleFactor) {
+        Log.i(TAG, rawResult.getText());
+        if (rawResult != null) {
+            if (!rawResult.getText().startsWith("rangzen://")) {
+                Log.i(TAG, rawResult.getText().substring(0, 10));
+                restartPreviewAfterDelay(0L);
+                return;
+            }
+        }
         inactivityTimer.onActivity();
         lastResult = rawResult;
         ResultHandler resultHandler = ResultHandlerFactory.makeResultHandler(
@@ -470,9 +481,12 @@ public final class CaptureActivity extends Activity implements
         switch (source) {
         case NATIVE_APP_INTENT:
         case PRODUCT_SEARCH_LINK:
-            handleDecodeExternally(rawResult, resultHandler, barcode);
+            Log.i(TAG, "handleDecode - PRODUCT_SEARCH_LINK");
+            handleDecodeInternally(rawResult, resultHandler, barcode);
+            // handleDecodeExternally(rawResult, resultHandler, barcode);
             break;
         case ZXING_LINK:
+            Log.i(TAG, "handleDecode - ZXING_LINK");
             if (scanFromWebPageManager == null
                     || !scanFromWebPageManager.isScanFromWebPage()) {
                 handleDecodeInternally(rawResult, resultHandler, barcode);
@@ -481,6 +495,7 @@ public final class CaptureActivity extends Activity implements
             }
             break;
         case NONE:
+            Log.i(TAG, "handleDecode - NONE");
             SharedPreferences prefs = PreferenceManager
                     .getDefaultSharedPreferences(this);
             if (fromLiveScan
@@ -551,8 +566,11 @@ public final class CaptureActivity extends Activity implements
     }
 
     // Put up our own UI for how to handle the decoded contents.
+    // (TODO) Jesus if the QR is not a rangzen URI then don't do anything yet
     private void handleDecodeInternally(Result rawResult,
             ResultHandler resultHandler, Bitmap barcode) {
+
+        Log.i(TAG, "rawResult = " + rawResult.toString());
 
         CharSequence displayContents = resultHandler.getDisplayContents();
 
@@ -576,72 +594,48 @@ public final class CaptureActivity extends Activity implements
 
         ImageView barcodeImageView = (ImageView) findViewById(R.id.barcode_image_view);
         if (barcode == null) {
+            Log.i(TAG, "barcode was null");
             barcodeImageView.setImageBitmap(BitmapFactory.decodeResource(
                     getResources(), R.drawable.launcher_icon));
         } else {
-            barcodeImageView.setImageBitmap(barcode);
+            Log.i(TAG, "barcode was not null");
+            // barcodeImageView.setImageBitmap(barcode);
+            barcodeImageView.setImageBitmap((Bitmap.createScaledBitmap(barcode,
+                    (int) (barcode.getWidth() * 1),
+                    (int) (barcode.getHeight() * 1), false)));
         }
 
-        TextView formatTextView = (TextView) findViewById(R.id.format_text_view);
-        formatTextView.setText(rawResult.getBarcodeFormat().toString());
-
-        TextView typeTextView = (TextView) findViewById(R.id.type_text_view);
-        typeTextView.setText(resultHandler.getType().toString());
-
-        DateFormat formatter = DateFormat.getDateTimeInstance(DateFormat.SHORT,
-                DateFormat.SHORT);
-        TextView timeTextView = (TextView) findViewById(R.id.time_text_view);
-        timeTextView
-                .setText(formatter.format(new Date(rawResult.getTimestamp())));
-
-        TextView metaTextView = (TextView) findViewById(R.id.meta_text_view);
-        View metaTextViewLabel = findViewById(R.id.meta_text_view_label);
-        metaTextView.setVisibility(View.GONE);
-        metaTextViewLabel.setVisibility(View.GONE);
-        Map<ResultMetadataType, Object> metadata = rawResult
-                .getResultMetadata();
-        if (metadata != null) {
-            StringBuilder metadataText = new StringBuilder(20);
-            for (Map.Entry<ResultMetadataType, Object> entry : metadata
-                    .entrySet()) {
-                if (DISPLAYABLE_METADATA_TYPES.contains(entry.getKey())) {
-                    metadataText.append(entry.getValue()).append('\n');
-                }
-            }
-            if (metadataText.length() > 0) {
-                metadataText.setLength(metadataText.length() - 1);
-                metaTextView.setText(metadataText);
-                metaTextView.setVisibility(View.VISIBLE);
-                metaTextViewLabel.setVisibility(View.VISIBLE);
-            }
-        }
-
-        TextView contentsTextView = (TextView) findViewById(R.id.contents_text_view);
-        contentsTextView.setText(displayContents);
-        int scaledSize = Math.max(22, 32 - displayContents.length() / 4);
-        contentsTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, scaledSize);
-
-        TextView supplementTextView = (TextView) findViewById(R.id.contents_supplement_text_view);
-        supplementTextView.setText("");
-        supplementTextView.setOnClickListener(null);
-        if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean(
-                PreferencesActivity.KEY_SUPPLEMENTAL, true)) {
-            SupplementalInfoRetriever.maybeInvokeRetrieval(supplementTextView,
-                    resultHandler.getResult(), historyManager, this);
-        }
-
-        int buttonCount = resultHandler.getButtonCount();
+        int buttonCount = 2;
         ViewGroup buttonView = (ViewGroup) findViewById(R.id.result_button_view);
         buttonView.requestFocus();
         for (int x = 0; x < ResultHandler.MAX_BUTTON_COUNT; x++) {
             TextView button = (TextView) buttonView.getChildAt(x);
             if (x < buttonCount) {
                 button.setVisibility(View.VISIBLE);
-                button.setText(resultHandler.getButtonText(x));
-                button.setOnClickListener(new ResultButtonListener(
-                        resultHandler, x));
-            } else {
-                button.setVisibility(View.GONE);
+                if (x == 0) {
+                    button.setText("Accept");
+                    button.setOnClickListener(new View.OnClickListener() {
+
+                        @Override
+                        public void onClick(View v) {
+                            Intent returnIntent = new Intent();
+                            returnIntent.putExtra("result",
+                                    lastResult.toString());
+                            setResult(RESULT_OK, returnIntent);
+                            finish();
+                            return;
+                        }
+                    });
+                } else {
+                    button.setText("Deny");
+                    button.setOnClickListener(new View.OnClickListener() {
+
+                        @Override
+                        public void onClick(View v) {
+                            restartPreviewAfterDelay(0L);
+                        }
+                    });
+                }
             }
         }
 

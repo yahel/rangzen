@@ -18,6 +18,7 @@ package com.google.zxing.client.android.camera;
 
 import android.graphics.Point;
 import android.hardware.Camera;
+import android.hardware.Camera.Parameters;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;

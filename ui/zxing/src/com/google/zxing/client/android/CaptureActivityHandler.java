@@ -93,6 +93,7 @@ public final class CaptureActivityHandler extends Handler {
           if (compressedBitmap != null) {
             barcode = BitmapFactory.decodeByteArray(compressedBitmap, 0, compressedBitmap.length, null);
             // Mutable copy:
+            Log.i(TAG, "barcode bitmap width - " + barcode.getWidth());
             barcode = barcode.copy(Bitmap.Config.ARGB_8888, true);
           }
           scaleFactor = bundle.getFloat(DecodeThread.BARCODE_SCALED_FACTOR);          

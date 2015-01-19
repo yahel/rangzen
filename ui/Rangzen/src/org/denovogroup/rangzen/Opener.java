@@ -143,39 +143,39 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         messageStore
                 .addMessage(
                         "Crowds Swell, Tensions Surge As Hong Kong Leader Seeks End To Protests | ",
-                        1);
+                        1L);
         messageStore
                 .addMessage(
                         "150 Protesters Disrupt Coal And Rail Operations In Southeast Australia ",
-                        1.5f);
+                        1.5d);
         messageStore
                 .addMessage(
                         "Police Violence In Naples When Protests Erupt Over European Bank Policies ",
-                        2);
+                        2L);
 
         messageStore
                 .addMessage(
                         "Mothers Challenge Social Cleansing As London's Housing Conflicts Sharpen ",
-                        .5f);
+                        .5);
         messageStore
                 .addMessage(
                         "Europe Versus Facebook: Privacy Activists Sue Social Media Giant Over Data Breach #occupy ",
-                        .5f);
+                        .5d);
         messageStore
                 .addMessage(
                         "#occupy @occupy happening right now by sproul on UCB campus berkeley ",
-                        .5f);
+                        .5d);
 
-        Log.d(TAG, "seventh " + messageStore.addMessage("Test7s", .5f));
-        Log.d(TAG, "eighth " + messageStore.addMessage("Test8", .5f));
-        Log.d(TAG, "9 " + messageStore.addMessage("test9", .5f));
+        Log.d(TAG, "seventh " + messageStore.addMessage("Test7s", .5d));
+        Log.d(TAG, "eighth " + messageStore.addMessage("Test8", .5d));
+        Log.d(TAG, "9 " + messageStore.addMessage("test9", .5d));
 
         messageStore
                 .addMessage(
                         "Pentagon Supplies School Districts with Assault Rifles, Grenade Launchers, M.R.A.P.'s",
                         2);
-        Log.d(TAG, "11 " + messageStore.addMessage("Test11", .5f));
-        Log.d(TAG, "12 " + messageStore.addMessage("Test12", .5f));
+        Log.d(TAG, "11 " + messageStore.addMessage("Test11", .5d));
+        Log.d(TAG, "12 " + messageStore.addMessage("Test12", .75d));
         mHasStored = true;
     }
 
@@ -293,6 +293,21 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                 "android");
         TextView abTitle = (TextView) findViewById(titleId);
         abTitle.setTextColor(Color.WHITE);
+        if (requestCode == QR) {
+            if (resultCode == RESULT_OK) {
+                FriendStore fs = new FriendStore(this,
+                        StorageBase.ENCRYPTION_DEFAULT);
+                boolean wasAdded = fs.addFriend(intent.getDataString());
+                if (wasAdded) {
+                    Toast.makeText(this, "Friend Added", Toast.LENGTH_SHORT)
+                            .show();
+                } else {
+                    Toast.makeText(this, "Already Friends", Toast.LENGTH_SHORT)
+                            .show();
+                }
+
+            }
+        }
     }
 
     /**
@@ -321,7 +336,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         } else if (position == 2) {
             Intent intent = new Intent("com.google.zxing.client.android.SCAN");
             intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
-            startActivityForResult(intent, 0);
+            // startActivityForResult(intent, 0);
+            startActivityForResult(intent, QR);
             return;
         } else {
             needAdd = new FragmentOrganizer();
@@ -396,7 +412,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
          */
         @Override
         public void onReceive(Context context, Intent intent) {
-          notifyDataSetChanged();
+            notifyDataSetChanged();
         }
     }
 
@@ -404,13 +420,13 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      * Find the adapter and call its notifyDataSetChanged method.
      */
     private void notifyDataSetChanged() {
-      Fragment feed = getSupportFragmentManager().findFragmentById(
-          R.id.mainContent);
-      if (feed instanceof ListFragmentOrganizer) {
-        ListFragmentOrganizer org = (ListFragmentOrganizer) feed;
-        FeedListAdapter adapt = (FeedListAdapter) org.getListView()
-          .getAdapter();
-        adapt.notifyDataSetChanged();
-      }
+        Fragment feed = getSupportFragmentManager().findFragmentById(
+                R.id.mainContent);
+        if (feed instanceof ListFragmentOrganizer) {
+            ListFragmentOrganizer org = (ListFragmentOrganizer) feed;
+            FeedListAdapter adapt = (FeedListAdapter) org.getListView()
+                    .getAdapter();
+            adapt.notifyDataSetChanged();
+        }
     }
 }

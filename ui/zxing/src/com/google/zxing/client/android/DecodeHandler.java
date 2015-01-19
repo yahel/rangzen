@@ -75,7 +75,8 @@ final class DecodeHandler extends Handler {
   private void decode(byte[] data, int width, int height) {
     long start = System.currentTimeMillis();
     Result rawResult = null;
-    PlanarYUVLuminanceSource source = activity.getCameraManager().buildLuminanceSource(data, width, height);
+    PlanarYUVLuminanceSource source = activity.getCameraManager().buildLuminanceSourceRectangle(data, width, height);
+    PlanarYUVLuminanceSource source2 = activity.getCameraManager().buildLuminanceSourceRectangle(data, width, height);
     if (source != null) {
       BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
       try {
@@ -95,7 +96,8 @@ final class DecodeHandler extends Handler {
       if (handler != null) {
         Message message = Message.obtain(handler, R.id.decode_succeeded, rawResult);
         Bundle bundle = new Bundle();
-        bundleThumbnail(source, bundle);        
+//        bundleThumbnail(source, bundle);
+        bundleImage(source, bundle);
         message.setData(bundle);
         message.sendToTarget();
       }
@@ -105,6 +107,17 @@ final class DecodeHandler extends Handler {
         message.sendToTarget();
       }
     }
+  }
+  
+  private static void bundleImage(PlanarYUVLuminanceSource source, Bundle bundle) {
+      int[] pixels = source.renderImage();
+      int height = source.getHeight();
+      int width = source.getWidth();
+      Bitmap bitmap = Bitmap.createBitmap(pixels, 0, width, width, height, Bitmap.Config.ARGB_8888);
+      ByteArrayOutputStream out = new ByteArrayOutputStream();    
+      bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+      bundle.putByteArray(DecodeThread.BARCODE_BITMAP, out.toByteArray());
+      bundle.putFloat(DecodeThread.BARCODE_SCALED_FACTOR, (float) width / source.getWidth());
   }
 
   private static void bundleThumbnail(PlanarYUVLuminanceSource source, Bundle bundle) {
