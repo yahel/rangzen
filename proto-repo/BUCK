@@ -5,7 +5,9 @@ genrule(
     'protocompile.sh',
     'CleartextFriends.proto',
     'CleartextMessages.proto',
+    'ClientMessage.proto',
     'RangzenMessage.proto',
+    'ServerMessage.proto',
     'Person.proto',
     'protos.include',
   ],
@@ -24,6 +26,7 @@ java_library(
   visibility = ['PUBLIC'],
   deps = [
     ':compile_protobufs',
+    '//libs:okio',
     '//libs:wire-runtime',
   ]
 );

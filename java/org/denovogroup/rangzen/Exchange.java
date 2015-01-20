@@ -53,15 +53,15 @@ import java.util.Set;
  */
 public class Exchange implements Runnable { 
   /** Store of friends to use in this exchange. */
-  private FriendStore friendStore;
+  /* package */ FriendStore friendStore;
   /** Store of messages to use in this exchange. */
-  private MessageStore messageStore;
+  /* package */ MessageStore messageStore;
   /** Input stream connected to the remote communication partner. */
-  private InputStream in;
+  /* package */ InputStream in;
   /** Output stream connected to the remote communication partner. */
-  private OutputStream out;
+  /* package */ OutputStream out;
   /** A callback to report the result of an exchange. */
-  private ExchangeCallback callback;
+  /* package */ ExchangeCallback callback;
   /** 
    * Whether to start the exchange with the first message or wait for the other side
    * to begin the exchange.
@@ -69,10 +69,10 @@ public class Exchange implements Runnable {
   private boolean asInitiator;
   
   /** The number of friends in common with the remote peer. */
-  private int commonFriends = -1;
+  /* package */ int commonFriends = -1;
 
   /** Messages received from remote party. */
-  private CleartextMessages mMessagesReceived;
+  /* package */ List<RangzenMessage> mMessagesReceived;
 
   /** Friends received from remote party. */
   private CleartextFriends mFriendsReceived;
@@ -106,20 +106,20 @@ public class Exchange implements Runnable {
   private static final String TAG = "Exchange";
 
   /** Synchronized getter for status. */
-  private synchronized Status getExchangeStatus() {
+  /* package */ synchronized Status getExchangeStatus() {
     return mStatus;
   }
   /** Synchronized setter for status. */
-  private synchronized void setExchangeStatus(Status status) {
+  /* package */ synchronized void setExchangeStatus(Status status) {
     this.mStatus = status;
   }
 
   /** Synchronized getter for error message. */
-  private synchronized String getErrorMessage() {
+  /* package */ synchronized String getErrorMessage() {
     return mErrorMessage;
   }
   /** Synchronized setter for error message. */
-  private synchronized void setErrorMessage(String errorMessage) {
+  /* package */ synchronized void setErrorMessage(String errorMessage) {
     this.mErrorMessage = errorMessage;
   }
 
@@ -184,6 +184,28 @@ public class Exchange implements Runnable {
   }
 
   /**
+   * Retrieve at most NUM_MESSAGES_TO_SEND messages from the message store and
+   * return them. If no messages, returns a empty list.
+   *
+   * @return The top NUM_MESSAGES_TO_SEND in the MessageStore.
+   * @see NUM_MESSAGES_TO_SEND;
+   */
+  /* package */ List<RangzenMessage> getMessages() { 
+    List<RangzenMessage> messages = new ArrayList<RangzenMessage>();
+    for (int k=0; k<NUM_MESSAGES_TO_SEND; k++) {
+      MessageStore.Message messageFromStore = messageStore.getKthMessage(k);
+      if (messageFromStore == null) {
+        break;
+      }
+      messages.add(new RangzenMessage.Builder()
+                                     .text(messageFromStore.getMessage())
+                                     .priority(messageFromStore.getPriority())
+                                     .build());
+    }
+    return messages;
+  }
+
+  /**
    * Get messages from the MessageStore, encode them as a CleartextMessages protobuf
    * object, and write that Message out to the output stream.
    */
@@ -236,7 +258,7 @@ public class Exchange implements Runnable {
    */
   private void receiveMessages() {
     CleartextMessages mMessagesReceived = lengthValueRead(in, CleartextMessages.class);
-    this.mMessagesReceived = mMessagesReceived;
+    this.mMessagesReceived = mMessagesReceived.messages;
   }
 
   /**
@@ -312,7 +334,7 @@ public class Exchange implements Runnable {
    * @return The set of messages received from the remote peer, or null if we
    * the exchange hasn't completed yet or the exchange failed.
    */ 
-  public CleartextMessages getReceivedMessages() {
+  public List<RangzenMessage> getReceivedMessages() {
     if (getExchangeStatus() == Status.SUCCESS) {
       return mMessagesReceived;
     } else {
@@ -367,6 +389,10 @@ public class Exchange implements Runnable {
 
   /**
    * Send the given message, encoded as length-value, on the given output stream.
+   *
+   * TODO(lerner): I don't like the fact that this returns true/false to signal
+   * success or failure. I'd rather it threw an IOException that has to be handled
+   * by the calling code. Would prefer to change this in future.
    *
    * @param outputStream The output stream to write the Message to.
    * @param m A message to write.

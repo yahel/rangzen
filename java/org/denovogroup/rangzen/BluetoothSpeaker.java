@@ -279,7 +279,7 @@ public class BluetoothSpeaker {
     mSocket = mServerSocket.accept();
     Log.i(TAG, "Accepted socket from " + mSocket.getRemoteDevice());
     Log.i(TAG, "Accepted socket connected? " + mSocket.isConnected());
-    mExchange = new Exchange(mSocket.getInputStream(),
+    mExchange = new CryptographicExchange(mSocket.getInputStream(),
                              mSocket.getOutputStream(),
                              false,
                              new FriendStore(mContext, StorageBase.ENCRYPTION_DEFAULT),
@@ -296,7 +296,7 @@ public class BluetoothSpeaker {
    * thread might be inactive if Bluetooth was turned off previously.
    */
   public void tasks() {
-    Log.v(TAG, "Starting BluetoothSpeaker tasks.");
+    // Log.v(TAG, "Starting BluetoothSpeaker tasks.");
     if (mServerSocket == null         && mBluetoothAdapter != null &&
         mBluetoothAdapter.isEnabled() && !mConnectionAcceptingThread.isAlive()) {
       try { 

@@ -2,6 +2,7 @@
     experimentalApp = //apps/experimentalApp:experimentalApp
     WifiDirectSpeakerTest = //tests/org/denovogroup/rangzen:wifiDirectSpeakerTest
     bluetoothSpeakerTest = //tests/org/denovogroup/rangzen:bluetoothSpeakerTest
+    cryptoTest = //tests/org/denovogroup/rangzen:cryptoTest
     exchangeTest = //tests/org/denovogroup/rangzen:exchangeTest
     friendStoreTest = //tests/org/denovogroup/rangzen:friendStoreTest
     hotspotSpeakerTest = //tests/org/denovogroup/rangzen:hotspotSpeakerTest

@@ -37,7 +37,7 @@ public final class InactivityTimer {
   private final Activity activity;
   private final BroadcastReceiver powerStatusReceiver;
   private boolean registered;
-  private AsyncTask<?,?,?> inactivityTask;
+  private AsyncTask<Object, Object, Object> inactivityTask;
 
   public InactivityTimer(Activity activity) {
     this.activity = activity;

@@ -164,6 +164,13 @@ public class RangzenService extends Service {
         mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
         mFriendStore = new FriendStore(this, StorageBase.ENCRYPTION_DEFAULT);
 
+        // Used for a live test.
+        // TODO(lerner): Remove this after real tests for cryptographic exchange exist.
+        // mFriendStore.addFriend(FriendStore.bytesToBase64(new byte[]{0, 0}));
+        // mFriendStore.addFriend(FriendStore.bytesToBase64(new byte[]{0, 1}));
+        // mFriendStore.addFriend(FriendStore.bytesToBase64(new byte[]{1, 0}));
+        // mFriendStore.addFriend(FriendStore.bytesToBase64(new byte[]{1, 1}));
+
         mWifiDirectSpeaker = new WifiDirectSpeaker(this, 
                                                    mPeerManager, 
                                                    mBluetoothSpeaker,
@@ -217,7 +224,9 @@ public class RangzenService extends Service {
       } else {
         timeSinceLastOK = true;
       }
-      Log.d(TAG, "Ready to connect? " + (timeSinceLastOK && !getConnecting()));
+      Log.v(TAG, "Ready to connect? " + (timeSinceLastOK && !getConnecting()));
+      Log.v(TAG, "Connecting: " + getConnecting());
+      Log.v(TAG, "timeSinceLastOK: " + timeSinceLastOK);
       return timeSinceLastOK && !getConnecting(); 
     }
 
@@ -235,7 +244,7 @@ public class RangzenService extends Service {
      * background tasks.
      */
     public void backgroundTasks() {
-        Log.v(TAG, "Background Tasks Started");
+        // Log.v(TAG, "Background Tasks Started");
 
         // TODO(lerner): Why not just use mPeerManager?
         PeerManager peerManager = PeerManager.getInstance(getApplicationContext());
@@ -269,7 +278,7 @@ public class RangzenService extends Service {
         }
         mBackgroundTaskRunCount++;
 
-        Log.v(TAG, "Background Tasks Finished");
+        // Log.v(TAG, "Background Tasks Finished");
     }
 
     /**
@@ -312,7 +321,7 @@ public class RangzenService extends Service {
           mSocket = socket;
           Log.i(TAG, "Socket connected, attempting exchange");
           try {
-            mExchange = new Exchange(
+            mExchange = new CryptographicExchange(
                 socket.getInputStream(),
                 socket.getOutputStream(),
                 true,
@@ -345,11 +354,11 @@ public class RangzenService extends Service {
     /* package */ ExchangeCallback mExchangeCallback = new ExchangeCallback() {
       @Override
       public void success(Exchange exchange) {
-        CleartextMessages newMessages = exchange.getReceivedMessages();
+        List<RangzenMessage> newMessages = exchange.getReceivedMessages();
         int friendOverlap = exchange.getCommonFriends();
-        Log.i(TAG, "Got " + newMessages.messages.size() + " messages in exchangeCallback");
+        Log.i(TAG, "Got " + newMessages.size() + " messages in exchangeCallback");
         Log.i(TAG, "Got " + friendOverlap + " common friends in exchangeCallback");
-        for (RangzenMessage message : newMessages.messages) {
+        for (RangzenMessage message : newMessages) {
           Set<String> myFriends = mFriendStore.getAllFriends();
           double stored = mMessageStore.getPriority(message.text);
           double remote = message.priority;

@@ -6,6 +6,7 @@ android_library(
            'BluetoothPeerNetwork.java',
            'BluetoothSpeaker.java',
            'Crypto.java',
+           'CryptographicExchange.java',
            'Exchange.java',
            'ExchangeCallback.java',
            'FriendStore.java', 

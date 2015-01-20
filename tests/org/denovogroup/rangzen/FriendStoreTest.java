@@ -33,6 +33,8 @@ package org.denovogroup.rangzen;
 import java.io.IOException;
 import java.io.OptionalDataException;
 import java.io.StreamCorruptedException;
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -40,6 +42,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Robolectric.clickOn;
@@ -151,5 +154,28 @@ public class FriendStoreTest {
     assertTrue(store.deleteFriend(friend3));
     assertTrue(store.deleteFriend(friend4));
     assertTrue(store.getAllFriends().isEmpty());
+  }
+
+  /**
+   * Test and demonstrate some behaviors of the base64 encoding/decoding utiliyt
+   * methods.
+   */
+  @Test
+  public void testBase64EncodeDecode() throws UnsupportedEncodingException {
+    String TEST = "TEST";
+    // Identity.
+    assertEquals(TEST, FriendStore.bytesToBase64(FriendStore.base64ToBytes(TEST)));
+    // Hand chosen random example.
+    assertEquals("Zm9vYmFyYmF6", FriendStore.bytesToBase64("foobarbaz".getBytes("utf-8")));
+
+    // Corner cases.
+    // Empty string's bytes encode to empty string in base64.
+    assertEquals("", FriendStore.bytesToBase64("".getBytes("utf-8")));
+    // Base64 empty string decodes to empty array of bytes.
+    assertTrue(Arrays.equals(new byte[]{}, FriendStore.base64ToBytes("")));
+    // Null's encoding is...
+
+    assertNull(FriendStore.base64ToBytes(null));
+    assertNull(FriendStore.bytesToBase64(null));
   }
 }

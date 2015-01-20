@@ -16,6 +16,8 @@
 
 package com.google.zxing.client.android.share;
 
+import java.util.List; 
+
 import android.app.ListActivity;
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -26,7 +28,7 @@ import android.widget.ListView;
 
 public final class AppPickerActivity extends ListActivity {
 
-  private AsyncTask<?,?,?> backgroundTask;
+  private AsyncTask<Void, Void, List<AppInfo>> backgroundTask;
 
   @Override
   protected void onResume() {

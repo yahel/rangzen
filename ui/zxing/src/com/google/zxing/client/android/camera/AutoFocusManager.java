@@ -43,7 +43,7 @@ final class AutoFocusManager implements Camera.AutoFocusCallback {
   private boolean active;
   private final boolean useAutoFocus;
   private final Camera camera;
-  private AsyncTask<?,?,?> outstandingTask;
+  private AsyncTask<Object, Object, Object> outstandingTask;
 
   AutoFocusManager(Context context, Camera camera) {
     this.camera = camera;

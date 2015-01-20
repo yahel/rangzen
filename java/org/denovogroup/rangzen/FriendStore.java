@@ -31,10 +31,13 @@
 package org.denovogroup.rangzen;
 
 import android.content.Context;
+import android.util.Base64;
+import android.util.Log;
 
 import java.io.IOException;
 import java.io.OptionalDataException;
 import java.io.StreamCorruptedException;
+import java.lang.IllegalArgumentException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -50,6 +53,9 @@ public class FriendStore {
   
   /** The internal key used in the underlying store for Rangzen location data. */
   private static final String FRIENDS_STORE_KEY = "RangzenFriend-";
+
+  /** Tag for Android log messages. */
+  private static final String TAG = "FriendStore";
 
   /**
    * Creates a Rangzen friend store, with a consistent application of encryption of that stored
@@ -118,5 +124,57 @@ public class FriendStore {
       return new HashSet<String>();
     }
     return friends;
+  }
+
+  /**
+   * Encode a byte array as a base64 string.
+   * This method should be used to convert from byte[]s accepted by Crypto.java
+   * and Strings stored in FriendStore.
+   *
+   * @param bytes The bytes to be converted.
+   * @return A base64 encoded string of the bytes given, or null if bytes was null.
+   */
+  public static String bytesToBase64(byte[] bytes) {
+    if (bytes == null) {
+      return null;
+    }
+    return Base64.encodeToString(bytes, Base64.NO_WRAP);
+  }
+
+  /**
+   * Encode a byte array as a base64 string.
+   * This method should be used to convert from Strings stored by FriendStore
+   * to byte[]s accepted by Crypto.java.
+   *
+   * @param string The string to be converted.
+   * @return A byte[] of the bytes represented in base64 by the given string, or
+   * null if the string was null or wasn't base64 encoded.
+   */
+  public static byte[] base64ToBytes(String base64) {
+    if (base64 == null) {
+      return null;
+    }
+
+    try { 
+      return Base64.decode(base64, Base64.NO_WRAP);
+    } catch (IllegalArgumentException e) {
+      Log.e(TAG, "Attempt to decode bad base-64 string: " + base64 + ", exception: " + e);
+      return null;
+    }
+  }
+
+  /**
+   * Return all friends stored as byte[], decoded from their base64 stored representations.
+   *
+   * @return The set of all stored friend IDs, as byte[].
+   */
+  public ArrayList<byte[]> getAllFriendsBytes() {
+    Set<String> base64s = getAllFriends();
+    ArrayList<byte[]> byteArrays = new ArrayList<byte[]>();
+    for (String base64 : base64s) { 
+      byte[] bytes = base64ToBytes(base64);
+      byteArrays.add(bytes);
+    }
+    return byteArrays;
   }
 }

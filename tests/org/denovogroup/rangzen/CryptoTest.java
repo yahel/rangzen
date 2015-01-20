@@ -40,6 +40,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.junit.Ignore;
@@ -49,6 +50,8 @@ import org.junit.runners.JUnit4;
 import org.spongycastle.crypto.AsymmetricCipherKeyPair;
 import org.spongycastle.crypto.params.DHPublicKeyParameters;
 import org.spongycastle.crypto.params.DHPrivateKeyParameters;
+
+import okio.ByteString;
 
 /**
  * Tests the functionality of the cryptographic routines.
@@ -190,5 +193,49 @@ public class CryptoTest {
 
     cardinality = client.getCardinality(serverReply);
     assertEquals("Testing that the client gets the right cardinality", 0, cardinality);
+  }
+
+  /**
+   * Tests that the behavior of byteStringsToArray and byteArraysToStrings is
+   * correct when the list passed is empty.
+   */
+  @Test
+  public void emptyListConversionTest() {
+    ArrayList<byte[]> emptyArrays = new ArrayList<byte[]>();
+    ArrayList<ByteString> emptyStrings = new ArrayList<ByteString>();
+
+    ArrayList<byte[]> convertedArrays = Crypto.byteStringsToArrays(emptyStrings);
+    ArrayList<ByteString> convertedStrings = Crypto.byteArraysToStrings(emptyArrays);
+
+    assertEquals(0, emptyArrays.size());
+    assertEquals(0, emptyStrings.size());
+    assertNotNull(convertedArrays);
+    assertNotNull(convertedStrings);
+    assertEquals(0, convertedArrays.size());
+    assertEquals(0, convertedStrings.size());
+  }
+
+  /**
+   * Demonstrates that replyToBlindedItems throws an IllegalArgumentException when
+   * passed null. Previously it would throw NullPointerException, which didn't 
+   * seem clean to me.
+   */
+  @Test
+  public void replyToBlindedItemsNullTest() throws NoSuchAlgorithmException {
+    byte[] oneone = new byte[] { 1, 1 };
+    byte[] onetwo = new byte[] { 1, 2 };
+    byte[] twoone = new byte[] { 2, 1 };
+    byte[] twotwo = new byte[] { 2, 2 };
+    try {
+      ArrayList<byte[]> serverValues = new ArrayList<>(Arrays.asList(oneone, onetwo, twoone, twotwo));
+
+      Crypto.PrivateSetIntersection server = new Crypto.PrivateSetIntersection(serverValues);
+      server.replyToBlindedItems(null);
+      assertTrue(false);
+    } catch (NullPointerException e) {
+      assertTrue(false);
+    } catch (IllegalArgumentException e) {
+      assertTrue(true);
+    }
   }
 }

@@ -237,5 +237,6 @@ java_test(
     '//libs:spongycastle-pkix-1.51',
     '//libs:spongycastle-prov-1.51',
     '//java/org/denovogroup/rangzen:experimentalBackend',
+    '//libs:okio',
   ],
 )

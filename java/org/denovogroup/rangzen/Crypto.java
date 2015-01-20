@@ -48,6 +48,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 
 import javax.crypto.interfaces.DHPublicKey;
 import javax.crypto.interfaces.DHPrivateKey;
@@ -63,6 +64,8 @@ import org.spongycastle.crypto.params.DHParameters;
 import org.spongycastle.crypto.params.DHPublicKeyParameters;
 import org.spongycastle.jce.provider.BouncyCastleProvider;
 import org.spongycastle.jcajce.provider.asymmetric.dh.KeyPairGeneratorSpi;
+
+import okio.ByteString;
 
 /**
  * Cryptographic routines for Rangzen.
@@ -252,7 +255,12 @@ public class Crypto {
      * @return A tuple of the the double blinded values and hashes of our blinded values.
      */
     public ServerReplyTuple replyToBlindedItems(
-        ArrayList<byte[]> remoteBlindedItems) throws NoSuchAlgorithmException {
+        ArrayList<byte[]> remoteBlindedItems) throws NoSuchAlgorithmException,
+                                                     IllegalArgumentException {
+
+      if (remoteBlindedItems == null) {
+        throw new IllegalArgumentException("Null remote blinded items to replyToBlindedItems!");
+      }
       // Double blind all the values the other side sent by blinding them with our private value.
       ArrayList<byte[]> doubleBlindedItems = new ArrayList<byte[]>(remoteBlindedItems.size());
       for (byte[] b : remoteBlindedItems) {
@@ -315,4 +323,44 @@ public class Crypto {
       return cardinality;
     }
   }
+
+  /**
+   * Converts an ArrayList<byte[]> to an ArrayList<ByteString>.
+   * If the input is an empty list, the output is an empty list.
+   * If the input is null, the output is null.
+   *
+   * @param The byte arrays to be converted.
+   * @return A list of ByteStrings wrapping the given byte[]s. Null if the input
+   * was null, an empty list if the input was an empty list.
+   */
+  public static ArrayList<ByteString> byteArraysToStrings(ArrayList<byte[]> byteArrays) {
+    if (byteArrays == null) {
+      return null;
+    }
+    ArrayList<ByteString> byteStrings = new ArrayList<ByteString>();
+    for (byte[] bytes : byteArrays) {
+      byteStrings.add(ByteString.of(bytes)); 
+    }
+    return byteStrings;
+  }
+
+  /**
+   * Converts an ArrayList<ByteString> to an ArrayList<byte[]>.
+   * If the input is an empty list, the output is an empty list.
+   * If the input is null, the output is null.
+   *
+   * @param The ByteStrings to be converted.
+   * @return A list of byte[] extracted from the ByteStrings.
+   */
+  public static ArrayList<byte[]> byteStringsToArrays(List<ByteString> byteStrings) {
+    if (byteStrings == null) {
+      return null;
+    }
+    ArrayList<byte[]> byteArrays = new ArrayList<byte[]>();
+    for (ByteString string : byteStrings) {
+      byteArrays.add(string.toByteArray()); 
+    }
+    return byteArrays;
+  }
+
 }

@@ -423,11 +423,11 @@ public class PeerManager {
    * Run tasks, e.g. garbage collection of peers, speaker tasks, etc.
    */
   public void tasks() {
-    Log.v(TAG, "Started PeerManager tasks.");
+    // Log.v(TAG, "Started PeerManager tasks.");
 
     garbageCollectPeers();
     
-    Log.v(TAG, "Finished with PeerManager tasks.");
+    // Log.v(TAG, "Finished with PeerManager tasks.");
   }
 
   /**
