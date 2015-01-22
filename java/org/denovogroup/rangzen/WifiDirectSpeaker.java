@@ -49,6 +49,7 @@ import android.util.Log;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Date;
 
 /**
  * This class handles interactions with the Android WifiP2pManager and the rest
@@ -362,13 +363,40 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
   }
 
   /**
+   * Set the time we last asked for a Wifi Direct Scan to now.
+   */
+  private void touchLastSeekingTime() {
+    lastSeekingTime = new Date();
+  }
+
+  /** Time in milliseconds between requests to discoverPeers(). */
+  private long LONG_AGO_THRESHOLD = 1 * 60 * 1000; // 1 minute.
+
+  /** Time at which we last called discoverPeers(). */
+  private Date lastSeekingTime = null; 
+
+  /**
+   * Check whether it's been LONG_AGO_THRESHOLD time since the last time we
+   * called discoverPeers().
+   *
+   * @see LONG_AGO_THRESHOLD
+   */
+  private boolean lastSeekingWasLongAgo() {
+    if (lastSeekingTime == null) {
+      return true;
+    }
+    return (new Date()).getTime() - lastSeekingTime.getTime() > LONG_AGO_THRESHOLD;
+  }
+
+  /**
    * Issue a request to the WifiP2pManager to start discovering peers.
    * This is an internal method. To turn on/off peer discovery from higher
    * level application code, call setSeekingDesired(true/false).
    */
   private void seekPeers() {
-    if (!getSeeking()) {
+    if (!getSeeking() || lastSeekingWasLongAgo()) {
       setSeeking(true);
+      touchLastSeekingTime();
       mWifiP2pManager.discoverPeers(mWifiP2pChannel, new WifiP2pManager.ActionListener() {
         @Override
         public void onSuccess() {
