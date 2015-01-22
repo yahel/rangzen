@@ -75,27 +75,34 @@ public class FriendStoreTest {
   private SlidingPageIndicator activity;
 
   /** Some friends we store/retrieve. */
-  private String friend1;
-  private String friend2;
-  private String friend3;
-  private String friend4;
+  private byte[] friend1;
+  private byte[] friend2;
+  private byte[] friend3;
+  private byte[] friend4;
 
-  private Set<String> testFriendSet;
+  private Set<byte[]> testFriendSetBytes;
+  private Set<String> testFriendSetBase64;
 
   @Before
   public void setUp() {
     activity = Robolectric.buildActivity(SlidingPageIndicator.class).create().get();
     store = new FriendStore(activity, StorageBase.ENCRYPTION_DEFAULT);
-    friend1 = "Friend one's ID";
-    friend2 = "Friend two's ID";
-    friend3 = "Friend three's ID";
-    friend4 = "Friend four's ID";
+    friend1 = "Friend one's ID".getBytes();
+    friend2 = "Friend two's ID".getBytes();
+    friend3 = "Friend three's ID".getBytes();
+    friend4 = "Friend four's ID".getBytes();
 
-    testFriendSet = new HashSet<String>();
-    testFriendSet.add(friend1);
-    testFriendSet.add(friend2);
-    testFriendSet.add(friend3);
-    testFriendSet.add(friend4);
+    testFriendSetBytes = new HashSet<byte[]>();
+    testFriendSetBytes.add(friend1);
+    testFriendSetBytes.add(friend2);
+    testFriendSetBytes.add(friend3);
+    testFriendSetBytes.add(friend4);
+
+    testFriendSetBase64 = new HashSet<String>();
+    testFriendSetBase64.add(FriendStore.bytesToBase64(friend1));
+    testFriendSetBase64.add(FriendStore.bytesToBase64(friend2));
+    testFriendSetBase64.add(FriendStore.bytesToBase64(friend3));
+    testFriendSetBase64.add(FriendStore.bytesToBase64(friend4));
   }
 
   /**
@@ -106,23 +113,23 @@ public class FriendStoreTest {
     // Start empty, adding friends adds to count of friends.
     assertEquals(0, store.getAllFriends().size());
     assertTrue(store.getAllFriends().isEmpty());
-    assertTrue(store.addFriend(friend1));
+    assertTrue(store.addFriendBytes(friend1));
     assertEquals(1, store.getAllFriends().size());
-    assertTrue(store.addFriend(friend2));
+    assertTrue(store.addFriendBytes(friend2));
     assertEquals(2, store.getAllFriends().size());
     
     // Duplicate friend isn't stored.
-    assertFalse(store.addFriend(friend2));
+    assertFalse(store.addFriendBytes(friend2));
     assertEquals(2, store.getAllFriends().size());
 
-    assertTrue(store.addFriend(friend3));
+    assertTrue(store.addFriendBytes(friend3));
     assertEquals(3, store.getAllFriends().size());
-    assertTrue(store.addFriend(friend4));
+    assertTrue(store.addFriendBytes(friend4));
     assertEquals(4, store.getAllFriends().size());
 
     Set<String> friends = store.getAllFriends();
     for (String friend : friends) {
-      assertTrue(testFriendSet.contains(friend));
+      assertTrue(testFriendSetBase64.contains(friend));
     }
   }
 
@@ -130,29 +137,29 @@ public class FriendStoreTest {
    * Tests that we can delete friends after storing them.
    */
   @Test
-  public void deleteFriends() {
+  public void deleteFriendBytess() {
     // Add 4 friends
-    assertTrue(store.addFriend(friend1));
-    assertTrue(store.addFriend(friend2));
-    assertTrue(store.addFriend(friend3));
-    assertTrue(store.addFriend(friend4));
+    assertTrue(store.addFriendBytes(friend1));
+    assertTrue(store.addFriendBytes(friend2));
+    assertTrue(store.addFriendBytes(friend3));
+    assertTrue(store.addFriendBytes(friend4));
     assertEquals(4, store.getAllFriends().size());
 
     // Delete one. Now there are 3.
-    assertTrue(store.deleteFriend(friend1));
+    assertTrue(store.deleteFriendBytes(friend1));
     assertEquals(3, store.getAllFriends().size());
 
     // Delete another one. Now there are 2.
-    assertTrue(store.deleteFriend(friend2));
+    assertTrue(store.deleteFriendBytes(friend2));
     assertEquals(2, store.getAllFriends().size());
 
     // Delete the same one. Fails, and there are still 2.
-    assertFalse(store.deleteFriend(friend2));
+    assertFalse(store.deleteFriendBytes(friend2));
     assertEquals(2, store.getAllFriends().size());
 
     // Delete the rest, set is empty. 
-    assertTrue(store.deleteFriend(friend3));
-    assertTrue(store.deleteFriend(friend4));
+    assertTrue(store.deleteFriendBytes(friend3));
+    assertTrue(store.deleteFriendBytes(friend4));
     assertTrue(store.getAllFriends().isEmpty());
   }
 
@@ -173,9 +180,37 @@ public class FriendStoreTest {
     assertEquals("", FriendStore.bytesToBase64("".getBytes("utf-8")));
     // Base64 empty string decodes to empty array of bytes.
     assertTrue(Arrays.equals(new byte[]{}, FriendStore.base64ToBytes("")));
-    // Null's encoding is...
-
-    assertNull(FriendStore.base64ToBytes(null));
-    assertNull(FriendStore.bytesToBase64(null));
   }
+
+  /**
+   * For security reasons, we don't want nulls emitted from base64 encoding/decoding.
+   * Test that decoding produces exceptions on poorly formed inputs.
+   */
+  @Test
+  public void noNullsFromBase64Decode() {
+    // TODO(lerner): We should include a verification mechanism that throws exceptions
+    // on attempting to decode strings that aren't valid base64.
+    // We don't have that yet, so this test doesn't do the right thing.
+    // try {
+    //   assertEquals("not this", FriendStore.base64ToBytes("   FO!#$@#%$%&___"));
+    //   assertTrue("Base64 to bytes didn't throw an exception on a bad string", false);
+    // } catch (IllegalArgumentException e) {
+    //   assertTrue(true);
+    // }
+
+    try {
+      FriendStore.base64ToBytes(null);
+      assertTrue("Base64 to bytes didn't throw an exception on a null string", false);
+    } catch (IllegalArgumentException e) {
+      assertTrue(true);
+    }
+
+    try {
+      FriendStore.bytesToBase64(null);
+      assertTrue("Bytes to base64 didn't throw an exception on a null string", false);
+    } catch (IllegalArgumentException e) {
+      assertTrue(true);
+    }
+  }
+
 }

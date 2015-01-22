@@ -243,7 +243,7 @@ public class ExchangeTest {
   @Test(timeout=2000)
   public void notAsInitiatorWithFriends() throws IOException {
     for (int i=0; i<NUM_FRIENDS; i++) {
-      friendStore.addFriend("FRIEND" + i);
+      friendStore.addFriendBytes(("FRIEND" + i).getBytes());
     }
 
     // Send no friends

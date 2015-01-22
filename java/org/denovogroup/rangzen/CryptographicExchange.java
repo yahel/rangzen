@@ -117,7 +117,8 @@ public class CryptographicExchange extends Exchange {
   /**
    * Initializes the client and server PSI objects with the node's friends.
    */
-  private void initializePSIObjects() throws NoSuchAlgorithmException {
+  private void initializePSIObjects() throws NoSuchAlgorithmException, 
+                                             IllegalArgumentException {
     ArrayList<byte[]> friends = friendStore.getAllFriendsBytes();
     try {
       // The clientPSI object manages the interaction in which we're the "client".

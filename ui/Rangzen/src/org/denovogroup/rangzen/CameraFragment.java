@@ -256,9 +256,11 @@ public final class CameraFragment extends Fragment implements
         if (result.getText().substring(0, 10).equals("Rangzen://")) {
             FriendStore friendStore = new FriendStore(getActivity(), StorageBase.ENCRYPTION_DEFAULT);
             
-            //add this friend to the message store
+            // TODO(lerner): Actually convert from the friend code string to 
+            // the friend id properly. Simply grabbing the bytes of the string
+            // isn't the right thing.
             String friendCode = result.getText().substring(10);
-            friendStore.addFriend(friendCode);
+            friendStore.addFriendBytes(friendCode.getBytes()); // WRONG.
 
             TextView statusView = (TextView) getActivity().findViewById(
                     R.id.status_view);

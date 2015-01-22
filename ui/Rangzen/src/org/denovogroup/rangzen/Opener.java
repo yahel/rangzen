@@ -297,7 +297,10 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             if (resultCode == RESULT_OK) {
                 FriendStore fs = new FriendStore(this,
                         StorageBase.ENCRYPTION_DEFAULT);
-                boolean wasAdded = fs.addFriend(intent.getDataString());
+                // TODO(lerner): Actually convert from the friend code string to 
+                // the friend id properly. Simply grabbing the bytes of the string
+                // isn't the right thing.
+                boolean wasAdded = fs.addFriendBytes(intent.getDataString().getBytes()); // WRONG.
                 if (wasAdded) {
                     Toast.makeText(this, "Friend Added", Toast.LENGTH_SHORT)
                             .show();

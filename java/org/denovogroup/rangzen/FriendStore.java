@@ -32,17 +32,11 @@ package org.denovogroup.rangzen;
 
 import android.content.Context;
 import android.util.Base64;
-import android.util.Log;
 
-import java.io.IOException;
-import java.io.OptionalDataException;
-import java.io.StreamCorruptedException;
 import java.lang.IllegalArgumentException;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * Storage for friends that uses StorageBase underneath. 
@@ -76,7 +70,7 @@ public class FriendStore {
    * @return Returns true if the friend was stored, false if the friend was already
    * stored.
    */
-  public boolean addFriend(String friend) {
+  private boolean addFriend(String friend) {
     Set<String> friends = store.getSet(FRIENDS_STORE_KEY);
     if (friends == null) {
       friends = new HashSet<String>();
@@ -91,13 +85,27 @@ public class FriendStore {
   }
 
   /**
+   * Add the given bytes as a friend, converting them to base64 and storing them
+   * in the FriendStore.
+   *
+   * @param friend The friend to be added.
+   * @return True if the friend was added, false if not since it was already there.
+   */
+  public boolean addFriendBytes(byte[] friend) {
+    if (friend == null) {
+      throw new IllegalArgumentException("Null friend added through addFriendBytes()");
+    }
+    return addFriend(bytesToBase64(friend));
+  }
+
+  /**
    * Delete the given friend ID from the friend store, if it exists.
    *
    * @param friend The friend ID to delete.
    *
    * @return True if the friend existed and was deleted, false otherwise.
    */
-  public boolean deleteFriend(String friend) {
+  private boolean deleteFriend(String friend) {
     Set<String> friends = store.getSet(FRIENDS_STORE_KEY);
     if (friends == null) {
       // No friends known, so deleting a friend should always fail.
@@ -111,6 +119,19 @@ public class FriendStore {
     }
     // Friends not empty but given friend to delete not known.
     return false;
+  }
+
+  /**
+   * Delete the given bytes as a friend.
+   *
+   * @param friend The friend to be deleted.
+   * @return True if the friend was deleted, false if they weren't in the store.
+   */
+  public boolean deleteFriendBytes(byte[] friend) {
+    if (friend == null) {
+      throw new IllegalArgumentException("Null friend deleted through addFriendBytes()");
+    }
+    return deleteFriend(bytesToBase64(friend));
   }
 
   /**
@@ -136,7 +157,7 @@ public class FriendStore {
    */
   public static String bytesToBase64(byte[] bytes) {
     if (bytes == null) {
-      return null;
+      throw new IllegalArgumentException("Asked to convert null byte array  to string.");
     }
     return Base64.encodeToString(bytes, Base64.NO_WRAP);
   }
@@ -150,25 +171,25 @@ public class FriendStore {
    * @return A byte[] of the bytes represented in base64 by the given string, or
    * null if the string was null or wasn't base64 encoded.
    */
-  public static byte[] base64ToBytes(String base64) {
+  public static byte[] base64ToBytes(String base64) throws IllegalArgumentException {
     if (base64 == null) {
-      return null;
+      throw new IllegalArgumentException("Asked to convert null base64 string to bytes.");
     }
 
-    try { 
-      return Base64.decode(base64, Base64.NO_WRAP);
-    } catch (IllegalArgumentException e) {
-      Log.e(TAG, "Attempt to decode bad base-64 string: " + base64 + ", exception: " + e);
-      return null;
-    }
+    return Base64.decode(base64, Base64.NO_WRAP);
   }
 
   /**
    * Return all friends stored as byte[], decoded from their base64 stored representations.
    *
+   * This doesn't take arguments but throws an underlying IllegalArgumentException.
+   * Which is awkward, but it needs to be some kind of exception, and the underlying
+   * exception has the most information. The exception might be thrown by 
+   * base64ToBytes().
+   *
    * @return The set of all stored friend IDs, as byte[].
    */
-  public ArrayList<byte[]> getAllFriendsBytes() {
+  public ArrayList<byte[]> getAllFriendsBytes() throws IllegalArgumentException {
     Set<String> base64s = getAllFriends();
     ArrayList<byte[]> byteArrays = new ArrayList<byte[]>();
     for (String base64 : base64s) { 
