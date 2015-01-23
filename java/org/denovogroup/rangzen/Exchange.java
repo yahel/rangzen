@@ -105,15 +105,15 @@ public class Exchange implements Runnable {
   /** Included with Android log messages. */
   private static final String TAG = "Exchange";
 
+  /** Number of bytes in a megabyte. */
+  private static final int MEGABYTES = 1024 * 1024;
+
   /**
    * Size, in bytes, of the maximum size message we'll try to read with lengthValueRead.
    * This is necessary since otherwise a malicious remote party can just provide a huge
    * size and cause an OutOfMemory error when we allocate a buffer.
    */
   private static final int MAX_MESSAGE_SIZE = 10 * MEGABYTES;
-
-  /** Number of bytes in a megabyte. */
-  private static final int MEGABYTES = 1024 * 1024;
 
   /** Synchronized getter for status. */
   /* package */ synchronized Status getExchangeStatus() {
