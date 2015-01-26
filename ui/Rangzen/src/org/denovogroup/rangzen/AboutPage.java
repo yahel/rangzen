@@ -59,10 +59,14 @@ public class AboutPage extends Activity {
         button.setOnClickListener(new View.OnClickListener() { 
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent();
-                intent.setClass(v.getContext(), MapsActivity.class);
-                startActivity(intent);
-                finish();
+                // TODO(Jesus): Update this activity to current needs.
+                // Doesn't need any buttons or anything, should have different text.
+                // Might also just want to remove it entirely?
+                //
+                // Intent intent = new Intent();
+                // intent.setClass(v.getContext(), MapsActivity.class);
+                // startActivity(intent);
+                // finish();
             }
         });
     }

@@ -84,7 +84,7 @@ prebuilt_jar(
 
 prebuilt_jar(
   name = 'okio',
-  binary_jar = 'okio-1.0.1.jar',
+  binary_jar = 'okio-1.2.0.jar',
   visibility = [ 'PUBLIC' ],
 )
 

@@ -28,7 +28,6 @@ android_library(
   visibility = [ 'PUBLIC' ],
   deps = [
     '//libs:android-support-v4',
-    '//ui/google-play-services_lib/libs:google-play-services',
     '//libs:gson',
     '//res/org/denovogroup/rangzen:res',
     '//java/com/github/kevinsawicki/http:httpRequest',

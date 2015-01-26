@@ -5,7 +5,6 @@ android_resource(
   visibility = [ 'PUBLIC' ],
   deps = [
     '//ui/appcompat_v7_4:appcompatRes',
-    '//ui/google-play-services_lib:googlePlayServicesRes',
   ],
 )
 

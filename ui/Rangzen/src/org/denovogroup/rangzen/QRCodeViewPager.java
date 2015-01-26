@@ -60,7 +60,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.google.android.gms.internal.ke;
 import com.viewpagerindicator.LinePageIndicator;
 import com.viewpagerindicator.PageIndicator;
 

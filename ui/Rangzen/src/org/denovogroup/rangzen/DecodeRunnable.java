@@ -23,7 +23,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
-import com.google.android.gms.drive.internal.ac;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.BinaryBitmap;
 import com.google.zxing.DecodeHintType;
