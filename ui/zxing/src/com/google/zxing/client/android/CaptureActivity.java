@@ -16,39 +16,31 @@
 
 package com.google.zxing.client.android;
 
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.DecodeHintType;
-import com.google.zxing.Result;
-import com.google.zxing.ResultMetadataType;
-import com.google.zxing.ResultPoint;
-import com.google.zxing.client.android.camera.CameraManager;
-import com.google.zxing.client.android.clipboard.ClipboardInterface;
-import com.google.zxing.client.android.history.HistoryActivity;
-import com.google.zxing.client.android.history.HistoryItem;
-import com.google.zxing.client.android.history.HistoryManager;
-import com.google.zxing.client.android.result.ResultButtonListener;
-import com.google.zxing.client.android.result.ResultHandler;
-import com.google.zxing.client.android.result.ResultHandlerFactory;
-import com.google.zxing.client.android.result.supplement.SupplementalInfoRetriever;
-import com.google.zxing.client.android.share.ShareActivity;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.Map;
 
-import android.R.raw;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
-import android.util.Base64;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
@@ -62,16 +54,24 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.IOException;
-import java.text.DateFormat;
-import java.util.Collection;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.Map;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.DecodeHintType;
+import com.google.zxing.Result;
+import com.google.zxing.ResultMetadataType;
+import com.google.zxing.ResultPoint;
+import com.google.zxing.client.android.camera.CameraManager;
+import com.google.zxing.client.android.clipboard.ClipboardInterface;
+import com.google.zxing.client.android.history.HistoryActivity;
+import com.google.zxing.client.android.history.HistoryItem;
+import com.google.zxing.client.android.history.HistoryManager;
+import com.google.zxing.client.android.result.ResultHandler;
+import com.google.zxing.client.android.result.ResultHandlerFactory;
+import com.google.zxing.client.android.share.ShareActivity;
 
 /**
  * This activity opens the camera and does the actual scanning on a background
@@ -120,6 +120,8 @@ public final class CaptureActivity extends Activity implements
     private InactivityTimer inactivityTimer;
     private BeepManager beepManager;
     private AmbientLightManager ambientLightManager;
+    private Fragment fragment;
+    private static boolean isFragment = false;
 
     ViewfinderView getViewfinderView() {
         return viewfinderView;
@@ -149,11 +151,62 @@ public final class CaptureActivity extends Activity implements
         ambientLightManager = new AmbientLightManager(this);
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+
+        createButtonImage(R.id.button22, R.drawable.qrtransdarkborder,
+                R.drawable.qrtransdarkpressed, false);
+    }
+
+    /**
+     * Creates a clickable about icon on the surfaceView/CameraView. This icon
+     * needs to be scaled down and the icon itself is created in the xml file,
+     * "capture.xml".
+     */
+    public void createButtonImage(int buttonId, int notPressedImage,
+            int pressedImage, boolean invert) {
+        ImageButton button = (ImageButton) findViewById(buttonId);
+
+        StateListDrawable states = new StateListDrawable();
+        states.addState(
+                new int[] { android.R.attr.state_pressed },
+                new BitmapDrawable(BitmapFactory.decodeResource(getResources(),
+                        pressedImage)));
+        states.addState(
+                new int[] { android.R.attr.state_focused },
+                new BitmapDrawable(BitmapFactory.decodeResource(getResources(),
+                        pressedImage)));
+        states.addState(
+                new int[] {},
+                new BitmapDrawable(BitmapFactory.decodeResource(getResources(),
+                        notPressedImage)));
+
+        button.setBackgroundDrawable(states);
+        Resources r = getResources();
+        int px = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                15, r.getDisplayMetrics());
+        button.setPadding(px, px, px, px);
+
+        // bitmap1 = icon;
+        // bitmap1a = icon2;
+        button.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                onPause();
+                FragmentManager fm = getFragmentManager();
+                FragmentTransaction ft = fm.beginTransaction();
+                ft.replace(android.R.id.content, fragment, "QRFragment");
+                ft.addToBackStack(null);
+                isFragment = true;
+                ft.commit();
+            }
+        });
+
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        fragment = new QRFragment();
 
         // CameraManager must be initialized here, not in onCreate(). This is
         // necessary because we don't
@@ -333,6 +386,20 @@ public final class CaptureActivity extends Activity implements
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         switch (keyCode) {
         case KeyEvent.KEYCODE_BACK:
+            /**
+             * This specifically looks to see if the QRCode Fragment is being
+             * shown, if it is then it removes that fragment and resumes
+             * scanning for other codes.
+             */
+            if (isFragment) {
+                FragmentTransaction ft = getFragmentManager()
+                        .beginTransaction();
+                ft.remove(fragment);
+                ft.commit();
+                isFragment = false;
+                onResume();
+                return true;
+            }
             if (source == IntentSource.NATIVE_APP_INTENT) {
                 setResult(RESULT_CANCELED);
                 finish();
@@ -455,7 +522,7 @@ public final class CaptureActivity extends Activity implements
      * @param barcode
      *            A greyscale bitmap of the camera data which was decoded.
      */
-     public void handleDecode(Result rawResult, Bitmap barcode, float scaleFactor) {
+    public void handleDecode(Result rawResult, Bitmap barcode, float scaleFactor) {
         Log.i(TAG, rawResult.getText());
         if (rawResult != null) {
             if (!rawResult.getText().startsWith("rangzen://")) {

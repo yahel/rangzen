@@ -154,7 +154,7 @@ public class FragmentOrganizer extends Fragment {
         String qrInputText = qrInput.getText().toString();
         // Log.v(LOG_TAG, qrInputText);
 
-        new CreateQRCode().execute(qrInputText);
+//        new CreateQRCode().execute(qrInputText);
         return view3;
 	}
 	
@@ -466,46 +466,6 @@ public class FragmentOrganizer extends Fragment {
 		float px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dip,
 				r.getDisplayMetrics());
 		return px;
-	}
-	
-	private class CreateQRCode extends AsyncTask<String, Integer, Integer> {
-
-	    BitMatrix bitmap = null;
-        @Override
-        protected Integer doInBackground(String... params) {
-         // Find screen size
-            WindowManager manager = (WindowManager) getActivity().getSystemService(
-                    Context.WINDOW_SERVICE);
-            Display display = manager.getDefaultDisplay();
-            Point point = new Point();
-            display.getSize(point);
-            int width = point.x;
-            int height = point.y;
-            int smallerDimension = width < height ? width : height;
-            smallerDimension = smallerDimension * 3 / 4;
-            
-            
-            QRCodeWriter qrCodeEncoder = new QRCodeWriter();
-
-            try {
-                bitmap = qrCodeEncoder.encode(params[0],
-                        BarcodeFormat.QR_CODE, width, height);
-
-            } catch (WriterException e) {
-                e.printStackTrace();
-            }
-            
-            return 1;
-        }
-        
-        @Override
-        protected void onPostExecute(Integer result) {
-            // TODO Auto-generated method stub
-            super.onPostExecute(result);
-            ImageView myImage = (ImageView) getActivity().findViewById(R.id.imageView1);
-            myImage.setImageBitmap(toBitmap(bitmap));
-        }
-	    
 	}
 
 }

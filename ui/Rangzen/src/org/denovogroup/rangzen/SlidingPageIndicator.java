@@ -31,18 +31,30 @@
 
 package org.denovogroup.rangzen;
 
-import org.denovogroup.rangzen.RangzenService;
-import org.denovogroup.rangzen.StorageBase;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.Point;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
+import android.view.Display;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 import com.viewpagerindicator.LinePageIndicator;
 import com.viewpagerindicator.PageIndicator;
 
@@ -59,11 +71,15 @@ public class SlidingPageIndicator extends FragmentActivity {
     private static final String TAG = "SlidingPageIndicator";
 
     /**
-     * Give your SharedPreferences file a name and save it to a static variable.
+     * Name of the file where the boolean remembering if the user has already
+     * seen the introduction is stored.
      */
     public static final String PREFS_NAME = "rememberPagesSeen";
-
-    private StorageBase mStore;
+    /**
+     * Name of the file in internal memory where the user's qr code bitmap is
+     * stored.
+     */
+    private static final String FILENAME = "qrcode";
 
     IntroductionFragmentAdapter mAdapter;
     ViewPager mPager;
@@ -71,14 +87,16 @@ public class SlidingPageIndicator extends FragmentActivity {
 
     /**
      * This is the first activity of the application and it checks to see if the
-     * introduction was already shown. If it was then the maps interface is
-     * brought up. If it was not, then introduction is handled.
+     * introduction was already shown. If it was then the Rangzen feed is shown.
+     * If it was not, then introduction is handled.
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
+        if (!fileExists(FILENAME)) {
+            new CreateQRCode().execute("0xfjddjvn377v7dft7cg6g72b3ge73g7d8b");
+        }
 
         // Start the RangzenService.
         Intent serviceIntent = new Intent(this, RangzenService.class);
@@ -140,5 +158,117 @@ public class SlidingPageIndicator extends FragmentActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * Checks internal storage for a file called 'qrcode'
+     * 
+     * @param filename
+     *            name of the file being looked for
+     * @return If the file exists in internal memory.
+     */
+    public boolean fileExists(String filename) {
+        File file = getFileStreamPath(filename);
+        if (file == null || !file.exists()) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Async task that creates the personal QR code and stores it as a file in
+     * internal memory.
+     * 
+     * @param String
+     *            - personal QR code string
+     */
+    private class CreateQRCode extends AsyncTask<String, Integer, Integer> {
+
+        BitMatrix bitmap = null;
+
+        /**
+         * This creates a QR code with the user's QRCode content information
+         * that is the size of the screen.
+         * 
+         * @params String that contains the user's QRCode content.
+         */
+        @Override
+        protected Integer doInBackground(String... params) {
+            WindowManager manager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+            Display display = manager.getDefaultDisplay();
+            Point point = new Point();
+            display.getSize(point);
+            int width = point.x;
+            int height = point.y;
+            int tmp = width;
+            width = height;
+            height = tmp;
+            Log.i(TAG, Integer.toString(point.x));
+            Log.i(TAG, Integer.toString(point.y));
+
+            QRCodeWriter qrCodeEncoder = new QRCodeWriter();
+
+            Log.i(TAG, "file does not exist");
+
+            try {
+                bitmap = qrCodeEncoder.encode(params[0], BarcodeFormat.QR_CODE,
+                        width, height);
+            } catch (WriterException e) {
+                e.printStackTrace();
+            }
+
+            return 1;
+        }
+
+        /**
+         * Puts the bitmap into memory in internal storage in the file name
+         * 'qrcode'
+         */
+        @Override
+        protected void onPostExecute(Integer result) {
+            super.onPostExecute(result);
+            Bitmap bmp = toBitmap(bitmap);
+            FileOutputStream out = null;
+
+            try {
+                out = openFileOutput(FILENAME, Context.MODE_PRIVATE);
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, out);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    if (out != null) {
+                        out.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**
+     * Writes the given Matrix on a new Bitmap object.
+     * 
+     * @param matrix
+     *            the matrix to write.
+     * @return the new {@link Bitmap}-object.
+     */
+    public Bitmap toBitmap(BitMatrix matrix) {
+        int height = matrix.getHeight();
+        int width = matrix.getWidth();
+        Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+        try {
+            for (int x = 0; x < width; x++) {
+                for (int y = 0; y < height; y++) {
+                    bmp.setPixel(x, y, matrix.get(x, y) ? Color.BLACK
+                            : Color.WHITE);
+                }
+            }
+        } catch (IllegalStateException e) {
+            Log.i(TAG, "immutable bitmap");
+        }
+
+        return bmp;
     }
 }
