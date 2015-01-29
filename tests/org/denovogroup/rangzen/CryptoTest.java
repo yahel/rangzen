@@ -30,10 +30,14 @@
  */
 package org.denovogroup.rangzen;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+
 import javax.crypto.spec.DHParameterSpec;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -46,7 +50,6 @@ import org.junit.Test;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
 import org.spongycastle.crypto.AsymmetricCipherKeyPair;
 import org.spongycastle.crypto.params.DHPublicKeyParameters;
 import org.spongycastle.crypto.params.DHPrivateKeyParameters;
@@ -276,5 +279,30 @@ public class CryptoTest {
     } catch (IllegalArgumentException e) {
       assertTrue(true);
     }
+  }
+
+  /**
+   * Check that the individual encode/decode private/public key methods reverse each other.
+   * Check that the generatePublicID/generatePrivateID methods are reversed by the 
+   * corresponding decode method.
+   */
+  @Test
+  public void encodeDecodeKeysTest() throws IOException {
+    AsymmetricCipherKeyPair keypair = Crypto.generateDHKeyPair();
+    DHPrivateKeyParameters privKey = (DHPrivateKeyParameters) keypair.getPrivate();
+    DHPublicKeyParameters pubKey = (DHPublicKeyParameters) keypair.getPublic();
+
+    assertEquals(pubKey, Crypto.decodeDHPublicKey(Crypto.encodeDHPublicKey(pubKey)));
+    assertEquals(privKey, Crypto.decodeDHPrivateKey(Crypto.encodeDHPrivateKey(privKey)));
+
+    assertEquals(pubKey, Crypto.decodeDHPublicKey(Crypto.generatePublicID(keypair)));
+    assertEquals(privKey, Crypto.decodeDHPrivateKey(Crypto.generatePrivateID(keypair)));
+
+    // Took this out because sometimes pubkey is 129 and sometimes it's 128.
+    // Not sure why that is (or what else to test here).
+    // int BYTES_IN_PUBKEY = 128;
+    // int BYTES_IN_PRIVKEY = 21;
+    // assertEquals(BYTES_IN_PUBKEY, Crypto.encodeDHPublicKey(pubKey).length);
+    // assertEquals(BYTES_IN_PRIVKEY, Crypto.encodeDHPrivateKey(privKey).length);
   }
 }

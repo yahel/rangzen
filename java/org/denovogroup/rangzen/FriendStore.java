@@ -32,6 +32,9 @@ package org.denovogroup.rangzen;
 
 import android.content.Context;
 import android.util.Base64;
+import android.util.Log;
+
+import org.spongycastle.crypto.AsymmetricCipherKeyPair;
 
 import java.lang.IllegalArgumentException;
 import java.util.ArrayList;
@@ -45,8 +48,14 @@ public class FriendStore {
   /** A handle for the underlying store */
   private StorageBase store;
   
-  /** The internal key used in the underlying store for Rangzen location data. */
+  /** The internal key used in the underlying store for Rangzen friend data. */
   private static final String FRIENDS_STORE_KEY = "RangzenFriend-";
+
+  /** The internal keys used in the underlying store for the public device ID (keys). */
+  private static final String DEVICE_PUBLIC_ID_KEY = "PublicDeviceIDKey";
+
+  /** The internal keys used in the underlying store for the private device ID (keys). */
+  private static final String DEVICE_PRIVATE_ID_KEY = "PrivateDeviceIDKey";
 
   /** Tag for Android log messages. */
   private static final String TAG = "FriendStore";
@@ -198,4 +207,44 @@ public class FriendStore {
     }
     return byteArrays;
   }
+
+  /**
+   * If the device has not previously generated and persisted its device ID (aka
+   * public/private keypair for PSI), generates and stores said ID.
+   *
+   * If the ID is already stored, this harmlessly does nothing.
+   */
+  private void generateAndStoreDeviceID() {
+    String privateDeviceID = store.get(DEVICE_PRIVATE_ID_KEY);
+    String publicDeviceID = store.get(DEVICE_PUBLIC_ID_KEY);
+    if (privateDeviceID == null || publicDeviceID == null) {
+      // This would be very strange, if only half the ID was stored.
+      if (privateDeviceID != publicDeviceID) {
+        if (privateDeviceID == null) {
+          Log.wtf(TAG, "Only one of private and public ID are stored! Public is stored, private is null.");
+        } else {
+          Log.wtf(TAG, "Only one of private and public ID are stored! Private is stored, public is null.");
+        }
+      }
+
+      AsymmetricCipherKeyPair keypair = Crypto.generateUserID();
+      privateDeviceID = bytesToBase64(Crypto.generatePrivateID(keypair));
+      publicDeviceID = bytesToBase64(Crypto.generatePublicID(keypair));
+      store.put(DEVICE_PRIVATE_ID_KEY, privateDeviceID);
+      store.put(DEVICE_PUBLIC_ID_KEY, publicDeviceID);
+    }
+  }
+
+  /**
+   * Return the device's public device ID as a base64 encoded string, ready to be
+   * shared with another device (e.g. as part of a QR code).
+   *
+   * @return A base64 encoded string representing the local device's public ID,
+   * or null if something went wrong.
+   */
+  public String getPublicDeviceIDString() {
+    generateAndStoreDeviceID();
+    return store.get(DEVICE_PUBLIC_ID_KEY);
+  }
+
 }

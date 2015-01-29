@@ -213,4 +213,19 @@ public class FriendStoreTest {
     }
   }
 
+  /** 
+   * Test that retrieving our public ID fulfills its most basic requirements.
+   */
+  @Test
+  public void getPublicIDTest() {
+    String base64Pubkey = store.getPublicDeviceIDString();
+
+    // Check that multiple calls to get the public ID string return the same ID.
+    assertEquals(store.getPublicDeviceIDString(), store.getPublicDeviceIDString());
+    // And that it's not null.
+    assertNotNull(base64Pubkey);
+
+    // Not sure what else to test here.
+  }
+
 }

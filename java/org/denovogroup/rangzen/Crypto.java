@@ -62,6 +62,7 @@ import org.spongycastle.crypto.generators.DHKeyPairGenerator;
 import org.spongycastle.crypto.params.DHKeyGenerationParameters;
 import org.spongycastle.crypto.params.DHParameters;
 import org.spongycastle.crypto.params.DHPublicKeyParameters;
+import org.spongycastle.crypto.params.DHPrivateKeyParameters;
 import org.spongycastle.jce.provider.BouncyCastleProvider;
 import org.spongycastle.jcajce.provider.asymmetric.dh.KeyPairGeneratorSpi;
 
@@ -132,6 +133,18 @@ public class Crypto {
   }
 
   /**
+   * Extracts a byte array representation of a private key given a keypair.
+   *
+   * @param privkey The keypair from which to get the private key.
+   *
+   * @return The underlying byte array of the private key or null upon failure.
+   */
+  protected static byte[] encodeDHPrivateKey(DHPrivateKeyParameters privkey) {
+    return privkey.getX().toByteArray();
+  }
+
+
+  /**
    * Creates a public key object from the given encoded key.
    *
    * @param encoded The encoded key bytes to generate the key from.
@@ -141,7 +154,18 @@ public class Crypto {
   protected static DHPublicKeyParameters decodeDHPublicKey(byte[] encoded) {
     BigInteger i = new BigInteger(encoded);
     return new DHPublicKeyParameters(i, DH_GROUP_PARAMETERS);
+  }
 
+  /**
+   * Creates a private key object from the given encoded key.
+   *
+   * @param encoded The encoded key bytes to generate the key from.
+   *
+   * @return The PrivateKey object or null upon failure.
+   */
+  protected static DHPrivateKeyParameters decodeDHPrivateKey(byte[] encoded) {
+    BigInteger i = new BigInteger(encoded);
+    return new DHPrivateKeyParameters(i, DH_GROUP_PARAMETERS);
   }
 
   /**
@@ -164,6 +188,19 @@ public class Crypto {
   public static byte[] generatePublicID(AsymmetricCipherKeyPair id) {
     return encodeDHPublicKey((DHPublicKeyParameters) id.getPublic());
   }
+
+  /**
+   * Generates a private ID for the purposes of long term storage.
+   *
+   * @param id The user ID represented as their key pair.
+   *
+   * @return An encoded form of the private ID (private key) or null upon failure.
+   */
+  public static byte[] generatePrivateID(AsymmetricCipherKeyPair id) {
+    return encodeDHPrivateKey((DHPrivateKeyParameters) id.getPrivate());
+  }
+
+
 
   /**
    * A data structure class for holding the private values needed on each side
