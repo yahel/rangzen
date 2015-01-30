@@ -95,6 +95,8 @@ public final class CaptureActivity extends Activity implements
 
     public static final int HISTORY_REQUEST_CODE = 0x0000bacc;
 
+    public static final String CODE_CONTENTS_EXTRA_KEY = "CODE_CONTENTS_EXTRA_KEY";
+
     private static final Collection<ResultMetadataType> DISPLAYABLE_METADATA_TYPES = EnumSet
             .of(ResultMetadataType.ISSUE_NUMBER,
                     ResultMetadataType.SUGGESTED_PRICE,
@@ -526,7 +528,6 @@ public final class CaptureActivity extends Activity implements
         Log.i(TAG, rawResult.getText());
         if (rawResult != null) {
             if (!rawResult.getText().startsWith("rangzen://")) {
-                Log.i(TAG, rawResult.getText().substring(0, 10));
                 restartPreviewAfterDelay(0L);
                 return;
             }
@@ -672,6 +673,9 @@ public final class CaptureActivity extends Activity implements
                     (int) (barcode.getHeight() * 1), false)));
         }
 
+        // TODO(jesus): The code scanned isn't displayed in text in this dialog.
+        // It would be a good idea to let the user preview the code that was
+        // scanned.
         int buttonCount = 2;
         ViewGroup buttonView = (ViewGroup) findViewById(R.id.result_button_view);
         buttonView.requestFocus();
@@ -680,13 +684,13 @@ public final class CaptureActivity extends Activity implements
             if (x < buttonCount) {
                 button.setVisibility(View.VISIBLE);
                 if (x == 0) {
-                    button.setText("Accept");
+                    button.setText("Add Friend");
                     button.setOnClickListener(new View.OnClickListener() {
-
+                        // When the user clicks the Accept button, 
                         @Override
                         public void onClick(View v) {
                             Intent returnIntent = new Intent();
-                            returnIntent.putExtra("result",
+                            returnIntent.putExtra(CODE_CONTENTS_EXTRA_KEY,
                                     lastResult.toString());
                             setResult(RESULT_OK, returnIntent);
                             finish();
@@ -694,7 +698,7 @@ public final class CaptureActivity extends Activity implements
                         }
                     });
                 } else {
-                    button.setText("Deny");
+                    button.setText("Nevermind");
                     button.setOnClickListener(new View.OnClickListener() {
 
                         @Override

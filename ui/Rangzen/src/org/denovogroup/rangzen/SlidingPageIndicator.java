@@ -70,6 +70,12 @@ public class SlidingPageIndicator extends FragmentActivity {
     /** Shown in Android log. */
     private static final String TAG = "SlidingPageIndicator";
 
+    /** 
+     * URI scheme for Rangzen protocol. A Rangzen friending URI looks like
+     * rangzen://<base64 encode of the bytes of our public ID>
+     */
+    public static final String QR_FRIENDING_SCHEME = "rangzen://";
+
     /**
      * Name of the file where the boolean remembering if the user has already
      * seen the introduction is stored.
@@ -95,7 +101,13 @@ public class SlidingPageIndicator extends FragmentActivity {
         super.onCreate(savedInstanceState);
 
         if (!fileExists(FILENAME)) {
-            new CreateQRCode().execute("0xfjddjvn377v7dft7cg6g72b3ge73g7d8b");
+          FriendStore store = new FriendStore(this, StorageBase.ENCRYPTION_DEFAULT);
+          String publicID = store.getPublicDeviceIDString();
+          if (publicID != null) {
+            new CreateQRCode().execute(QR_FRIENDING_SCHEME + publicID);
+          } else {
+            Log.wtf(TAG, "PublicID is null on call to FriendStore.getPublicDeviceIDString()");
+          }
         }
 
         // Start the RangzenService.

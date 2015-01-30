@@ -57,6 +57,9 @@ public class FriendStore {
   /** The internal keys used in the underlying store for the private device ID (keys). */
   private static final String DEVICE_PRIVATE_ID_KEY = "PrivateDeviceIDKey";
 
+  /** URI scheme for Rangzen friending. */
+  public static final String QR_FRIENDING_SCHEME = "rangzen://";
+
   /** Tag for Android log messages. */
   private static final String TAG = "FriendStore";
 
@@ -166,7 +169,7 @@ public class FriendStore {
    */
   public static String bytesToBase64(byte[] bytes) {
     if (bytes == null) {
-      throw new IllegalArgumentException("Asked to convert null byte array  to string.");
+      return null;
     }
     return Base64.encodeToString(bytes, Base64.NO_WRAP);
   }
@@ -178,14 +181,19 @@ public class FriendStore {
    *
    * @param string The string to be converted.
    * @return A byte[] of the bytes represented in base64 by the given string, or
-   * null if the string was null or wasn't base64 encoded.
+   * null if the string was null or wasn't well formed base64.
    */
   public static byte[] base64ToBytes(String base64) throws IllegalArgumentException {
     if (base64 == null) {
-      throw new IllegalArgumentException("Asked to convert null base64 string to bytes.");
+      return null;
     }
 
-    return Base64.decode(base64, Base64.NO_WRAP);
+    try {
+      return Base64.decode(base64, Base64.NO_WRAP);
+    } catch (IllegalArgumentException e) {
+      Log.e(TAG, "Returning null on attempt to decode badly formed base64 string: " + base64);
+      return null;
+    }
   }
 
   /**
@@ -245,6 +253,33 @@ public class FriendStore {
   public String getPublicDeviceIDString() {
     generateAndStoreDeviceID();
     return store.get(DEVICE_PUBLIC_ID_KEY);
+  }
+
+  /**
+   * Extract the public ID from the contents of a QR code.
+   *
+   * TODO(lerner): Validate the ID more than cursorily.
+   *
+   * @param qrContents The full contents of a QR code (e.g. rangzen://<publicid>)
+   * @return A byte[] representing the public ID stored in that QR code, or null
+   * if the code was malformed/null/didn't contain an ID.
+   */
+  public static byte[] getPublicIDFromQR(String qrContents) {
+    if (qrContents == null) { 
+      return null; 
+    } else if (!qrContents.startsWith(QR_FRIENDING_SCHEME)) {
+      return null;
+    } else {
+      // TODO(lerner): Perform more aggressive validation of the ID.
+      // For now we're willing to return any thing after rangzen://, which might
+      // be various bad things, like...
+      //   --nothing
+      //   --tons of data
+      //   --not the right size/format/number of bytes/parity to form a key
+      // But I don't know what the spec is for these keys, so I can't verify more now.
+      return base64ToBytes(qrContents.substring(QR_FRIENDING_SCHEME.length()));
+    }
+    
   }
 
 }

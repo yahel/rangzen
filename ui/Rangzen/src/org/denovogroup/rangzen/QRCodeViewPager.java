@@ -85,14 +85,12 @@ public class QRCodeViewPager extends FragmentActivity {
 
     private StorageBase mStore;
 
-    QRPagesAdapter mAdapter;
+    // QRPagesAdapter mAdapter;
     ViewPager mPager;
     PageIndicator mIndicator;
 
     /**
-     * This is the first activity of the application and it checks to see if the
-     * introduction was already shown. If it was then the maps interface is
-     * brought up. If it was not, then introduction is handled.
+     * 
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,37 +112,36 @@ public class QRCodeViewPager extends FragmentActivity {
 
         setContentView(R.layout.qr_simple_lines);
 
-        mAdapter = new QRPagesAdapter(getSupportFragmentManager());
+        // mAdapter = new QRPagesAdapter(getSupportFragmentManager());
 
         mPager = (ViewPager) findViewById(R.id.pager);
-        mPager.setAdapter(mAdapter);
+        // mPager.setAdapter(mAdapter);
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (mPager.getCurrentItem() == 0) {
-            CameraFragment cam = (CameraFragment) mAdapter
-                    .getRegisteredFragment(0);
-            com.google.zxing.Result result = cam.getResult();
-            if (result != null) {
-                switch (keyCode) {
-                case KeyEvent.KEYCODE_DPAD_CENTER:
-                    cam.handleResult(result);
-                    return true;
-                case KeyEvent.KEYCODE_BACK:
-                    cam.reset();
-                    return true;
-                }
-            } else {
-                if (keyCode == KeyEvent.KEYCODE_BACK) {
-                    getActionBar().setTitle("Feed");
-                    int titleId = getResources().getIdentifier(
-                            "action_bar_title", "id", "android");
-                    TextView abTitle = (TextView) findViewById(titleId);
-                    abTitle.setTextColor(Color.WHITE);
-                    finish();
-                }
-            }
+            // CameraFragment cam = (CameraFragment) mAdapter
+            //         .getRegisteredFragment(0);
+            // com.google.zxing.Result result = cam.getResult();
+            // if (result != null) {
+            //     switch (keyCode) {
+            //     case KeyEvent.KEYCODE_DPAD_CENTER:
+            //         // cam.handleResult(result);
+            //         return true;
+            //     case KeyEvent.KEYCODE_BACK:
+            //         // cam.reset();
+            //         return true;
+            //     }
+            // } else {
+          if (keyCode == KeyEvent.KEYCODE_BACK) {
+            getActionBar().setTitle("Feed");
+            int titleId = getResources().getIdentifier(
+                "action_bar_title", "id", "android");
+            TextView abTitle = (TextView) findViewById(titleId);
+            abTitle.setTextColor(Color.WHITE);
+            finish();
+          }
         }
         return super.onKeyDown(keyCode, event);
     }

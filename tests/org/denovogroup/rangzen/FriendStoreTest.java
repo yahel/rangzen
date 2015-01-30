@@ -51,7 +51,9 @@ import static org.robolectric.Robolectric.shadowOf;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.robolectric.Robolectric;
@@ -82,6 +84,9 @@ public class FriendStoreTest {
 
   private Set<byte[]> testFriendSetBytes;
   private Set<String> testFriendSetBase64;
+
+  @Rule 
+  public ExpectedException expectedException = ExpectedException.none();
 
   @Before
   public void setUp() {
@@ -134,6 +139,16 @@ public class FriendStoreTest {
   }
 
   /**
+   * Null is a bad value to have as a friend ID, people.
+   * The FriendStore should throw an exception if you try to add a null ID as a friend.
+   */
+  @Test
+  public void storeNullFriends() {
+    expectedException.expect(IllegalArgumentException.class);
+    store.addFriendBytes(null);
+  }
+
+  /**
    * Tests that we can delete friends after storing them.
    */
   @Test
@@ -163,6 +178,7 @@ public class FriendStoreTest {
     assertTrue(store.getAllFriends().isEmpty());
   }
 
+
   /**
    * Test and demonstrate some behaviors of the base64 encoding/decoding utiliyt
    * methods.
@@ -180,37 +196,13 @@ public class FriendStoreTest {
     assertEquals("", FriendStore.bytesToBase64("".getBytes("utf-8")));
     // Base64 empty string decodes to empty array of bytes.
     assertTrue(Arrays.equals(new byte[]{}, FriendStore.base64ToBytes("")));
-  }
 
-  /**
-   * For security reasons, we don't want nulls emitted from base64 encoding/decoding.
-   * Test that decoding produces exceptions on poorly formed inputs.
-   */
-  @Test
-  public void noNullsFromBase64Decode() {
-    // TODO(lerner): We should include a verification mechanism that throws exceptions
-    // on attempting to decode strings that aren't valid base64.
-    // We don't have that yet, so this test doesn't do the right thing.
-    // try {
-    //   assertEquals("not this", FriendStore.base64ToBytes("   FO!#$@#%$%&___"));
-    //   assertTrue("Base64 to bytes didn't throw an exception on a bad string", false);
-    // } catch (IllegalArgumentException e) {
-    //   assertTrue(true);
-    // }
-
-    try {
-      FriendStore.base64ToBytes(null);
-      assertTrue("Base64 to bytes didn't throw an exception on a null string", false);
-    } catch (IllegalArgumentException e) {
-      assertTrue(true);
-    }
-
-    try {
-      FriendStore.bytesToBase64(null);
-      assertTrue("Bytes to base64 didn't throw an exception on a null string", false);
-    } catch (IllegalArgumentException e) {
-      assertTrue(true);
-    }
+    // This string isn't well formed base64 due to awkward length I believe.
+    // I'm not sure why it's not valid tbh.
+    // TODO(lerner): Learn something about base64 and write some better tests here.
+    assertNull(FriendStore.base64ToBytes("foobarbazaewfjawoeifjaowiejfoawejfoawejfoawjefiowewww"));
+    assertNull(FriendStore.base64ToBytes(null));
+    assertNull(FriendStore.bytesToBase64(null));
   }
 
   /** 
@@ -226,6 +218,18 @@ public class FriendStoreTest {
     assertNotNull(base64Pubkey);
 
     // Not sure what else to test here.
+  }
+
+  @Test
+  public void testParsePublicIDFromQRCode() {
+    assertNull(FriendStore.getPublicIDFromQR(null));
+    assertNull(FriendStore.getPublicIDFromQR("http://google.com"));
+    assertNull(FriendStore.getPublicIDFromQR(""));
+    assertNull(FriendStore.getPublicIDFromQR("rangzen:wejfiajweofiaj"));
+
+    assertNotNull(FriendStore.getPublicIDFromQR("rangzen://afweifjawoefij"));
+    assertNotNull(FriendStore.getPublicIDFromQR("rangzen://"));
+    assertEquals(0, FriendStore.getPublicIDFromQR("rangzen://").length);
   }
 
 }

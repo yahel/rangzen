@@ -2,10 +2,6 @@ android_library(
   name = 'experimentalUI',
   srcs = [ 
     'AboutPage.java',
-    'CameraFragment.java',
-    'CameraConfigurationManager.java',
-    'CameraConfigurationUtils.java',
-    'DecodeRunnable.java',
     'DepthPageTransformer.java',
     'FeedListAdapter.java',
     'FragmentOrganizer.java',
@@ -14,11 +10,8 @@ android_library(
     'Opener.java',
     'PostActivity.java',
     'QRCodeViewPager.java',
-    'QRPagesAdapter.java',
-    'RangeSeekBar.java',
     'SidebarListAdapter.java',
     'SlidingPageIndicator.java',
-    'ZoomOutPageTransformer.java',
   ],
   visibility = [ 'PUBLIC' ],
   deps = [

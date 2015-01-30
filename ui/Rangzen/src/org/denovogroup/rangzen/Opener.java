@@ -288,29 +288,48 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         mCurrentTextView.setTextSize(19);
     }
 
+    /**
+     * Called whenever any activity launched from this activity exits.
+     * For example, this is called when returning from the QR code activity,
+     * providing us with the QR code (if any) that was scanned.
+     *
+     * @see Activity.onActivityResult
+     */
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        int titleId = getResources().getIdentifier("action_bar_title", "id",
-                "android");
-        TextView abTitle = (TextView) findViewById(titleId);
-        abTitle.setTextColor(Color.WHITE);
-        if (requestCode == QR) {
-            if (resultCode == RESULT_OK) {
-                FriendStore fs = new FriendStore(this,
-                        StorageBase.ENCRYPTION_DEFAULT);
-                // TODO(lerner): Actually convert from the friend code string to 
-                // the friend id properly. Simply grabbing the bytes of the string
-                // isn't the right thing.
-                boolean wasAdded = fs.addFriendBytes(intent.getDataString().getBytes()); // WRONG.
-                if (wasAdded) {
-                    Toast.makeText(this, "Friend Added", Toast.LENGTH_SHORT)
-                            .show();
-                } else {
-                    Toast.makeText(this, "Already Friends", Toast.LENGTH_SHORT)
-                            .show();
-                }
+      Log.i(TAG, "Got activity result back in Opener!");
 
-            }
+      int titleId = getResources().getIdentifier("action_bar_title", "id", "android");
+      TextView abTitle = (TextView) findViewById(titleId);
+      abTitle.setTextColor(Color.WHITE);
+
+      // Check whether the activity that returned was the QR code activity,
+      // and whether it succeeded.
+      if (requestCode == QR && resultCode == RESULT_OK) {
+        // Grab the string extra containing the QR code that was scanned.
+        FriendStore fs = new FriendStore(this, StorageBase.ENCRYPTION_DEFAULT);
+        String code = intent.getStringExtra(com.google.zxing.client.android.
+            CaptureActivity.CODE_CONTENTS_EXTRA_KEY);
+        // Convert the code into a public Rangzen ID.
+        byte[] publicIDBytes = FriendStore.getPublicIDFromQR(code);
+        Log.i(TAG, "In Opener, received intent with code " + code); 
+
+        // Try to add the friend to the FriendStore, if they're not null.
+        if (publicIDBytes != null) {
+          boolean wasAdded = fs.addFriendBytes(publicIDBytes);
+          Log.i(TAG, "Now have " + fs.getAllFriends().size() + " friends.");
+          if (wasAdded) {
+            Toast.makeText(this, "Friend Added", Toast.LENGTH_SHORT).show();
+          } else {
+            Toast.makeText(this, "Already Friends", Toast.LENGTH_SHORT).show();
+          }
+        } else {
+          // This can happen if the URI is well-formed (rangzen://<stuff>) but the
+          // stuff isn't valid base64, since we get here based on the scheme but
+          // not a check of the contents of the URI.
+          Log.i(TAG, "Opener got back a supposed rangzen scheme code that didn't process to produce a public id:" + code);
+          Toast.makeText(this, "Invalid Friend Code", Toast.LENGTH_SHORT).show();
         }
+      }
     }
 
     /**
