@@ -91,6 +91,13 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu, menu);
+
+        MessageStore messageStore = new MessageStore(this, StorageBase.ENCRYPTION_DEFAULT);
+
+        messageStore.addMessage(
+             "This is the Rangzen message feed. Messages in the ether will appear here.",
+             1L
+        );
         return true;
     }
 
@@ -102,9 +109,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.drawer_layout);
-        if (!mHasStored) {
-            storeTempMessages();
-        }
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
         // activityRootView = drawerLayout;
         mListView = (ListView) findViewById(R.id.drawerList);
@@ -134,49 +138,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, Gravity.LEFT);
-    }
-
-    private void storeTempMessages() {
-        MessageStore messageStore = new MessageStore(this,
-                StorageBase.ENCRYPTION_DEFAULT);
-
-        messageStore
-                .addMessage(
-                        "Crowds Swell, Tensions Surge As Hong Kong Leader Seeks End To Protests | ",
-                        1L);
-        messageStore
-                .addMessage(
-                        "150 Protesters Disrupt Coal And Rail Operations In Southeast Australia ",
-                        1.5d);
-        messageStore
-                .addMessage(
-                        "Police Violence In Naples When Protests Erupt Over European Bank Policies ",
-                        2L);
-
-        messageStore
-                .addMessage(
-                        "Mothers Challenge Social Cleansing As London's Housing Conflicts Sharpen ",
-                        .5);
-        messageStore
-                .addMessage(
-                        "Europe Versus Facebook: Privacy Activists Sue Social Media Giant Over Data Breach #occupy ",
-                        .5d);
-        messageStore
-                .addMessage(
-                        "#occupy @occupy happening right now by sproul on UCB campus berkeley ",
-                        .5d);
-
-        Log.d(TAG, "seventh " + messageStore.addMessage("Test7s", .5d));
-        Log.d(TAG, "eighth " + messageStore.addMessage("Test8", .5d));
-        Log.d(TAG, "9 " + messageStore.addMessage("test9", .5d));
-
-        messageStore
-                .addMessage(
-                        "Pentagon Supplies School Districts with Assault Rifles, Grenade Launchers, M.R.A.P.'s",
-                        2);
-        Log.d(TAG, "11 " + messageStore.addMessage("Test11", .5d));
-        Log.d(TAG, "12 " + messageStore.addMessage("Test12", .75d));
-        mHasStored = true;
     }
 
     /**

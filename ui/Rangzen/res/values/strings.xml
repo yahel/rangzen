@@ -6,7 +6,11 @@
     <item name="decode_succeeded" type="id"/>
     <item name="quit" type="id"/>
 
+    <!-- This is a hack to get the name of the app to be "Rangzen".
+      @string:app_name was getting read from strings.xml from zxing instead of here. -->
     <string name="app_name">Rangzen</string>
+    <string name="rangzen_app_name">Rangzen</string>
+
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="continueButton">Continue</string>
