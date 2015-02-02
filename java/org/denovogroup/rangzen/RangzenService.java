@@ -30,6 +30,8 @@
  */
 package org.denovogroup.rangzen;
 
+import au.com.bytecode.opencsv.CSVWriter;
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothSocket;
 import android.support.v4.content.LocalBroadcastManager;
@@ -43,6 +45,7 @@ import android.os.Environment;
 import android.os.IBinder;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.System;
@@ -364,7 +367,18 @@ public class RangzenService extends Service {
      * @param row String array of column values for the CSV.
      */
     private void logEventToCSV(String[] row) {
-      Log.i(TAG, row.toString());
+      try { 
+        Log.i(TAG, row.toString());
+        String BENCHMARK_FILENAME = "benchmarks.csv";
+        FileWriter file = new FileWriter(new File(getBenchmarkDataDir(), BENCHMARK_FILENAME));
+        CSVWriter writer = new CSVWriter(file, ',', '\'');
+        writer.writeNext(row);
+
+        file.close();
+        writer.close();
+      } catch (IOException e) {
+        Log.e(TAG, "Failed to write to CSV: " + e);
+      }
     }
 
     /**
@@ -384,10 +398,10 @@ public class RangzenService extends Service {
         // Latency of communication: Record RTT and any other parameters.
         // TODO(lerner): Record time.
         String init = exchange.asInitiator ? "initiator" : "listener";
-        Log.i(TAG, String.format("Exchange complete as %s, took %d milliseconds", rttMillis, init));
+        Log.i(TAG, String.format("Exchange complete as %s, took %d milliseconds", init, rttMillis));
 
         BluetoothSocket activeSocket = (mSocket != null) ? mSocket : mBluetoothSpeaker.mSocket;
-        RangzenService.this.logEventToCSV(new String[]{
+        RangzenService.this.logEventToCSV(new String[] {
           activeSocket.getRemoteDevice().getAddress(),
           init,
           Long.toString(System.currentTimeMillis()),

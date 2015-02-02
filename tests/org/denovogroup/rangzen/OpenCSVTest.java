@@ -31,10 +31,14 @@
 package org.denovogroup.rangzen;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
@@ -43,15 +47,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import au.com.bytecode.opencsv.CSVReader;
+import au.com.bytecode.opencsv.CSVWriter;
 
 /**
- * Set of meaningless tests that demonstrate how to write JUnit tests.
+ * Demonstrating how to use OpenCSV.
  */
 @RunWith(JUnit4.class)
 public class OpenCSVTest {
-  /**
-   * This test always passes, because it has no asserts to fail.
-   */
   @Test
   public void testRead() throws IOException {
     String csv = "one,two,three\none,five,six\none,2.0,'124124.1241241.12,12412,1,4'";
@@ -63,5 +65,24 @@ public class OpenCSVTest {
       assertEquals(3, row.length);
     }
 
+  }
+
+  @Test
+  public void testWrite() throws IOException { 
+    String[] row1 = new String[] { "oneone", "onetwo", "onethree" };
+    String[] row2 = new String[] { "twoone", "twotwo", "twothree" };
+
+    StringWriter sWriter = new StringWriter();
+    CSVWriter writer = new CSVWriter(sWriter, ',', '\'');
+
+    writer.writeNext(row1);
+    writer.writeNext(row2);
+
+    String written = sWriter.toString();
+
+    CSVReader reader = new CSVReader(new StringReader(written), ',', '\'');
+    List<String[]> rows = reader.readAll();
+    assertTrue(Arrays.equals(rows.get(0), row1));
+    assertTrue(Arrays.equals(rows.get(1), row2));
   }
 }

@@ -37,6 +37,7 @@ android_library(
     '//proto-repo:protobufs',
     '//libs:spongycastle-core-1.51',
     '//libs:spongycastle-pkix-1.51',
-    '//libs:spongycastle-prov-1.51'
+    '//libs:spongycastle-prov-1.51',
+    '//libs:opencsv',
   ],
 )

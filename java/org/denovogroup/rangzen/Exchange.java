@@ -66,7 +66,7 @@ public class Exchange implements Runnable {
    * Whether to start the exchange with the first message or wait for the other side
    * to begin the exchange.
    */
-  private boolean asInitiator;
+  /* package */ boolean asInitiator;
   
   /** The number of friends in common with the remote peer. */
   /* package */ int commonFriends = -1;
@@ -100,7 +100,7 @@ public class Exchange implements Runnable {
    * An error message, if any, explaning why the exchange isn't successful.
    * Set to null upon success.
    */
-  private String mErrorMessage = "Not yet complete.";
+  /* package */ String mErrorMessage = "Not yet complete.";
 
   /** Included with Android log messages. */
   private static final String TAG = "Exchange";

@@ -44,6 +44,9 @@ import java.util.Random;
  */
 public class NonceEchoExchange extends Exchange {
 
+  /** Included with Android log messages. */
+  private static final String TAG = "NonceEchoExchange";
+
   /**
    * Pass-through constructor to super-class Exchange.
    *
