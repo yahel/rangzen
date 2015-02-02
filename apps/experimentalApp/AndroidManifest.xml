@@ -29,7 +29,7 @@
   <application
       android:debuggable="true"
       android:allowBackup="true"
-      android:icon="@drawable/ic_launcher"
+      android:icon="@mipmap/ic_launcher"
       android:label="@string/rangzen_app_name"
       android:theme="@android:style/Theme.Black">
     <service android:name=".RangzenService"
