@@ -2,6 +2,7 @@ genrule(
   name = 'compile_protobufs',
   visibility = ['PUBLIC'],
   srcs = [
+    'BunchOfBytes.proto',
     'CleartextFriends.proto',
     'CleartextMessages.proto',
     'ClientMessage.proto',
