@@ -100,3 +100,9 @@ prebuilt_jar(
   visibility = [ 'PUBLIC' ],
 )
 
+prebuilt_jar(
+  name = 'apache-commons-lang',
+  binary_jar = 'commons-lang3-3.3.2.jar',
+  visibility = [ 'PUBLIC' ],
+)
+

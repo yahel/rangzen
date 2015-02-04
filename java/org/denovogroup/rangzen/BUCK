@@ -39,5 +39,6 @@ android_library(
     '//libs:spongycastle-pkix-1.51',
     '//libs:spongycastle-prov-1.51',
     '//libs:opencsv',
+    '//libs:apache-commons-lang',
   ],
 )
