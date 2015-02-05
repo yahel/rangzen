@@ -342,6 +342,9 @@ public class CryptographicExchangeTest {
 
     threadA.join();
     threadB.join();
+
+    assertEquals(Exchange.Status.SUCCESS, exchangeA.getExchangeStatus());
+    assertEquals(Exchange.Status.SUCCESS, exchangeB.getExchangeStatus());
   }
 
   /**

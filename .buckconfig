@@ -1,6 +1,7 @@
 [alias]
     experimentalApp = //apps/experimentalApp:experimentalApp
     WifiDirectSpeakerTest = //tests/org/denovogroup/rangzen:wifiDirectSpeakerTest
+    bandwidthMeasurementExchangeTest = //tests/org/denovogroup/rangzen:bandwidthMeasurementExchangeTest
     bluetoothSpeakerTest = //tests/org/denovogroup/rangzen:bluetoothSpeakerTest
     cryptoTest = //tests/org/denovogroup/rangzen:cryptoTest
     cryptographicExchangeTest = //tests/org/denovogroup/rangzen:cryptographicExchangeTest

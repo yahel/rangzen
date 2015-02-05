@@ -53,6 +53,8 @@ import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowActivity;
 import org.robolectric.shadows.ShadowIntent;
 
+import okio.ByteString;
+
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
@@ -336,5 +338,16 @@ public class ExchangeTest {
       assertTrue(Exchange.fractionOfFriendsPriority(TEST_PRIORITY, inCommon, NUM_FRIENDS) <
                  Exchange.fractionOfFriendsPriority(TEST_PRIORITY, inCommon + 1, NUM_FRIENDS));
     }
+  }
+
+  @Test
+  public void byteStringEqualityTest() {
+    ByteString a = ByteString.of(new byte[] { 'a', 'b', 'c' });
+    ByteString b = ByteString.of(new byte[] { 'a', 'b', 'c' });
+    ByteString z = ByteString.of(new byte[] { 'x', 'y', 'z' });
+
+    assertEquals(a, b);
+    assertNotEquals(a, z);
+    assertNotNull(ByteString.of(new byte[] {}));
   }
 }
