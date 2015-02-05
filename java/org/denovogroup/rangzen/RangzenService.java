@@ -332,18 +332,47 @@ public class RangzenService extends Service {
           } catch (IOException e) {
             Log.e(TAG, "Getting input/output stream from socket failed: " + e);
             Log.e(TAG, "Exchange not happening.");
+            RangzenService.this.cleanupAfterExchange();
           }
         } else {
           Log.w(TAG, "But the socket claims not to be connected!");
+          RangzenService.this.cleanupAfterExchange();
         }
       }
       @Override
       public void failure(String reason) {
         Log.i(TAG, "Callback says we failed to connect: " + reason);
-        setConnecting(false);
-        setLastExchangeTime();
+        RangzenService.this.cleanupAfterExchange();
       }
     };
+
+    /**
+     * Cleans up sockets and connecting state after an exchange, including recording
+     * that an exchange was just attempted, that we're no longer currently connecting,
+     * closing sockets and setting socket variables to null, etc.
+     *
+     * Is also used after a Bluetooth connection failure to cleanup.
+     */
+    /* package */ void cleanupAfterExchange() {
+      setConnecting(false);
+      setLastExchangeTime();
+      try {
+        if (mSocket != null) {
+          mSocket.close();
+        }
+      } catch (IOException e) {
+        Log.w(TAG, "Couldn't close bt socket: " + e);
+      }
+      try { 
+        if (mBluetoothSpeaker.mSocket != null) {
+          mBluetoothSpeaker.mSocket.close();
+        }
+      } catch (IOException e) {
+        Log.w(TAG, "Couldn't close bt socket in BTSpeaker: " + e);
+      }
+      mSocket = null;
+      mBluetoothSpeaker.mSocket = null;
+    }
 
     /**
      * Passed to an Exchange to be called back to when the exchange completes.
@@ -376,34 +405,13 @@ public class RangzenService extends Service {
                                     myFriends.size(), friendOverlap));
           }
         }
-        setConnecting(false);
-        setLastExchangeTime();
-        try {
-          if (mSocket != null) {
-            mSocket.close();
-          }
-          if (mBluetoothSpeaker.mSocket != null) {
-            mBluetoothSpeaker.mSocket.close();
-          }
-        } catch (IOException e) {
-          Log.w(TAG, "Couldn't close bt socket after exhange success: " + e);
-        }
-        mSocket = null;
-        mBluetoothSpeaker.mSocket = null;
+        RangzenService.this.cleanupAfterExchange();
       }
 
       @Override
       public void failure(Exchange exchange, String reason) {
         Log.e(TAG, "Exchange failed, reason: " + reason);
-        setConnecting(false);
-        setLastExchangeTime();
-        try { 
-          if (mSocket != null) {
-            mSocket.close();
-          }
-        } catch (IOException e) {
-          Log.i(TAG, "Couldn't close bt socket after exchange failure: " + e);
-        }
+        RangzenService.this.cleanupAfterExchange();
       }
     };
 
