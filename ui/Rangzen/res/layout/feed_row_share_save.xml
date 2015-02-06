@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/listitem_selector"
+    android:minHeight="30dp"
+    android:orientation="vertical"
+    android:paddingBottom="3dp"
+    android:paddingEnd="0dp"
+    android:paddingStart="0dp"
+    android:paddingTop="17dp" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingBottom="17dp" >
+
+        <TextView
+            android:id="@+id/upvoteView"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:paddingEnd="15dp"
+            android:paddingStart="25dp"
+            android:textColor="@android:color/black" />
+
+        <LinearLayout
+            android:layout_width="1dp"
+            android:layout_height="fill_parent"
+            android:paddingEnd="15dp"
+            android:paddingStart="0dp"
+            android:textColor="@android:color/black" />
+
+        <LinearLayout
+            android:id="@+id/hashtagHolder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingEnd="20dp"
+            android:paddingStart="15dp" >
+
+            <TextView
+                android:id="@+id/hashtagView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:maxWidth="320dp"
+                android:minWidth="250dp"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textColor="@android:color/black" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp" />
+
+    <LinearLayout
+        android:id="@+id/saveAndShare"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:paddingTop="3dp" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableStart="@drawable/ic_action_share"
+            android:gravity="center"
+            android:paddingEnd="30dp"
+            android:paddingStart="50dp"
+            android:text="Share" >
+        </TextView>
+
+        <LinearLayout
+            android:layout_width="1dp"
+            android:layout_height="fill_parent"
+            android:background="@android:color/darker_gray" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableStart="@drawable/ic_action_save"
+            android:gravity="center"
+            android:paddingEnd="30dp"
+            android:paddingStart="50dp"
+            android:text="Save" >
+        </TextView>
+    </LinearLayout>
+
+</LinearLayout>

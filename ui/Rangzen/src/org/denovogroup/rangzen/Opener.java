@@ -43,6 +43,7 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
@@ -92,12 +93,13 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu, menu);
 
-        MessageStore messageStore = new MessageStore(this, StorageBase.ENCRYPTION_DEFAULT);
+        MessageStore messageStore = new MessageStore(this,
+                StorageBase.ENCRYPTION_DEFAULT);
 
-        messageStore.addMessage(
-             "This is the Rangzen message feed. Messages in the ether will appear here.",
-             1L
-        );
+        messageStore
+                .addMessage(
+                        "This is the Rangzen message feed. Messages in the ether will appear here.",
+                        1L);
         return true;
     }
 
@@ -217,8 +219,15 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      */
     public void selectItem(int position) {
         mListView.setItemChecked(position, true);
-        String[] sidebar = getResources().getStringArray(R.array.sidebar);
-        setTitle(sidebar[position]);
+        if (position != 2) {
+            String[] sidebar = getResources().getStringArray(R.array.sidebar);
+            setTitle(sidebar[position]);
+        } else {
+            int titleId = getResources().getIdentifier("action_bar_title", "id",
+                    "android");
+            TextView abTitle = (TextView) findViewById(titleId);
+            abTitle.setTextColor(Color.WHITE);
+        }
     }
 
     /**
@@ -250,47 +259,57 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     }
 
     /**
-     * Called whenever any activity launched from this activity exits.
-     * For example, this is called when returning from the QR code activity,
+     * Called whenever any activity launched from this activity exits. For
+     * example, this is called when returning from the QR code activity,
      * providing us with the QR code (if any) that was scanned.
-     *
+     * 
      * @see Activity.onActivityResult
      */
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-      Log.i(TAG, "Got activity result back in Opener!");
+        Log.i(TAG, "Got activity result back in Opener!");
 
-      int titleId = getResources().getIdentifier("action_bar_title", "id", "android");
-      TextView abTitle = (TextView) findViewById(titleId);
-      abTitle.setTextColor(Color.WHITE);
+        int titleId = getResources().getIdentifier("action_bar_title", "id",
+                "android");
+        TextView abTitle = (TextView) findViewById(titleId);
+        abTitle.setTextColor(Color.WHITE);
 
-      // Check whether the activity that returned was the QR code activity,
-      // and whether it succeeded.
-      if (requestCode == QR && resultCode == RESULT_OK) {
-        // Grab the string extra containing the QR code that was scanned.
-        FriendStore fs = new FriendStore(this, StorageBase.ENCRYPTION_DEFAULT);
-        String code = intent.getStringExtra(com.google.zxing.client.android.
-            CaptureActivity.CODE_CONTENTS_EXTRA_KEY);
-        // Convert the code into a public Rangzen ID.
-        byte[] publicIDBytes = FriendStore.getPublicIDFromQR(code);
-        Log.i(TAG, "In Opener, received intent with code " + code); 
+        // Check whether the activity that returned was the QR code activity,
+        // and whether it succeeded.
+        if (requestCode == QR && resultCode == RESULT_OK) {
+            // Grab the string extra containing the QR code that was scanned.
+            FriendStore fs = new FriendStore(this,
+                    StorageBase.ENCRYPTION_DEFAULT);
+            String code = intent
+                    .getStringExtra(com.google.zxing.client.android.CaptureActivity.CODE_CONTENTS_EXTRA_KEY);
+            // Convert the code into a public Rangzen ID.
+            byte[] publicIDBytes = FriendStore.getPublicIDFromQR(code);
+            Log.i(TAG, "In Opener, received intent with code " + code);
 
-        // Try to add the friend to the FriendStore, if they're not null.
-        if (publicIDBytes != null) {
-          boolean wasAdded = fs.addFriendBytes(publicIDBytes);
-          Log.i(TAG, "Now have " + fs.getAllFriends().size() + " friends.");
-          if (wasAdded) {
-            Toast.makeText(this, "Friend Added", Toast.LENGTH_SHORT).show();
-          } else {
-            Toast.makeText(this, "Already Friends", Toast.LENGTH_SHORT).show();
-          }
-        } else {
-          // This can happen if the URI is well-formed (rangzen://<stuff>) but the
-          // stuff isn't valid base64, since we get here based on the scheme but
-          // not a check of the contents of the URI.
-          Log.i(TAG, "Opener got back a supposed rangzen scheme code that didn't process to produce a public id:" + code);
-          Toast.makeText(this, "Invalid Friend Code", Toast.LENGTH_SHORT).show();
+            // Try to add the friend to the FriendStore, if they're not null.
+            if (publicIDBytes != null) {
+                boolean wasAdded = fs.addFriendBytes(publicIDBytes);
+                Log.i(TAG, "Now have " + fs.getAllFriends().size()
+                        + " friends.");
+                if (wasAdded) {
+                    Toast.makeText(this, "Friend Added", Toast.LENGTH_SHORT)
+                            .show();
+                } else {
+                    Toast.makeText(this, "Already Friends", Toast.LENGTH_SHORT)
+                            .show();
+                }
+            } else {
+                // This can happen if the URI is well-formed (rangzen://<stuff>)
+                // but the
+                // stuff isn't valid base64, since we get here based on the
+                // scheme but
+                // not a check of the contents of the URI.
+                Log.i(TAG,
+                        "Opener got back a supposed rangzen scheme code that didn't process to produce a public id:"
+                                + code);
+                Toast.makeText(this, "Invalid Friend Code", Toast.LENGTH_SHORT)
+                        .show();
+            }
         }
-      }
     }
 
     /**
@@ -366,6 +385,11 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     protected void onResume() {
         super.onResume();
         notifyDataSetChanged();
+        int titleId = getResources().getIdentifier("action_bar_title", "id",
+                "android");
+        TextView abTitle = (TextView) findViewById(titleId);
+        abTitle.setTextColor(Color.WHITE);
+
         registerReceiver(receiver, filter);
         Log.i(TAG, "Registered receiver");
     }

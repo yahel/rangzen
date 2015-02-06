@@ -31,12 +31,23 @@
 
 package org.denovogroup.rangzen;
 
+import java.io.ByteArrayInputStream;
+
+import android.content.Context;
+import android.content.res.TypedArray;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Point;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
@@ -80,6 +91,21 @@ public class ListFragmentOrganizer extends ListFragment {
         case FEED:
             View view = (View) inflater
                     .inflate(R.layout.feed, container, false);
+
+            ImageView iv = (ImageView) view.findViewById(R.id.normal_image);
+
+            Display display = getActivity().getWindowManager().getDefaultDisplay();
+            Point size = new Point();
+            display.getSize(size);
+            int width = size.x;
+            int height = (int) (size.y);
+
+            Bitmap bd = FragmentOrganizer.decodeSampledBitmapFromResource(getResources(), R.drawable.firstb,
+                    width, height);
+            BitmapDrawable ob = new BitmapDrawable(bd);
+            iv.setBackgroundDrawable(ob);
+           
+
             ListView listView = (ListView) view.findViewById(android.R.id.list);
             mFeedListAdaper = new FeedListAdapter(getActivity());
             listView.setAdapter(mFeedListAdaper);
