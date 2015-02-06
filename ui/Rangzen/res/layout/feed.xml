@@ -7,8 +7,7 @@
     <ImageView
         android:id="@+id/normal_image"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:src="@drawable/firstb" />
+        android:layout_height="match_parent"/>
 
     <LinearLayout
         android:layout_width="fill_parent"
@@ -18,8 +17,11 @@
     <ListView
         android:id="@android:id/list"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:dividerHeight="7.0sp"
-        android:listSelector="@drawable/listitem_selector" />
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="10.0sp"
+        android:listSelector="@drawable/listitem_selector"
+        android:padding="16dip" />
 
 </FrameLayout>

@@ -8,12 +8,12 @@
     android:paddingBottom="3dp"
     android:paddingEnd="0dp"
     android:paddingStart="0dp"
-    android:paddingTop="13dp" >
+    android:paddingTop="17dp" >
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingBottom="10dp" >
+        android:paddingBottom="17dp" >
 
         <TextView
             android:id="@+id/upvoteView"
@@ -50,46 +50,4 @@
                 android:textColor="@android:color/black" />
         </LinearLayout>
     </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="fill_parent"
-        android:layout_height="1dp"
-        android:background="@android:color/darker_gray"
-        android:paddingTop="8dp" />
-
-    <LinearLayout
-        android:id="@+id/saveAndShare"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:paddingTop="3dp" >
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:drawableStart="@drawable/ic_action_share"
-            android:gravity="center"
-            android:paddingEnd="30dp"
-            android:paddingStart="50dp"
-            android:text="Share" >
-        </TextView>
-
-        <LinearLayout
-            android:layout_width="1dp"
-            android:layout_height="fill_parent"
-            android:background="@android:color/darker_gray" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:drawableStart="@drawable/ic_action_save"
-            android:gravity="center"
-            android:paddingEnd="30dp"
-            android:paddingStart="50dp"
-            android:text="Save" >
-        </TextView>
-    </LinearLayout>
-
 </LinearLayout>

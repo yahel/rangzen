@@ -43,7 +43,6 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
@@ -385,11 +384,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     protected void onResume() {
         super.onResume();
         notifyDataSetChanged();
-        int titleId = getResources().getIdentifier("action_bar_title", "id",
-                "android");
-        TextView abTitle = (TextView) findViewById(titleId);
-        abTitle.setTextColor(Color.WHITE);
-
         registerReceiver(receiver, filter);
         Log.i(TAG, "Registered receiver");
     }
