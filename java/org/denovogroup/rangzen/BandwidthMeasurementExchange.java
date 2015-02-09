@@ -31,9 +31,11 @@
 package org.denovogroup.rangzen;
 
 import java.io.InputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Random;
 
 import okio.ByteString;
@@ -67,7 +69,7 @@ public class BandwidthMeasurementExchange extends Exchange {
   }
 
   /** Amount of random data to send. */
-  private static final int MESSAGE_SIZE = 1 * 1024;
+  private static final int MESSAGE_SIZE = 1 * 512;
 
   @Override
   public void run() {
@@ -75,11 +77,11 @@ public class BandwidthMeasurementExchange extends Exchange {
       // We're the measurement node.
       // Generate random data to send.
       byte[] randomBytes = new byte[MESSAGE_SIZE];
-      (new Random()).nextBytes(randomBytes);
-      ByteString randomBytesString = ByteString.of(randomBytes);
-      BunchOfBytes message = new BunchOfBytes.Builder()
-                                             .bunchOfBytes(randomBytesString)
-                                             .build();     
+      // (new Random()).nextBytes(randomBytes);
+      // ByteString randomBytesString = ByteString.of(randomBytes);
+      // BunchOfBytes message = new BunchOfBytes.Builder()
+      //                                        .bunchOfBytes(randomBytesString)
+      //                                        .build();     
       
       ByteString digest;
       try { 
@@ -92,22 +94,29 @@ public class BandwidthMeasurementExchange extends Exchange {
       }
 
       // Start the timer and begin transmission.
+      Log.i(TAG, "Sending random bytes");
       stopwatch.start();
-      lengthValueWrite(out, message);
+      // lengthValueWrite(out, message);
+      sendBytes(randomBytes);
+      Log.i(TAG, "Sent random bytes, waiting for digest in reply.");
 
 
-      BunchOfBytes remoteDigest = lengthValueRead(in, BunchOfBytes.class);
+      // BunchOfBytes remoteDigest = lengthValueRead(in, BunchOfBytes.class);
+      byte[] echo = receiveBytes();
       stopwatch.stop();
+      Log.i(TAG, "Received echo in reply.");
       
-      if (remoteDigest != null && digest.equals(remoteDigest.bunchOfBytes)) {
+      if (Arrays.equals(echo, randomBytes)) {
+      // if (remoteDigest != null && digest.equals(remoteDigest.bunchOfBytes)) {
         setExchangeStatus(Status.SUCCESS);
         Log.i(TAG, String.format("Completed exchange of %d bytes in %d nanos (%f b/s).", 
                                  MESSAGE_SIZE, stopwatch.getNanoTime(), getBytesPerSecond()));
                                    
 
       } else {
-        setErrorMessage(String.format("Matching digest not received, %s vs %s", 
-                                      remoteDigest, digest));
+        Log.i(TAG, "Echo didn't match!");
+        setErrorMessage(String.format("Matching echo not received, %d vs %d", 
+                                      randomBytes.length, echo.length));
         setExchangeStatus(Status.ERROR);
         callback.failure(this, getErrorMessage());
         return;
@@ -115,22 +124,25 @@ public class BandwidthMeasurementExchange extends Exchange {
       
     } else {
       // We're not the measurement node.
-      BunchOfBytes randomData = lengthValueRead(in, BunchOfBytes.class);
-      if (randomData.bunchOfBytes != null) {
-        ByteString digest;
-        try {
-          digest = digestBytes(randomData.bunchOfBytes.toByteArray());
-        } catch (NoSuchAlgorithmException e) {
-          setErrorMessage("No digest algorithm!");
-          setExchangeStatus(Status.ERROR);
-          callback.failure(this, getErrorMessage());
-          return;
-        }
+      // BunchOfBytes randomBytes = lengthValueRead(in, BunchOfBytes.class);
+      byte[] randomBytes = receiveBytes();
+      if (randomBytes != null) {
+      // if (randomBytes.bunchOfBytes != null) {
+        // ByteString digest;
+        // try {
+        //   digest = digestBytes(randomBytes.bunchOfBytes.toByteArray());
+        // } catch (NoSuchAlgorithmException e) {
+        //   setErrorMessage("No digest algorithm!");
+        //   setExchangeStatus(Status.ERROR);
+        //   callback.failure(this, getErrorMessage());
+        //   return;
+        // }
       
-        BunchOfBytes message = new BunchOfBytes.Builder()
-                                               .bunchOfBytes(digest)
-                                               .build();     
-        lengthValueWrite(out, message);
+        // BunchOfBytes message = new BunchOfBytes.Builder()
+        //                                        .bunchOfBytes(digest)
+        //                                        .build();     
+        // lengthValueWrite(out, message);
+        sendBytes(randomBytes);
       } else {
         setErrorMessage("No random data received from measurement node.");
         setExchangeStatus(Status.ERROR);
@@ -172,5 +184,24 @@ public class BandwidthMeasurementExchange extends Exchange {
   public double getBytesPerSecond() {
     double seconds = stopwatch.getNanoTime() / ((double) NANOS_PER_SECOND);
     return ((double) MESSAGE_SIZE) / seconds;
+  }
+
+  private void sendBytes(byte[] payload) {
+    try { 
+      out.write(payload);
+    } catch (IOException e) {
+      Log.e(TAG, "Failed to send " +payload.length + " bytes: " + e);
+    }
+    Log.i(TAG, "Sent " + payload.length);
+  }
+  private byte[] receiveBytes() {
+    byte[] received = new byte[MESSAGE_SIZE];
+    try { 
+      int recvCount = in.read(received);
+      Log.i(TAG, "Received " + recvCount);
+    } catch (IOException e) {
+      Log.e(TAG, "Failed to read! Returning empty array!");
+    }
+    return received;
   }
 }

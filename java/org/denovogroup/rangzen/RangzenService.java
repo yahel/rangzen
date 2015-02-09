@@ -332,28 +332,31 @@ public class RangzenService extends Service {
           mSocket = socket;
           Log.i(TAG, "Socket connected, attempting exchange");
           try {
-            mExchange = new NonceEchoExchange(
+            mExchange = new BandwidthMeasurementExchange(
                 socket.getInputStream(),
                 socket.getOutputStream(),
                 true,
                 new FriendStore(RangzenService.this, StorageBase.ENCRYPTION_DEFAULT),
                 new MessageStore(RangzenService.this, StorageBase.ENCRYPTION_DEFAULT),
-                RangzenService.this.mLatencyBenchmarkCallback);
+                RangzenService.this.mBandwidthExchangeCallback);
 
             // Latency of communication: Start timer here.
             exchangeStartTimeMillis = System.currentTimeMillis();
 
             (new Thread(mExchange)).start();
           } catch (IOException e) {
+            RangzenService.this.cleanupAfterExchange();
             Log.e(TAG, "Getting input/output stream from socket failed: " + e);
             Log.e(TAG, "Exchange not happening.");
           }
         } else {
+          RangzenService.this.cleanupAfterExchange();
           Log.w(TAG, "But the socket claims not to be connected!");
         }
       }
       @Override
       public void failure(String reason) {
+        RangzenService.this.cleanupAfterExchange();
         Log.i(TAG, "Callback says we failed to connect: " + reason);
         setConnecting(false);
         setLastExchangeTime();
@@ -380,6 +383,19 @@ public class RangzenService extends Service {
         Log.e(TAG, "Failed to write to CSV: " + e);
       }
     }
+
+    /**
+     */
+    /* package */ ExchangeCallback mBandwidthExchangeCallback = new ExchangeCallback() {
+      @Override
+      public void success(Exchange exchange) {
+        RangzenService.this.cleanupAfterExchange();
+      }
+      @Override
+      public void failure(Exchange exchange, String reason) {
+        RangzenService.this.cleanupAfterExchange();
+      }
+    };
 
     /**
      * Passed to an Exchange to be called back to when the exchange completes.
