@@ -47,6 +47,8 @@ import android.os.Looper;
 import android.os.Parcelable;
 import android.util.Log;
 
+import org.apache.commons.lang3.time.StopWatch;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Date;
@@ -92,6 +94,9 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * events.
    */
   private Looper mLooper;
+
+  private StopWatch stopwatch;
+  
 
   /** 
    * Flag to remember whether we're seeking peers. This flag is used to know
@@ -166,6 +171,8 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     intentFilter.addAction(WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION);
     context.registerReceiver(this, intentFilter);
 
+    stopwatch = new StopWatch();
+
     Log.d(TAG, "Finished creating WifiDirectSpeaker.");
   }
 
@@ -236,6 +243,8 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
     Parcelable temp = intent.getParcelableExtra(WifiP2pManager.EXTRA_P2P_DEVICE_LIST);
     WifiP2pDeviceList peerDevices = (WifiP2pDeviceList) temp;
 
+    boolean foundAnyRangzenPeers = false;
+
     for (WifiP2pDevice device : peerDevices.getDeviceList()) {
       if (device.deviceName != null && device.deviceName.startsWith(RangzenService.RSVP_PREFIX)) {
         String bluetoothAddress = device.deviceName.replace(RangzenService.RSVP_PREFIX, "");
@@ -243,6 +252,15 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
         if (BluetoothSpeaker.looksLikeBluetoothAddress(bluetoothAddress) &&
             !BluetoothSpeaker.isReservedMACAddress(bluetoothAddress)) {
           BluetoothDevice bluetoothDevice = mBluetoothSpeaker.getDevice(bluetoothAddress);
+
+          if (stopwatch.isStarted()) {
+            stopwatch.stop();
+          }
+          float seconds = stopwatch.getNanoTime() / (float)(1000 * 1000 * 1000);
+          float ms = stopwatch.getNanoTime() / (float)(1000 * 1000);
+          Log.i(TAG, "Discovered a peer " + seconds + " seconds after discoverPeers call.");
+          foundAnyRangzenPeers = true;
+
           if (bluetoothDevice != null) {
             Peer peer = getCanonicalPeerByDevice(bluetoothDevice);
             Log.d(TAG, "Adding peer " + peer);  
@@ -256,6 +274,13 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
         }
 
       }
+    }
+
+    // If we found any Rangzen peers, then we stop seeking a wait a while before
+    // doing it again, in order to measure the time it takes to find peers.
+    if (foundAnyRangzenPeers) {
+      stopSeekingPeers();      
+      touchLastSeekingTime();  // Touch the last seeking time to wait a while before seeking.
     }
     Log.v(TAG, "P2P peers changed");
   }
@@ -394,9 +419,13 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * level application code, call setSeekingDesired(true/false).
    */
   private void seekPeers() {
-    if (!getSeeking() || lastSeekingWasLongAgo()) {
+    // DO NOT SUBMIT
+    // Switched this to be &&
+    if (!getSeeking() && lastSeekingWasLongAgo()) {
       setSeeking(true);
       touchLastSeekingTime();
+      stopwatch.reset();
+      stopwatch.start();
       mWifiP2pManager.discoverPeers(mWifiP2pChannel, new WifiP2pManager.ActionListener() {
         @Override
         public void onSuccess() {
@@ -421,6 +450,7 @@ public class WifiDirectSpeaker extends BroadcastReceiver {
    * level application code, call setSeekingDesired(true/false).
    */
   private void stopSeekingPeers() {
+    Log.i(TAG, "Stopping discovery...");
     mWifiP2pManager.stopPeerDiscovery(mWifiP2pChannel, new WifiP2pManager.ActionListener() {
       @Override
       public void onSuccess() {
