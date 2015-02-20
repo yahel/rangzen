@@ -441,8 +441,11 @@ public class Exchange implements Runnable {
     }
     byte[] messageBytes = new byte[length];
     T recoveredMessage;
+    int readByteCount = 0;
     try {
-      inputStream.read(messageBytes);
+      while (readByteCount != length) {
+        readByteCount += inputStream.read(messageBytes, readByteCount, length - readByteCount);
+      }
       recoveredMessage = wire.parseFrom(messageBytes, messageClass);
     } catch (IOException e) {
       Log.e(TAG, "IOException parsing message bytes: " + e);
