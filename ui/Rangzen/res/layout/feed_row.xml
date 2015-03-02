@@ -3,26 +3,69 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/listitem_selector"
-    android:minHeight="30dp"
+    android:minHeight="100dp"
     android:orientation="vertical"
     android:paddingBottom="3dp"
     android:paddingEnd="0dp"
     android:paddingStart="0dp"
-    android:paddingTop="17dp" >
+    android:paddingTop="0dp" >
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingBottom="17dp" >
+        android:paddingBottom="10dp" >
 
-        <TextView
-            android:id="@+id/upvoteView"
+        <LinearLayout
             android:layout_width="wrap_content"
-            android:layout_height="fill_parent"
-            android:gravity="center"
-            android:paddingEnd="15dp"
-            android:paddingStart="25dp"
-            android:textColor="@android:color/black" />
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingTop="5dp" >
+
+            <LinearLayout
+                android:id="@+id/container"
+                android:layout_width="40dp"
+                android:layout_height="35dp"
+                android:layout_gravity="center"
+                android:paddingBottom="0dp"
+                android:paddingStart="12dp" >
+
+                <ImageButton
+                    android:id="@+id/upArrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@android:color/transparent"
+                    android:onClick="upVote"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/uparrow" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/upvoteView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:paddingEnd="15dp"
+                android:paddingStart="28dp"
+                android:textColor="@android:color/black" />
+
+            <LinearLayout
+                android:id="@+id/container2"
+                android:layout_width="40dp"
+                android:layout_height="35dp"
+                android:layout_gravity="center"
+                android:paddingStart="12dp"
+                android:paddingTop="0dp" >
+
+                <ImageButton
+                    android:id="@+id/downArrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@android:color/transparent"
+                    android:onClick="downVote"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/downarrow" />
+            </LinearLayout>
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="1dp"
@@ -36,8 +79,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:paddingBottom="5dp"
             android:paddingEnd="20dp"
-            android:paddingStart="15dp" >
+            android:paddingStart="15dp"
+            android:paddingTop="17dp" >
 
             <TextView
                 android:id="@+id/hashtagView"
@@ -45,9 +90,11 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="start"
                 android:maxWidth="320dp"
+                android:minLines="3"
                 android:minWidth="250dp"
                 android:textAppearance="?android:attr/textAppearanceMedium"
                 android:textColor="@android:color/black" />
         </LinearLayout>
     </LinearLayout>
+
 </LinearLayout>

@@ -55,12 +55,16 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ImageView;
 
 /**
  * This class is the manager of all of the fragments that are clickable in the
@@ -222,8 +226,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             String[] sidebar = getResources().getStringArray(R.array.sidebar);
             setTitle(sidebar[position]);
         } else {
-            int titleId = getResources().getIdentifier("action_bar_title", "id",
-                    "android");
+            int titleId = getResources().getIdentifier("action_bar_title",
+                    "id", "android");
             TextView abTitle = (TextView) findViewById(titleId);
             abTitle.setTextColor(Color.WHITE);
         }
@@ -429,5 +433,59 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                     .getAdapter();
             adapt.notifyDataSetChanged();
         }
+    }
+
+    public void upVote(View view) {
+        handleVoting(1, view);
+    }
+
+    private void handleVoting(int i, View view) {
+        ViewGroup vg = (ViewGroup) view.getParent();
+        ViewGroup vg2 = (ViewGroup) vg.getParent();
+        ViewGroup vg3 = (ViewGroup) vg2.getParent();
+        LinearLayout l = (LinearLayout) vg3.getChildAt(2);
+        Log.d(TAG, vg3.getChildAt(2).getClass().getName());
+        Log.d(TAG, l.getChildAt(0).getClass().getName());
+        
+        TextView upvoteView = (TextView) vg2.getChildAt(1);
+        TextView hashtagView = (TextView) l.getChildAt(0);
+        
+        //TextView tv = (TextView) findViewById(R.id.hashtagView);
+        //TextView upvote = (TextView) findViewById(R.id.upvoteView);
+        ImageView iv = (ImageView) view;
+        MessageStore messageStore = new MessageStore(this,
+                StorageBase.ENCRYPTION_DEFAULT);
+
+        if (i == 1) {
+            Toast.makeText(this, "upVote", Toast.LENGTH_SHORT).show();
+            iv.setImageResource(R.drawable.uparrowgreen);
+            LinearLayout l2 = (LinearLayout) vg2.getChildAt(2);
+            ImageButton ib = (ImageButton) l2.getChildAt(0);
+            ib.setImageResource(R.drawable.downarrow);
+        } else {
+            Toast.makeText(this, "downVote", Toast.LENGTH_SHORT).show();
+            iv.setImageResource(R.drawable.downarrowred);
+            LinearLayout l2 = (LinearLayout) vg2.getChildAt(0);
+            ImageButton ib = (ImageButton) l2.getChildAt(0);
+            ib.setImageResource(R.drawable.uparrow);
+        }
+
+        String text = hashtagView.getText().toString();
+
+        if (100 * messageStore.getPriority((text)) < 96 && i == 1) { // max
+            messageStore.updatePriority(text,
+                    messageStore.getPriority((text)) + .15);
+        } else if (100 * messageStore.getPriority((text)) > 15 && i == 0) { // min
+            messageStore.updatePriority(text,
+                    messageStore.getPriority((text)) - .15);
+        } else {
+            return;
+        }
+        upvoteView.setText(Integer.toString((int) (100 * messageStore
+                .getPriority(text))));
+    }
+
+    public void downVote(View view) {
+        handleVoting(0, view);
     }
 }

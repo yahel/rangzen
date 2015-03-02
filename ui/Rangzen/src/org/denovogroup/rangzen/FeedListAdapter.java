@@ -121,7 +121,7 @@ public class FeedListAdapter extends BaseAdapter {
             mViewHolder = (ViewHolder) convertView.getTag();
         }
         mViewHolder.mHashtagView.setText(message.getMessage());
-        mViewHolder.mUpvoteView.setText(Double.toString(message.getPriority()));
+        mViewHolder.mUpvoteView.setText(Integer.toString((int) (100 * message.getPriority())));
 
         return convertView;
     }
