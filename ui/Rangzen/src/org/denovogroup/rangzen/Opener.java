@@ -586,4 +586,5 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         iv.setAdjustViewBounds(true);
         iv.setImageResource(R.drawable.ic_action_repeat_green);
     }
+
 }
