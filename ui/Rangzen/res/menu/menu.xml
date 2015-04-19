@@ -7,4 +7,9 @@
         android:icon="@drawable/ic_action_new_event_light"
         android:title="@string/new_post"
         compat:showAsAction="ifRoom"/>
+    
+    <item
+        android:id="@+id/show_only"
+        android:title="@string/show_only"
+        compat:showAsAction="always" />
 </menu>
