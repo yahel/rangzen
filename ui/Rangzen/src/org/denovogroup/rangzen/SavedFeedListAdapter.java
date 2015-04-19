@@ -83,7 +83,7 @@ public class SavedFeedListAdapter extends FeedListAdapter {
     /**
      * Navigates the treemap and finds the correct message from memory to
      * display at this position in the feed, then returns the row's view object,
-     * fully populated with information.
+     * fully populated with information. This only shows saved messages.
      * 
      * @param position
      *            The current row index in the feed.
@@ -101,7 +101,8 @@ public class SavedFeedListAdapter extends FeedListAdapter {
         if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater) mContext
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = inflater.inflate(R.layout.feed_row_save, parent, false);
+            convertView = inflater.inflate(R.layout.feed_row_save, parent,
+                    false);
 
             mViewHolder = new ViewHolder();
             mViewHolder.mUpvoteView = (TextView) convertView
@@ -115,7 +116,8 @@ public class SavedFeedListAdapter extends FeedListAdapter {
         }
         Log.d("MessageStore", Integer.toString(position));
         mViewHolder.mHashtagView.setText(message.getMessage());
-        mViewHolder.mUpvoteView.setText(Integer.toString((int) (100 * message.getPriority())));
+        mViewHolder.mUpvoteView.setText(Integer.toString((int) (100 * message
+                .getPriority())));
 
         return convertView;
     }

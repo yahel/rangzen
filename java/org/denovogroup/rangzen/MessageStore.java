@@ -73,6 +73,9 @@ public class MessageStore {
      */
     private static final String MESSAGE_PRIORITY_KEY = "RangzenMessagePriority-";
 
+    private static final int SAVED_MESSAGES = 1;
+    private static final int NOT_SAVED_MESSAGES = -0;
+    
     /**
      * The number of bins to use for storing messages. Each bin stores
      * 1/NUM_BINS range of priority values, called the INCREMENT. Bin 0 stores
@@ -91,7 +94,7 @@ public class MessageStore {
 
     // The default value that indicates not found.
     public static final double NOT_FOUND = -2.0f;
-    
+
     public static final String TAG = "MessageStore";
 
     /** Ensures that the given priority value is in range. */
@@ -380,12 +383,12 @@ public class MessageStore {
         Log.d(TAG, "message count = " + Integer.toString(count));
         return count - getSavedMessageCount();
     }
-    
+
     /**
      * This will iterate over all of the messages in the message store and
      * return the number of saved messages
      * 
-     * @return count The total number of messages in the message store.
+     * @return count The total number of saved messages in the message store.
      */
     public int getSavedMessageCount() {
         int count = 0;
@@ -416,7 +419,7 @@ public class MessageStore {
      *            The index of the message to return.
      * 
      * @param type
-     * 0 - regular messages, 1 - saved messages
+     *            0 - regular messages, 1 - saved messages
      * @return A message object that is the kth most trusted.
      */
     public Message getKthMessage(int k, int type) {
@@ -430,13 +433,13 @@ public class MessageStore {
                 continue;
 
             for (String m : msgs) {
-                if (type == 1) {
-                    //saved message, get saved priority
-                    //check if message exists as a saved message
-                    //add to topk if so
+                if (type == SAVED_MESSAGES) {
+                    // get saved priority
+                    // check if message exists as a saved message
+                    // add to topk if so
                     String msgPriorityKey = "RangzenSavedMessage-" + m;
-                    double p = store.getDouble(msgPriorityKey, -2);
-                    if (p != -2) {
+                    double p = store.getDouble(msgPriorityKey, NOT_FOUND);
+                    if (p != NOT_FOUND) {
                         topk.add(new Message(p, m));
                     }
                 } else {
@@ -496,11 +499,12 @@ public class MessageStore {
         msgs.add(msg);
         store.putSet(binKey, msgs);
 
-         /** Sending the broadcast here when a message is added to the phone.
+        /**
+         * Sending the broadcast here when a message is added to the phone.
          **/
-         Intent intent = new Intent();
-         intent.setAction(NEW_MESSAGE);
-         mContext.sendBroadcast(intent);
+        Intent intent = new Intent();
+        intent.setAction(NEW_MESSAGE);
+        mContext.sendBroadcast(intent);
         return true;
     }
 

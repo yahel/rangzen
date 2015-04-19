@@ -80,7 +80,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private ActionBarDrawerToggle mDrawerListener;
     private SidebarListAdapter mSidebarAdapter;
     private static TextView mCurrentTextView;
-    private static boolean mHasStored = false;
     private static boolean mFirstTime = true;
     private static final String TAG = "Opener";
 
@@ -94,6 +93,9 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
 
     private final static int QR = 10;
     private final static int Message = 20;
+    
+    private final static int upVote = 1;
+    private final static int downVote = 0;
 
     /** Initialize the contents of the activities menu. */
     @Override
@@ -107,7 +109,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                 .addMessage(
                         "This is the Rangzen message feed. Messages in the ether will appear here.",
                         1L);
-        
+
         messageStore.saveMessage("hello.", 1L);
 
         messageStore
@@ -482,38 +484,50 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             FeedListAdapter adapt = (FeedListAdapter) org.getListView()
                     .getAdapter();
             adapt.notifyDataSetChanged();
-       }
-    }
-
-    public void upVote(View view) {
-        handleVoting(1, view);
+        }
     }
     
-    public void onSave(View view) {
-        //from view of button
-        ViewGroup vg = (ViewGroup) view.getParent(); //root
-        LinearLayout l = (LinearLayout) vg.getChildAt(0); //root -> (0) = linear layout
-        LinearLayout l2 = (LinearLayout) l.getChildAt(2); // third element of first child
-        
-        ViewGroup vg2 = (ViewGroup) vg.getParent();
-        ViewGroup vg3 = (ViewGroup) vg2.getParent(); // linear layout containing message layouts
-        ViewGroup vg4 = (ViewGroup) vg3.getParent(); // root layout
-        
-        //Button b = (Button) vg4.getChildAt(1);
-        
-        //LinearLayout l = (LinearLayout) vg3.getChildAt(2);
+    
 
-        //TextView upvoteView = (TextView) vg2.getChildAt(1);
-        TextView hashtagView = (TextView) l2.getChildAt(0);
-        MessageStore messageStore = new MessageStore(this,
-                StorageBase.ENCRYPTION_DEFAULT);
-        String text = hashtagView.getText().toString();
-        double p = messageStore.getPriority((text));
-        
-        messageStore.saveMessage(text, p);
+    /**
+     * This is an onclick listener created in feed_row.xml or feed_row_save.xml.
+     * It's a button that allows the user to up vote a message.
+     * 
+     * @param view
+     *            - This is the button image view for the upvote.
+     */
+    public void upVote(View view) {
+        handleVoting(upVote, view);
     }
 
+    /**
+     * This is an onclick listener created in feed_row.xml or feed_row_save.xml.
+     * It's a button that allows the user to down vote a message.
+     * 
+     * @param view
+     *            - This is the button image view for the downvote.
+     */
+    public void downVote(View view) {
+        handleVoting(downVote, view);
+    }
+
+    /**
+     * Finds the textviews containing the up/down vote score and the textview
+     * for the message. It places a cap and a floor on the score that a message
+     * can be and increments the score by some number.
+     * 
+     * @param i
+     *            - Constant indicating up vote or down vote.
+     * @param view
+     *            - The up/down vote image button view.
+     */
     private void handleVoting(int i, View view) {
+        /**
+         * The view that we have is to a specific instance of a feed element. We
+         * cannot call findViewById here because it would give a reference to
+         * only the first instance of a feed element. To get around this I sift
+         * through the layers of xml.
+         */
         ViewGroup vg = (ViewGroup) view.getParent();
         ViewGroup vg2 = (ViewGroup) vg.getParent();
         ViewGroup vg3 = (ViewGroup) vg2.getParent();
@@ -522,8 +536,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         TextView upvoteView = (TextView) vg2.getChildAt(1);
         TextView hashtagView = (TextView) l.getChildAt(0);
 
-        // TextView tv = (TextView) findViewById(R.id.hashtagView);
-        // TextView upvote = (TextView) findViewById(R.id.upvoteView);
         ImageView iv = (ImageView) view;
         MessageStore messageStore = new MessageStore(this,
                 StorageBase.ENCRYPTION_DEFAULT);
@@ -557,7 +569,25 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                 .getPriority(text))));
     }
 
-    public void downVote(View view) {
-        handleVoting(0, view);
+    /**
+     * This is an onclick listener created in feed_row.xml. It's a button that
+     * allows the user to save a message.
+     * 
+     * @param view
+     *            - This is the button view.
+     */
+    public void onSave(View view) {
+        ViewGroup vg = (ViewGroup) view.getParent(); // root
+        LinearLayout l = (LinearLayout) vg.getChildAt(0); // id-messageAndScore
+        LinearLayout l2 = (LinearLayout) l.getChildAt(2); // id-hashtagHolder
+
+        TextView hashtagView = (TextView) l2.getChildAt(0);
+        MessageStore messageStore = new MessageStore(this,
+                StorageBase.ENCRYPTION_DEFAULT);
+        String text = hashtagView.getText().toString();
+        double p = messageStore.getPriority((text));
+
+        messageStore.saveMessage(text, p);
     }
+
 }
