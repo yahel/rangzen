@@ -92,10 +92,10 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private IntentFilter filter = new IntentFilter(MessageStore.NEW_MESSAGE);
 
     private final static int QR = 10;
-    private final static int Message = 20;
+    private final static int MESSAGE = 20;
     
-    private final static int upVote = 1;
-    private final static int downVote = 0;
+    private final static int UPVOTE = 1;
+    private final static int DOWNVOTE = 0;
 
     /** Initialize the contents of the activities menu. */
     @Override
@@ -389,7 +389,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         } else if (position == 1) {
             Intent intent = new Intent();
             intent.setClass(this, PostActivity.class);
-            startActivityForResult(intent, Message);
+            startActivityForResult(intent, MESSAGE);
             return;
         } else if (position == 2) {
             Intent intent = new Intent("com.google.zxing.client.android.SCAN");
@@ -399,7 +399,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         } else {
             Intent intent = new Intent();
             intent.setClass(this, InfoActivity.class);
-            startActivityForResult(intent, Message);
+            startActivityForResult(intent, MESSAGE);
             return;
         }
         makeTitleBold(position);
@@ -497,7 +497,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      *            - This is the button image view for the upvote.
      */
     public void upVote(View view) {
-        handleVoting(upVote, view);
+        handleVoting(UPVOTE, view);
     }
 
     /**
@@ -508,7 +508,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      *            - This is the button image view for the downvote.
      */
     public void downVote(View view) {
-        handleVoting(downVote, view);
+        handleVoting(DOWNVOTE, view);
     }
 
     /**

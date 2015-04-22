@@ -41,6 +41,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+/**
+ * This class extends FeedListAdapter and has all of the same functionality as
+ * that class except in two places. Getting the count of the messages to show
+ * now returns the number of saved messages and the messages that are going to
+ * be shown are only saved messages.
+ * 
+ * @author jesus
+ * 
+ */
 public class SavedFeedListAdapter extends FeedListAdapter {
 
     public SavedFeedListAdapter(Context context) {

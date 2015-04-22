@@ -75,7 +75,7 @@ public class MessageStore {
 
     private static final int SAVED_MESSAGES = 1;
     private static final int NOT_SAVED_MESSAGES = -0;
-    
+
     /**
      * The number of bins to use for storing messages. Each bin stores
      * 1/NUM_BINS range of priority values, called the INCREMENT. Bin 0 stores
@@ -471,6 +471,19 @@ public class MessageStore {
         return topk.get(k);
     }
 
+    /**
+     * This method stores a message into the storage base with the prefix,
+     * "RangzenSavedMessage-". That will be the way that the saved message will
+     * be distinct from non-saved. It does the same thing as addMessage but with
+     * a different tag.
+     * 
+     * @param msg
+     *            - Message to be saved.
+     * @param priority
+     *            - Current priority of the message, the priority it will be
+     *            saved with.
+     * @return
+     */
     public boolean saveMessage(String msg, double priority) {
         checkPriority(priority);
 
