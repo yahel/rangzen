@@ -30,3 +30,6 @@ local.properties
 
 #Temporary Files
 *~
+
+lint.xml
+
