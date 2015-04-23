@@ -22,6 +22,7 @@
     <string name="empty">There are no items</string>
     <string name="refresh">Refresh</string>
     <string name="show_only">Show Only</string>
+    <string name="crash_toast_text">I crashed and reported it!</string>
 
     <string-array name="sidebar">
         <item>Feed</item>

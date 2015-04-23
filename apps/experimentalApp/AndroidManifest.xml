@@ -16,6 +16,8 @@
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+  <uses-permission android:name="android.permission.READ_LOGS"></uses-permission>
+  
 
 
   <uses-sdk
@@ -30,7 +32,9 @@
       android:allowBackup="true"
       android:icon="@mipmap/ic_launcher"
       android:label="@string/rangzen_app_name"
-      android:theme="@android:style/Theme.Black">
+      android:theme="@android:style/Theme.Black"
+      android:name="org.denovogroup.rangzen.RangzenApplication">
+
     <service android:name=".RangzenService"
              android:enabled="true" />
     <receiver android:name=".StartupIntentReceiver">

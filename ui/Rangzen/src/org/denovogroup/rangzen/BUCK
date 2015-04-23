@@ -11,6 +11,7 @@ android_library(
     'Opener.java',
     'PostActivity.java',
     'QRCodeViewPager.java',
+    'RangzenApplication.java',
     'SavedFeedListAdapter.java',
     'SidebarListAdapter.java',
     'SlidingPageIndicator.java',
@@ -23,5 +24,6 @@ android_library(
     '//ui/appcompat_v7_4/libs:android-support-v7-appcompat',
     '//ui/Rangzen:experimentalUIRes',
     '//java/org/denovogroup/rangzen:experimentalBackend',
+    '//libs:acra',
   ],
 )
