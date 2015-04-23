@@ -68,7 +68,7 @@ public class ListFragmentOrganizer extends ListFragment {
      * page.
      */
     enum FragmentType {
-        FEED, FRIENDS
+        FEED, NEW, SAVED
     }
 
     /** Creates and populates the content for the feed fragment. */
@@ -87,35 +87,38 @@ public class ListFragmentOrganizer extends ListFragment {
         Bundle b = getArguments();
         FragmentType whichScreen = (FragmentType) b
                 .getSerializable("whichScreen");
-        switch (whichScreen) {
-        case FEED:
-            View view = (View) inflater
-                    .inflate(R.layout.feed, container, false);
+        View view = (View) inflater.inflate(R.layout.feed, container, false);
 
-            ImageView iv = (ImageView) view.findViewById(R.id.normal_image);
+        ImageView iv = (ImageView) view.findViewById(R.id.normal_image);
 
-            Display display = getActivity().getWindowManager().getDefaultDisplay();
-            Point size = new Point();
-            display.getSize(size);
-            int width = size.x;
-            int height = (int) (size.y);
+        Display display = getActivity().getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        int width = size.x;
+        int height = (int) (size.y);
 
-            Bitmap bd = FragmentOrganizer.decodeSampledBitmapFromResource(getResources(), R.drawable.firstb,
-                    width, height);
-            BitmapDrawable ob = new BitmapDrawable(bd);
-            iv.setBackgroundDrawable(ob);
-           
+        Bitmap bd = FragmentOrganizer.decodeSampledBitmapFromResource(
+                getResources(), R.drawable.firstb, width, height);
+        BitmapDrawable ob = new BitmapDrawable(bd);
+        iv.setBackgroundDrawable(ob);
 
-            ListView listView = (ListView) view.findViewById(android.R.id.list);
+        ListView listView = (ListView) view.findViewById(android.R.id.list);
+        Log.d("Opener", whichScreen.toString());
+
+        if (whichScreen == FragmentType.FEED) {
             mFeedListAdaper = new FeedListAdapter(getActivity());
             listView.setAdapter(mFeedListAdaper);
-            return view;
-        case FRIENDS:
-            View view2 = inflater.inflate(R.layout.feed_row, container, false);
-            return view2;
-        default:
-            return null;
         }
+        if (whichScreen == FragmentType.NEW) {
+            mFeedListAdaper = new FeedListAdapter(getActivity());
+            listView.setAdapter(mFeedListAdaper);
+        }
+        if (whichScreen == FragmentType.SAVED) {
+            SavedFeedListAdapter f = new SavedFeedListAdapter(getActivity());
+            listView.setAdapter(f);
+        }
+
+        return view;
     }
 
     @Override

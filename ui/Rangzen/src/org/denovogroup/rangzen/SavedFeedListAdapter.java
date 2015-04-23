@@ -35,13 +35,27 @@ import org.denovogroup.rangzen.MessageStore.Message;
 
 import android.app.Activity;
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 import android.widget.TextView;
 
-public class FeedListAdapter extends BaseAdapter {
+/**
+ * This class extends FeedListAdapter and has all of the same functionality as
+ * that class except in two places. Getting the count of the messages to show
+ * now returns the number of saved messages and the messages that are going to
+ * be shown are only saved messages.
+ * 
+ * @author jesus
+ * 
+ */
+public class SavedFeedListAdapter extends FeedListAdapter {
+
+    public SavedFeedListAdapter(Context context) {
+        super(context);
+        this.mContext = context;
+    }
 
     /** Activity context passed in to the FeedListAdapter. */
     private Context mContext;
@@ -54,23 +68,11 @@ public class FeedListAdapter extends BaseAdapter {
      */
     private ViewHolder mViewHolder;
 
-    /**
-     * Sets the feed text fields to be their values from messages from memory.
-     * This finds the correct message at what position and populates recycled
-     * views.
-     * 
-     * @param context
-     *            The context of the activity that spawned this class.
-     */
-    public FeedListAdapter(Context context) {
-        this.mContext = context;
-    }
-
     @Override
     public int getCount() {
         mMessageStore = new MessageStore((Activity) mContext,
                 StorageBase.ENCRYPTION_DEFAULT);
-        return mMessageStore.getMessageCount();
+        return mMessageStore.getSavedMessageCount();
     }
 
     /**
@@ -90,7 +92,7 @@ public class FeedListAdapter extends BaseAdapter {
     /**
      * Navigates the treemap and finds the correct message from memory to
      * display at this position in the feed, then returns the row's view object,
-     * fully populated with information.
+     * fully populated with information. This only shows saved messages.
      * 
      * @param position
      *            The current row index in the feed.
@@ -104,11 +106,12 @@ public class FeedListAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         MessageStore messageStore = new MessageStore((Activity) mContext,
                 StorageBase.ENCRYPTION_DEFAULT);
-        Message message = messageStore.getKthMessage(position, 0);
+        Message message = messageStore.getKthMessage(position, 1);
         if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater) mContext
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = inflater.inflate(R.layout.feed_row, parent, false);
+            convertView = inflater.inflate(R.layout.feed_row_save, parent,
+                    false);
 
             mViewHolder = new ViewHolder();
             mViewHolder.mUpvoteView = (TextView) convertView
@@ -120,8 +123,10 @@ public class FeedListAdapter extends BaseAdapter {
         } else {
             mViewHolder = (ViewHolder) convertView.getTag();
         }
+        Log.d("MessageStore", Integer.toString(position));
         mViewHolder.mHashtagView.setText(message.getMessage());
-        mViewHolder.mUpvoteView.setText(Integer.toString((int) (100 * message.getPriority())));
+        mViewHolder.mUpvoteView.setText(Integer.toString((int) (100 * message
+                .getPriority())));
 
         return convertView;
     }

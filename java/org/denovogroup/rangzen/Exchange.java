@@ -203,7 +203,7 @@ public class Exchange implements Runnable {
   /* package */ List<RangzenMessage> getMessages() { 
     List<RangzenMessage> messages = new ArrayList<RangzenMessage>();
     for (int k=0; k<NUM_MESSAGES_TO_SEND; k++) {
-      MessageStore.Message messageFromStore = messageStore.getKthMessage(k);
+      MessageStore.Message messageFromStore = messageStore.getKthMessage(k, 0);
       if (messageFromStore == null) {
         break;
       }
@@ -222,7 +222,7 @@ public class Exchange implements Runnable {
   private void sendMessages() {
     List<RangzenMessage> messages = new ArrayList<RangzenMessage>();
     for (int k=0; k<NUM_MESSAGES_TO_SEND; k++) {
-      MessageStore.Message messageFromStore = messageStore.getKthMessage(k);
+      MessageStore.Message messageFromStore = messageStore.getKthMessage(k, 0);
       if (messageFromStore == null) {
         break;
       }

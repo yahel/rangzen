@@ -21,6 +21,7 @@
     <string name="close">Navigation Drawer is Closed</string>
     <string name="empty">There are no items</string>
     <string name="refresh">Refresh</string>
+    <string name="show_only">Show Only</string>
 
     <string-array name="sidebar">
         <item>Feed</item>

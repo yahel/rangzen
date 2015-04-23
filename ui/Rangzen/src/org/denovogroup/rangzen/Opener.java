@@ -55,12 +55,18 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ImageView;
+import android.support.v4.app.FragmentTabHost;
 
 /**
  * This class is the manager of all of the fragments that are clickable in the
@@ -74,9 +80,10 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private ActionBarDrawerToggle mDrawerListener;
     private SidebarListAdapter mSidebarAdapter;
     private static TextView mCurrentTextView;
-    private static boolean mHasStored = false;
     private static boolean mFirstTime = true;
     private static final String TAG = "Opener";
+
+    private FragmentTabHost mTabHost;
 
     // Create reciever object
     private BroadcastReceiver receiver = new NewMessageReceiver();
@@ -85,7 +92,10 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private IntentFilter filter = new IntentFilter(MessageStore.NEW_MESSAGE);
 
     private final static int QR = 10;
-    private final static int Message = 20;
+    private final static int MESSAGE = 20;
+    
+    private final static int UPVOTE = 1;
+    private final static int DOWNVOTE = 0;
 
     /** Initialize the contents of the activities menu. */
     @Override
@@ -99,6 +109,28 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                 .addMessage(
                         "This is the Rangzen message feed. Messages in the ether will appear here.",
                         1L);
+
+        messageStore.saveMessage("hello.", 1L);
+
+        messageStore
+                .addMessage(
+                        "This is the Rangzen message feed. Messages in the ether will appear here1.",
+                        2L);
+
+        messageStore
+                .addMessage(
+                        "This is the Rangzen message feed. Messages in the ether will appear here2.",
+                        0L);
+
+        messageStore
+                .addMessage(
+                        "This is the Rangzen message feed. Messages in the ether will appear here3.",
+                        1L);
+
+        messageStore
+                .addMessage(
+                        "This is the Rangzen message feed. Messages in the ether will appear here4.",
+                        0L);
         return true;
     }
 
@@ -139,6 +171,31 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, Gravity.LEFT);
+
+        setUpTabHost();
+    }
+
+    private void setUpTabHost() {
+
+        mTabHost = (FragmentTabHost) findViewById(android.R.id.tabhost);
+        mTabHost.setup(this, getSupportFragmentManager(), R.id.tabcontent);
+
+        Bundle b = new Bundle();
+        b.putSerializable("whichScreen",
+                ListFragmentOrganizer.FragmentType.FEED);
+        Bundle b2 = new Bundle();
+        b2.putSerializable("whichScreen",
+                ListFragmentOrganizer.FragmentType.NEW);
+        Bundle b3 = new Bundle();
+        b3.putSerializable("whichScreen",
+                ListFragmentOrganizer.FragmentType.SAVED);
+
+        mTabHost.addTab(mTabHost.newTabSpec("Trust").setIndicator("Trust"),
+                ListFragmentOrganizer.class, b);
+        mTabHost.addTab(mTabHost.newTabSpec("New").setIndicator("New"),
+                ListFragmentOrganizer.class, b2);
+        mTabHost.addTab(mTabHost.newTabSpec("Saved").setIndicator("Saved"),
+                ListFragmentOrganizer.class, b3);
     }
 
     /**
@@ -222,8 +279,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             String[] sidebar = getResources().getStringArray(R.array.sidebar);
             setTitle(sidebar[position]);
         } else {
-            int titleId = getResources().getIdentifier("action_bar_title", "id",
-                    "android");
+            int titleId = getResources().getIdentifier("action_bar_title",
+                    "id", "android");
             TextView abTitle = (TextView) findViewById(titleId);
             abTitle.setTextColor(Color.WHITE);
         }
@@ -332,19 +389,18 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         } else if (position == 1) {
             Intent intent = new Intent();
             intent.setClass(this, PostActivity.class);
-            startActivityForResult(intent, Message);
+            startActivityForResult(intent, MESSAGE);
             return;
         } else if (position == 2) {
             Intent intent = new Intent("com.google.zxing.client.android.SCAN");
             intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
-            // startActivityForResult(intent, 0);
             startActivityForResult(intent, QR);
             return;
         } else {
-            needAdd = new FragmentOrganizer();
-            Bundle b = new Bundle();
-            b.putSerializable("whichScreen", FragmentType.SECONDABOUT);
-            needAdd.setArguments(b);
+            Intent intent = new Intent();
+            intent.setClass(this, InfoActivity.class);
+            startActivityForResult(intent, MESSAGE);
+            return;
         }
         makeTitleBold(position);
         FragmentManager fragmentManager = getSupportFragmentManager();
@@ -430,4 +486,108 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             adapt.notifyDataSetChanged();
         }
     }
+    
+    
+
+    /**
+     * This is an onclick listener created in feed_row.xml or feed_row_save.xml.
+     * It's a button that allows the user to up vote a message.
+     * 
+     * @param view
+     *            - This is the button image view for the upvote.
+     */
+    public void upVote(View view) {
+        handleVoting(UPVOTE, view);
+    }
+
+    /**
+     * This is an onclick listener created in feed_row.xml or feed_row_save.xml.
+     * It's a button that allows the user to down vote a message.
+     * 
+     * @param view
+     *            - This is the button image view for the downvote.
+     */
+    public void downVote(View view) {
+        handleVoting(DOWNVOTE, view);
+    }
+
+    /**
+     * Finds the textviews containing the up/down vote score and the textview
+     * for the message. It places a cap and a floor on the score that a message
+     * can be and increments the score by some number.
+     * 
+     * @param i
+     *            - Constant indicating up vote or down vote.
+     * @param view
+     *            - The up/down vote image button view.
+     */
+    private void handleVoting(int i, View view) {
+        /**
+         * The view that we have is to a specific instance of a feed element. We
+         * cannot call findViewById here because it would give a reference to
+         * only the first instance of a feed element. To get around this I sift
+         * through the layers of xml.
+         */
+        ViewGroup vg = (ViewGroup) view.getParent();
+        ViewGroup vg2 = (ViewGroup) vg.getParent();
+        ViewGroup vg3 = (ViewGroup) vg2.getParent();
+        LinearLayout l = (LinearLayout) vg3.getChildAt(2);
+
+        TextView upvoteView = (TextView) vg2.getChildAt(1);
+        TextView hashtagView = (TextView) l.getChildAt(0);
+
+        ImageView iv = (ImageView) view;
+        MessageStore messageStore = new MessageStore(this,
+                StorageBase.ENCRYPTION_DEFAULT);
+
+        if (i == 1) {
+            Toast.makeText(this, "upVote", Toast.LENGTH_SHORT).show();
+            iv.setImageResource(R.drawable.uparrowgreen);
+            LinearLayout l2 = (LinearLayout) vg2.getChildAt(2);
+            ImageButton ib = (ImageButton) l2.getChildAt(0);
+            ib.setImageResource(R.drawable.downarrow);
+        } else {
+            Toast.makeText(this, "downVote", Toast.LENGTH_SHORT).show();
+            iv.setImageResource(R.drawable.downarrowred);
+            LinearLayout l2 = (LinearLayout) vg2.getChildAt(0);
+            ImageButton ib = (ImageButton) l2.getChildAt(0);
+            ib.setImageResource(R.drawable.uparrow);
+        }
+
+        String text = hashtagView.getText().toString();
+
+        if (100 * messageStore.getPriority((text)) < 86 && i == 1) { // max
+            messageStore.updatePriority(text,
+                    messageStore.getPriority((text)) + .15);
+        } else if (100 * messageStore.getPriority((text)) > 15 && i == 0) { // min
+            messageStore.updatePriority(text,
+                    messageStore.getPriority((text)) - .15);
+        } else {
+            return;
+        }
+        upvoteView.setText(Integer.toString((int) (100 * messageStore
+                .getPriority(text))));
+    }
+
+    /**
+     * This is an onclick listener created in feed_row.xml. It's a button that
+     * allows the user to save a message.
+     * 
+     * @param view
+     *            - This is the button view.
+     */
+    public void onSave(View view) {
+        ViewGroup vg = (ViewGroup) view.getParent(); // root
+        LinearLayout l = (LinearLayout) vg.getChildAt(0); // id-messageAndScore
+        LinearLayout l2 = (LinearLayout) l.getChildAt(2); // id-hashtagHolder
+
+        TextView hashtagView = (TextView) l2.getChildAt(0);
+        MessageStore messageStore = new MessageStore(this,
+                StorageBase.ENCRYPTION_DEFAULT);
+        String text = hashtagView.getText().toString();
+        double p = messageStore.getPriority((text));
+
+        messageStore.saveMessage(text, p);
+    }
+
 }

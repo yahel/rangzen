@@ -79,6 +79,20 @@
             </intent-filter>
         </activity>
 
+    <activity
+            android:name="org.denovogroup.rangzen.InfoActivity"
+            android:label="@string/rangzen_app_name"
+            android:theme="@style/MyTheme1"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait" >
+            <intent-filter>
+                <action android:name="android.intent.action.DEFAULT" />
+
+                <category                 				android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
 <activity android:name="com.google.zxing.client.android.CaptureActivity"
    android:screenOrientation="landscape"
    android:configChanges="orientation|keyboardHidden"
