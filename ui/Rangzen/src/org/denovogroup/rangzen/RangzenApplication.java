@@ -44,6 +44,7 @@ import android.util.Log;
   httpMethod = org.acra.sender.HttpSender.Method.PUT,
   formUriBasicAuthLogin="rangzenReporter",
   formUriBasicAuthPassword="rangzenReporterPassword",
+  logcatArguments = { "-t", "500", "-v", "time" }, 
 
   mode = ReportingInteractionMode.TOAST,
   resToastText = 1
