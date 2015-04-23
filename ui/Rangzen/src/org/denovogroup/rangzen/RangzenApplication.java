@@ -39,7 +39,7 @@ import android.util.Log;
 
 @ReportsCrashes(
   formKey = "",  // Required for backwards compatibility.
-  formUri = "http://lacamas.cs.washington.edu:5984/acra-rangzen-test/_design/acra-storage/_update/report",
+  formUri = "http://s.rangzen.io:5984/acra-rangzen/_design/acra-storage/_update/report",
   reportType = org.acra.sender.HttpSender.Type.JSON,
   httpMethod = org.acra.sender.HttpSender.Method.PUT,
   formUriBasicAuthLogin="rangzenReporter",
@@ -48,19 +48,26 @@ import android.util.Log;
   mode = ReportingInteractionMode.TOAST,
   resToastText = 1
 )
-
+/**
+ * The purpose of this class is to initialize ACRA, which is responsible for 
+ * sending crash reports to our servers when the application encounters an
+ * unhandled exception. ACRA can also be used to transmit bug reports and
+ * debugging info on other conditions.
+ */
 public class RangzenApplication extends Application {
 
+  /** Output in logcat messages. */
   private static String TAG = "RangzenApplication";
 
   @Override
   public final void onCreate() {
     super.onCreate();
 
-    // This is a hack due to the fact that the strings aren't constants anymore?
-    Log.i(TAG, "Initializing ACRA");
+    Log.d(TAG, "Initializing ACRA");
     ACRA.init(this);
+    // This is a hack due to the fact that strings from XML aren't constants anymore
+    // which means that it's hard to put them in the @ReportsCrashes annotation above.
     ACRA.getConfig().setResToastText(R.string.crash_toast_text); 
-    Log.i(TAG, "Done Initializing ACRA");
+    Log.d(TAG, "Done Initializing ACRA");
   }
 }
