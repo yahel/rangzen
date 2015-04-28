@@ -36,6 +36,9 @@ import java.util.Stack;
 import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
 
 import android.app.Activity;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.TaskStackBuilder;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -48,6 +51,7 @@ import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -93,7 +97,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
 
     private final static int QR = 10;
     private final static int MESSAGE = 20;
-    
+
     private final static int UPVOTE = 1;
     private final static int DOWNVOTE = 0;
 
@@ -439,7 +443,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     @Override
     protected void onResume() {
         super.onResume();
-        notifyDataSetChanged();
+        //notifyDataSetChanged(); //Removed this line, so errors so far
         registerReceiver(receiver, filter);
         Log.i(TAG, "Registered receiver");
     }
@@ -485,9 +489,34 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                     .getAdapter();
             adapt.notifyDataSetChanged();
         }
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(
+                this).setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("New Message").setContentText("You've received new messages.").setNumber(1);
+        
+        NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
+        
+        
+        String[] events = new String[6];
+        //Sets a title for the Inbox in expanded layout
+        inboxStyle.setBigContentTitle("Event tracker details:");
+        
+        for (int i=0; i < events.length; i++) {
+
+            inboxStyle.addLine(events[i]);
+        }
+        mBuilder.setStyle(inboxStyle);
+        
+        Intent resultIntent = new Intent(this, Opener.class);
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+        stackBuilder.addParentStack(Opener.class);
+        stackBuilder.addNextIntent(resultIntent);
+        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+        mBuilder.setContentIntent(resultPendingIntent);
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        
+        mNotificationManager.notify(0, mBuilder.build());
+        
     }
-    
-    
 
     /**
      * This is an onclick listener created in feed_row.xml or feed_row_save.xml.
