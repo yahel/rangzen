@@ -73,8 +73,8 @@ public class MessageStore {
      */
     private static final String MESSAGE_PRIORITY_KEY = "RangzenMessagePriority-";
 
-    private static final int SAVED_MESSAGES = 1;
-    private static final int NOT_SAVED_MESSAGES = -0;
+    public static final int SAVED_MESSAGES = 1;
+    public static final int NOT_SAVED_MESSAGES = -0;
 
     /**
      * The number of bins to use for storing messages. Each bin stores

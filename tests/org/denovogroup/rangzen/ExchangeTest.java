@@ -184,7 +184,7 @@ public class ExchangeTest {
   public void asInitiatorEmptyLists() throws IOException {
     // friendStore is empty, messageStore is empty.
     assertTrue(friendStore.getAllFriends().isEmpty());
-    assertNull(messageStore.getKthMessage(0));
+    assertNull(messageStore.getKthMessage(0, MessageStore.NOT_SAVED_MESSAGES));
 
     // TODO(lerner): Figure out how to send these friends after receiving
     // so we can prove that the Exchange is transmitting first.
@@ -215,7 +215,7 @@ public class ExchangeTest {
   public void notAsInitiatorEmptyLists() throws IOException {
     // friendStore is empty, messageStore is empty.
     assertTrue(friendStore.getAllFriends().isEmpty());
-    assertNull(messageStore.getKthMessage(0));
+    assertNull(messageStore.getKthMessage(0, MessageStore.NOT_SAVED_MESSAGES));
 
     // Send some friends
     assertTrue(Exchange.lengthValueWrite(testOutputStream, nullFriends));
