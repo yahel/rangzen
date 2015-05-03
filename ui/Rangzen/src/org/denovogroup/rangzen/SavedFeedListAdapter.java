@@ -35,11 +35,14 @@ import org.denovogroup.rangzen.MessageStore.Message;
 
 import android.app.Activity;
 import android.content.Context;
+import android.text.SpannableString;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.TextView.BufferType;
 
 /**
  * This class extends FeedListAdapter and has all of the same functionality as
@@ -123,8 +126,11 @@ public class SavedFeedListAdapter extends FeedListAdapter {
         } else {
             mViewHolder = (ViewHolder) convertView.getTag();
         }
-        Log.d("MessageStore", Integer.toString(position));
-        mViewHolder.mHashtagView.setText(message.getMessage());
+
+        mViewHolder.mHashtagView.setMovementMethod(LinkMovementMethod
+                .getInstance());
+        mViewHolder.mHashtagView.setText(applySpan(message.getMessage()), BufferType.SPANNABLE);
+
         mViewHolder.mUpvoteView.setText(Integer.toString((int) (100 * message
                 .getPriority())));
 
