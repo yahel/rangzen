@@ -28,6 +28,7 @@
         <item>New Post</item>
         <item>Add Friend</item>
         <item>Info</item>
+        <item>Debug</item>
     </string-array>
 
     <color name="whitish">#D7D7D7</color>

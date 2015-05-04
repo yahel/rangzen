@@ -2,6 +2,7 @@ android_library(
   name = 'experimentalUI',
   srcs = [ 
     'AboutPage.java',
+    'DebugActivity.java',
     'DepthPageTransformer.java',
     'FeedListAdapter.java',
     'FragmentOrganizer.java',

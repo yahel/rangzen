@@ -6,11 +6,11 @@
         android:id="@+id/new_post"
         android:icon="@drawable/ic_action_new_event_light"
         android:title="@string/new_post"
-        compat:showAsAction="always"/>
+        android:showAsAction="always"/>
     <item
         android:id="@+id/refresh"
         android:icon="@drawable/ic_action_refresh"
         android:title="@string/refresh"
-        compat:showAsAction="always"/>
+        android:showAsAction="always"/>
 
 </menu>

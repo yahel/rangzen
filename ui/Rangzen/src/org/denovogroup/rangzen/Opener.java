@@ -118,11 +118,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
 
         messageStore
                 .addMessage(
-                        "This is the Rangzen message feed. Messages in the ether will appear here1.",
-                        2L);
-
-        messageStore
-                .addMessage(
                         "This is the Rangzen message feed. Messages in the ether will appear here2.",
                         0L);
 
@@ -247,6 +242,16 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         if (item.getItemId() == R.id.new_post) {
             showFragment(1);
         }
+        if (item.getItemId() == R.id.refresh) {
+            Fragment feed = getSupportFragmentManager().findFragmentById(
+                    R.id.mainContent);
+            if (feed instanceof ListFragmentOrganizer) {
+                ListFragmentOrganizer org = (ListFragmentOrganizer) feed;
+                FeedListAdapter adapt = (FeedListAdapter) org.getListView()
+                        .getAdapter();
+                adapt.notifyDataSetChanged();
+            }
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -332,6 +337,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                 "android");
         TextView abTitle = (TextView) findViewById(titleId);
         abTitle.setTextColor(Color.WHITE);
+        abTitle.setText("Feed");
 
         // Check whether the activity that returned was the QR code activity,
         // and whether it succeeded.
@@ -400,9 +406,15 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
             startActivityForResult(intent, QR);
             return;
-        } else {
+        } else if (position == 3) {
             Intent intent = new Intent();
             intent.setClass(this, InfoActivity.class);
+            startActivityForResult(intent, MESSAGE); //reverts action bar back to feed
+            return;
+        } else {
+            //debug screen
+            Intent intent = new Intent();
+            intent.setClass(this, DebugActivity.class);
             startActivityForResult(intent, MESSAGE);
             return;
         }

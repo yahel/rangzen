@@ -10,6 +10,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
@@ -28,23 +29,9 @@ public class InfoActivity extends FragmentActivity {
     protected void onCreate(Bundle arg0) {
         super.onCreate(arg0);
         setContentView(R.layout.fragment_holder);
-        getActionBar().setDisplayHomeAsUpEnabled(true);
-        getActionBar().setTitle("Info");
-        int titleId = getResources().getIdentifier("action_bar_title", "id", "android");
-        TextView abTitle = (TextView) findViewById(titleId);
-        abTitle.setTextColor(Color.WHITE);
-        Fragment fragment = new FragmentOrganizer();
-        Bundle b = new Bundle();
-        b.putSerializable("whichScreen", FragmentOrganizer.FragmentType.SECONDABOUT);
-        fragment.setArguments(b);
-        FragmentManager fragmentManager = getSupportFragmentManager();
-
-        FragmentTransaction ft = fragmentManager.beginTransaction();
-
-        ft.replace(R.id.relativeLayout, fragment);
-
-        ft.commit();
-
+        setUpActionBar();
+        createFragment();
+        
         Log.i(TAG, "Attempting to learn build time and show it...");
         TextView buildTimeView = (TextView) findViewById(R.id.buildTime); 
         if (buildTimeView != null) {
@@ -59,6 +46,35 @@ public class InfoActivity extends FragmentActivity {
           Log.i(TAG, "Build time view was null.");
         }
 
+    }
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.info_menu, menu);
+        return true;
+    }
+    
+    private void setUpActionBar() {
+        getActionBar().setDisplayHomeAsUpEnabled(true);
+        getActionBar().setTitle("Info");
+        int titleId = getResources().getIdentifier("action_bar_title", "id",
+                "android");
+        TextView abTitle = (TextView) findViewById(titleId);
+        abTitle.setTextColor(Color.WHITE);
+    }
+
+    private void createFragment() {
+        Fragment fragment = new FragmentOrganizer();
+        Bundle b = new Bundle();
+        b.putSerializable("whichScreen", FragmentOrganizer.FragmentType.SECONDABOUT);
+        fragment.setArguments(b);
+        FragmentManager fragmentManager = getSupportFragmentManager();
+
+        FragmentTransaction ft = fragmentManager.beginTransaction();
+
+        ft.replace(R.id.relativeLayout, fragment);
+
+        ft.commit();
     }
 
     @Override
