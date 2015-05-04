@@ -470,10 +470,17 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
          * When the receiver is activated then that means a message has been
          * added to the message store, (either by the user or by the active
          * services).
+         * 
+         * If the message is a NEW_MESSAGE and not SAVE_MESSAGE then create a notification.
          */
         @Override
         public void onReceive(Context context, Intent intent) {
-            notifyDataSetChanged();
+            if (intent.getAction() == MessageStore.NEW_MESSAGE) {
+                notifyDataSetChanged();
+                createNotification();
+            } else {
+                notifyDataSetChanged();
+            }
         }
     }
 
@@ -499,6 +506,9 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                     .getAdapter();
             adapt.notifyDataSetChanged();
         }
+    }
+    
+    private void createNotification() {
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(
                 this).setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle("New Message")
@@ -515,7 +525,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             inboxStyle.addLine(events[i]);
         }
         mBuilder.setStyle(inboxStyle);
-
         Intent resultIntent = new Intent(this, Opener.class);
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
         stackBuilder.addParentStack(Opener.class);
@@ -526,7 +535,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         mNotificationManager.notify(0, mBuilder.build());
-
     }
 
     /**
