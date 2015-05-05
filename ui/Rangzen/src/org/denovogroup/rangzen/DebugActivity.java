@@ -1,6 +1,7 @@
 package org.denovogroup.rangzen;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Menu;
@@ -34,14 +35,24 @@ public class DebugActivity extends Activity {
     private void updateDeviceAreaBox() {
       PeerManager pm = PeerManager.getInstance(this); 
       List<Peer> peers = pm.getPeers();
-      String peerString = "# of nearby peers: " + peers.size() + "\n";
+
+      BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+      String localBTAddress = "";
+      if (mBluetoothAdapter == null) {
+        localBTAddress = "unknown";
+      } else {
+        localBTAddress = mBluetoothAdapter.getAddress();
+      }
+
+      String peerString = String.format("My address: %s\n# of nearby peers: %d",
+                                        localBTAddress, 
+                                        peers.size());
       for (Peer p : peers) {
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
         String shortTimeStr = sdf.format(p.getLastSeen());
 
         long secondsAgo = (new Date().getTime()/1000 - p.getLastSeen().getTime()/1000);
 
-        
         peerString += String.format("%s, last seen: %s (%d seconds ago)\n", 
                                     p.getNetwork().toString(),
                                     shortTimeStr,
