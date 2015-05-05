@@ -32,6 +32,9 @@ public class DebugActivity extends Activity {
         abTitle.setTextColor(Color.WHITE);
     }
 
+    /**
+     * Update the display of known peers to current data.
+     */
     private void updateDeviceAreaBox() {
       PeerManager pm = PeerManager.getInstance(this); 
       List<Peer> peers = pm.getPeers();
