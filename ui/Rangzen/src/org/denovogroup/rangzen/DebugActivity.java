@@ -8,6 +8,8 @@ import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 public class DebugActivity extends Activity {
@@ -34,7 +36,16 @@ public class DebugActivity extends Activity {
       List<Peer> peers = pm.getPeers();
       String peerString = "# of nearby peers: " + peers.size() + "\n";
       for (Peer p : peers) {
-        peerString += p.toString() + "\n";
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+        String shortTimeStr = sdf.format(p.getLastSeen());
+
+        long secondsAgo = (new Date().getTime()/1000 - p.getLastSeen().getTime()/1000);
+
+        
+        peerString += String.format("%s, last seen: %s (%d seconds ago)\n", 
+                                    p.getNetwork().toString(),
+                                    shortTimeStr,
+                                    secondsAgo);
       }
       TextView peerTextView = (TextView) findViewById(R.id.device_area);
       if (peerTextView != null) {
