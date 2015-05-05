@@ -56,10 +56,18 @@ public class DebugActivity extends Activity {
 
         long secondsAgo = (new Date().getTime()/1000 - p.getLastSeen().getTime()/1000);
 
-        peerString += String.format("%s, last seen: %s (%d seconds ago)\n", 
+        Date lastExchange = pm.getLastExchangeTime(p);
+        String lastExchangeSecondsAgo;
+        if (lastExchange == null) {
+          lastExchangeSecondsAgo = "none";
+        } else {
+          lastExchangeSecondsAgo = (new Date().getTime()/1000 - lastExchange.getTime()/1000) + "s ago";
+        }
+
+        peerString += String.format("%s, seen %ds ago, last exchange: %s\n", 
                                     p.getNetwork().toString(),
-                                    shortTimeStr,
-                                    secondsAgo);
+                                    secondsAgo,
+                                    lastExchangeSecondsAgo);
       }
       TextView peerTextView = (TextView) findViewById(R.id.device_area);
       if (peerTextView != null) {
