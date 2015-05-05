@@ -44,7 +44,7 @@ public class DebugActivity extends Activity {
         localBTAddress = mBluetoothAdapter.getAddress();
       }
 
-      String peerString = String.format("My address: %s\n# of nearby peers: %d",
+      String peerString = String.format("My address: %s\n# of nearby peers: %d\n",
                                         localBTAddress, 
                                         peers.size());
       for (Peer p : peers) {
