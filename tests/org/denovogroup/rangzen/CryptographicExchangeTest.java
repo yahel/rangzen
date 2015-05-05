@@ -172,9 +172,9 @@ public class CryptographicExchangeTest {
   public void emptyListsTest() throws IOException, InterruptedException {
     // This test involves empty friend/message lists.
     assertTrue(friendStoreA.getAllFriends().isEmpty());
-    assertNull(messageStoreA.getKthMessage(0));
+    assertNull(messageStoreA.getKthMessage(0, MessageStore.NOT_SAVED_MESSAGES));
     assertTrue(friendStoreB.getAllFriends().isEmpty());
-    assertNull(messageStoreB.getKthMessage(0));
+    assertNull(messageStoreB.getKthMessage(0, MessageStore.NOT_SAVED_MESSAGES));
 
     performExchange();
 
@@ -192,9 +192,9 @@ public class CryptographicExchangeTest {
   public void emptyFriendsSomeMessagesTest() throws IOException, InterruptedException {
     // This test involves empty friend/message lists.
     assertTrue(friendStoreA.getAllFriends().isEmpty());
-    assertNull(messageStoreA.getKthMessage(0));
+    assertNull(messageStoreA.getKthMessage(0, MessageStore.NOT_SAVED_MESSAGES));
     assertTrue(friendStoreB.getAllFriends().isEmpty());
-    assertNull(messageStoreB.getKthMessage(0));
+    assertNull(messageStoreB.getKthMessage(0, MessageStore.NOT_SAVED_MESSAGES));
 
     // 3 messeages in A's MessageStore, 0 in B's.
     messageStoreA.addMessage(TEST_MESSAGE_1, TEST_PRIORITY_1);
@@ -422,7 +422,7 @@ public class CryptographicExchangeTest {
     }
 
     @Override
-    public Message getKthMessage(int k) {
+    public Message getKthMessage(int k, int messageType) {
       kthCalls++;
       try {
         return mockMessages.get(k);

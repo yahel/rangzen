@@ -33,6 +33,7 @@ package org.denovogroup.rangzen;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -66,6 +67,9 @@ public class MessageStore {
 
     /** Intent action for new message arrival in the store. */
     public static final String NEW_MESSAGE = "org.denovogroup.rangzen.NEW_MESSAGE_ACTION";
+    
+    /** Intent action for new saved message in the store. */
+    public static final String SAVE_MESSAGE = "org.denovogroup.rangzen.SAVE_MESSAGE";
 
     /**
      * The internal key used in the underlying store for Rangzen message
@@ -73,8 +77,8 @@ public class MessageStore {
      */
     private static final String MESSAGE_PRIORITY_KEY = "RangzenMessagePriority-";
 
-    private static final int SAVED_MESSAGES = 1;
-    private static final int NOT_SAVED_MESSAGES = -0;
+    public static final int SAVED_MESSAGES = 1;
+    public static final int NOT_SAVED_MESSAGES = -0;
 
     /**
      * The number of bins to use for storing messages. Each bin stores
@@ -516,7 +520,8 @@ public class MessageStore {
          * Sending the broadcast here when a message is added to the phone.
          **/
         Intent intent = new Intent();
-        intent.setAction(NEW_MESSAGE);
+        Bundle b = new Bundle();
+        intent.setAction(SAVE_MESSAGE);
         mContext.sendBroadcast(intent);
         return true;
     }

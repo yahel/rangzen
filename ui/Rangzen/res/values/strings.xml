@@ -29,6 +29,7 @@
         <item>New Post</item>
         <item>Add Friend</item>
         <item>Info</item>
+        <item>Debug</item>
     </string-array>
 
     <color name="whitish">#D7D7D7</color>
@@ -40,6 +41,8 @@
     <string name="app_id">254046681454257</string>
     <string name="aboutTitle">About Rangzen</string>
     <string name="aboutBody">This application is a prototype for a research project done by De Novo Group.</string>
+    <string name="buildTimeTitle">Build time of this APK:</string>
+    <string name="notAvailable">NOT AVAILABLE</string>
     <string name="FirstTitleAbout">About the Experiment</string>
     <string name="FirstAboutParagraph">The purpose of this experiment is to evaluate a prototype of Rangzen, a new app for enabling anonymous communication during an Internet blackout, like those that have been imposed in numerous countries in the past few years. Rangzen distributes microblogs (short messages, like Tweets) directly between nearby smartphones without the help of the Internet or other networks. Messages spread through the population one hop at a time, phone to phone. Since Rangzen is an anonymous system, it can’t identify bad messages (like spam, or propaganda) based on who wrote the message. Instead, Rangzen decides whether to trust messages based on users’ friendships. Messages received from people with whom you share mutual friends are more trusted. At the same time, sharing friends is a privacy risk, so Rangzen’s design uses cryptography to learn the number of mutual friends without revealing who those friends are.</string>
     <string name="SecondAboutParagraph">The goal of this study is two-fold: to confirm our previous simulations of the system using real-world measurements, and to collect a dataset of real-world measurements which can be used to inform future simulations.</string>

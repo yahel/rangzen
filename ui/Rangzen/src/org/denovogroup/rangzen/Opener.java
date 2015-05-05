@@ -36,6 +36,9 @@ import java.util.Stack;
 import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
 
 import android.app.Activity;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.TaskStackBuilder;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -48,6 +51,7 @@ import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -93,7 +97,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
 
     private final static int QR = 10;
     private final static int MESSAGE = 20;
-    
+
     private final static int UPVOTE = 1;
     private final static int DOWNVOTE = 0;
 
@@ -111,11 +115,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                         1L);
 
         messageStore.saveMessage("hello.", 1L);
-
-        messageStore
-                .addMessage(
-                        "This is the Rangzen message feed. Messages in the ether will appear here1.",
-                        2L);
 
         messageStore
                 .addMessage(
@@ -244,6 +243,16 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         if (item.getItemId() == R.id.new_post) {
             showFragment(1);
         }
+        if (item.getItemId() == R.id.refresh) {
+            Fragment feed = getSupportFragmentManager().findFragmentById(
+                    R.id.mainContent);
+            if (feed instanceof ListFragmentOrganizer) {
+                ListFragmentOrganizer org = (ListFragmentOrganizer) feed;
+                FeedListAdapter adapt = (FeedListAdapter) org.getListView()
+                        .getAdapter();
+                adapt.notifyDataSetChanged();
+            }
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -329,6 +338,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                 "android");
         TextView abTitle = (TextView) findViewById(titleId);
         abTitle.setTextColor(Color.WHITE);
+        abTitle.setText("Feed");
 
         // Check whether the activity that returned was the QR code activity,
         // and whether it succeeded.
@@ -397,9 +407,15 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
             startActivityForResult(intent, QR);
             return;
-        } else {
+        } else if (position == 3) {
             Intent intent = new Intent();
             intent.setClass(this, InfoActivity.class);
+            startActivityForResult(intent, MESSAGE); //reverts action bar back to feed
+            return;
+        } else {
+            //debug screen
+            Intent intent = new Intent();
+            intent.setClass(this, DebugActivity.class);
             startActivityForResult(intent, MESSAGE);
             return;
         }
@@ -440,16 +456,13 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     @Override
     protected void onResume() {
         super.onResume();
-        notifyDataSetChanged();
         registerReceiver(receiver, filter);
         Log.i(TAG, "Registered receiver");
     }
 
     /**
-     * This is the broadcast receiver object that I am registering. I created a
-     * new class in order to override onReceive functionality.
-     * 
-     * @author jesus
+     * A custom broadcast receiver object that receives a signal whenever a new
+     * message is added to the phone. When the new message is received then
      * 
      */
     public class NewMessageReceiver extends BroadcastReceiver {
@@ -457,25 +470,33 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         /**
          * When the receiver is activated then that means a message has been
          * added to the message store, (either by the user or by the active
-         * services). The reason that the instanceof check is necessary is
-         * because there are two possible routes of activity:
+         * services).
          * 
-         * 1) The previous/current fragment viewed could have been the about
-         * fragment, if it was then the focused fragment is not a
-         * ListFragmentOrganizer and when the user returns to the feed then the
-         * feed will check its own data set and not crash.
-         * 
-         * 2) The previous/current fragment is the feed, it needs to be notified
-         * immediately that there was a change in the underlying dataset.
+         * If the message is a NEW_MESSAGE and not SAVE_MESSAGE then create a notification.
          */
         @Override
         public void onReceive(Context context, Intent intent) {
-            notifyDataSetChanged();
+            if (intent.getAction() == MessageStore.NEW_MESSAGE) {
+                notifyDataSetChanged();
+                createNotification();
+            } else {
+                notifyDataSetChanged();
+            }
         }
     }
 
     /**
-     * Find the adapter and call its notifyDataSetChanged method.
+     * Find the adapter and call its notifyDataSetChanged method if a
+     * FeedListOrganizer is being shown. The reason that the instanceof check is
+     * necessary is because there are two possible routes of activity:
+     * 
+     * 1) The previous/current fragment viewed could have been the about
+     * fragment, if it was then the focused fragment is not a
+     * ListFragmentOrganizer and when the user returns to the feed then the feed
+     * will check its own data set and not crash.
+     * 
+     * 2) The previous/current fragment is the feed, it needs to be notified
+     * immediately that there was a change in the underlying dataset.
      */
     private void notifyDataSetChanged() {
         Fragment feed = getSupportFragmentManager().findFragmentById(
@@ -488,7 +509,34 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         }
     }
     
-    
+    private void createNotification() {
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(
+                this).setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("New Message")
+                .setContentText("You've received new messages.").setNumber(1);
+
+        NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
+
+        String[] events = new String[6];
+        // Sets a title for the Inbox in expanded layout
+        inboxStyle.setBigContentTitle("Event tracker details:");
+
+        for (int i = 0; i < events.length; i++) {
+
+            inboxStyle.addLine(events[i]);
+        }
+        mBuilder.setStyle(inboxStyle);
+        Intent resultIntent = new Intent(this, Opener.class);
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+        stackBuilder.addParentStack(Opener.class);
+        stackBuilder.addNextIntent(resultIntent);
+        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        mBuilder.setContentIntent(resultPendingIntent);
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        mNotificationManager.notify(0, mBuilder.build());
+    }
 
     /**
      * This is an onclick listener created in feed_row.xml or feed_row_save.xml.

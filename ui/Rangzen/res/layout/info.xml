@@ -37,138 +37,154 @@
             android:paddingBottom="15dp" >
 
             <TextView
-                android:id="@+id/firstTitle"
+                android:id="@+id/buildTimeTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingBottom="15dp"
                 android:paddingTop="15dp"
-                android:text="@string/FirstTitleAbout"
+                android:text="@string/buildTimeTitle"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/firstTitleFirst"
+                android:id="@+id/buildTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingBottom="15dp"
-                android:text="@string/FirstAboutParagraph" />
+                android:text="@string/notAvailable" />
 
-            <TextView
-                android:id="@+id/firstTitleSecond"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/SecondAboutParagraph" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/firstTitle" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:paddingTop="15dp" -->
+            <!--     android:text="@string/FirstTitleAbout" -->
+            <!--     android:textStyle="bold" /> -->
 
-            <TextView
-                android:id="@+id/firstTitleThird"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/ThirdAboutParagraph" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/firstTitleFirst" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/FirstAboutParagraph" /> -->
 
-            <TextView
-                android:id="@+id/secondTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/SecondTitleAbout"
-                android:textStyle="bold" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/firstTitleSecond" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/SecondAboutParagraph" /> -->
 
-            <TextView
-                android:id="@+id/secondTitleFirst"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/FourthAboutParagraph" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/firstTitleThird" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/ThirdAboutParagraph" /> -->
 
-            <TextView
-                android:id="@+id/thirdTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/ThirdTitleAbout"
-                android:textStyle="bold" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/secondTitle" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/SecondTitleAbout" -->
+            <!--     android:textStyle="bold" /> -->
 
-            <TextView
-                android:id="@+id/thirdTitleFirst"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/FifthParagraphAbout" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/secondTitleFirst" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/FourthAboutParagraph" /> -->
 
-            <TextView
-                android:id="@+id/thirdTitleSecond"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/SixthParagraphAbout" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/thirdTitle" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/ThirdTitleAbout" -->
+            <!--     android:textStyle="bold" /> -->
 
-            <TextView
-                android:id="@+id/thirdTitleThird"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/SeventhParagraphAbout" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/thirdTitleFirst" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/FifthParagraphAbout" /> -->
 
-            <TextView
-                android:id="@+id/fourthTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/FourthTitleAbout"
-                android:textStyle="bold" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/thirdTitleSecond" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/SixthParagraphAbout" /> -->
 
-            <TextView
-                android:id="@+id/fourthTitleFirst"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/EighthParagraphAbout" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/thirdTitleThird" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/SeventhParagraphAbout" /> -->
 
-            <TextView
-                android:id="@+id/fourthTitleSecond"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/NinthParagraphAbout" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/fourthTitle" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/FourthTitleAbout" -->
+            <!--     android:textStyle="bold" /> -->
 
-            <TextView
-                android:id="@+id/fifthTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/FifthTitleAbout"
-                android:textStyle="bold" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/fourthTitleFirst" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/EighthParagraphAbout" /> -->
 
-            <TextView
-                android:id="@+id/fifthTitleFirst"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/TenthParagraphAbout" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/fourthTitleSecond" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/NinthParagraphAbout" /> -->
 
-            <TextView
-                android:id="@+id/sixthTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/SixthTitleAbout"
-                android:textStyle="bold" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/fifthTitle" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/FifthTitleAbout" -->
+            <!--     android:textStyle="bold" /> -->
 
-            <TextView
-                android:id="@+id/sixthTitleFirst"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="15dp"
-                android:text="@string/EleventhParagraphAbout" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/fifthTitleFirst" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/TenthParagraphAbout" /> -->
 
-            <Button
-                android:id="@+id/optOut"
-                android:onClick="sOptOut"
-                android:layout_gravity="center"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/optOut" />
+            <!-- <TextView -->
+            <!--     android:id="@+id/sixthTitle" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/SixthTitleAbout" -->
+            <!--     android:textStyle="bold" /> -->
+
+            <!-- <TextView -->
+            <!--     android:id="@+id/sixthTitleFirst" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:paddingBottom="15dp" -->
+            <!--     android:text="@string/EleventhParagraphAbout" /> -->
+
+            <!-- <Button -->
+            <!--     android:id="@+id/optOut" -->
+            <!--     android:onClick="sOptOut" -->
+            <!--     android:layout_gravity="center" -->
+            <!--     android:layout_width="wrap_content" -->
+            <!--     android:layout_height="wrap_content" -->
+            <!--     android:text="@string/optOut" /> -->
 
         </LinearLayout>
     </ScrollView>
