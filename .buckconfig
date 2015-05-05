@@ -19,6 +19,8 @@
     wifiDirectSpeakerTest = //tests/org/denovogroup/rangzen:wifiDirectSpeakerTest
     wireTest = //tests/org/denovogroup/rangzen:wireTest
 
+[android]
+  target = Google Inc.:Google APIs:18
 
 [project]
   ignore = .git, bin/
