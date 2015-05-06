@@ -1,7 +1,6 @@
 android_binary(
   name = 'experimentalApp',
   manifest = 'AndroidManifest.xml',
-  target = 'Google Inc.:Google APIs:18',
   keystore = ':debug_keystore',
   deps = [
     '//java/org/denovogroup/rangzen:experimentalBackend',

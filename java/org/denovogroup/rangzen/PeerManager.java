@@ -309,7 +309,7 @@ public class PeerManager {
    * @param peer The remote peer about whom we are remembering an exchange.
    * @param exchangetime The time at which we had an exchange with the peer.
    */
-  private void recordExchangeTime(Peer peer, Date exchangeTime) {
+  public void recordExchangeTime(Peer peer, Date exchangeTime) {
     BluetoothDevice device = peer.getNetwork().getBluetoothDevice();
     if (device == null) {
       Log.e(TAG, "Recording exchange time of non-bluetooth peer! Can't do it.");
@@ -350,18 +350,14 @@ public class PeerManager {
    * @return The Date at which the last known successful exchange with the peer
    * occurred, or the epoch if none is known.
    */
-  private Date getLastExchangeTime(Peer peer) {
+  public Date getLastExchangeTime(Peer peer) {
     BluetoothDevice device = peer.getNetwork().getBluetoothDevice();
     if (device == null) {
       Log.e(TAG, "Getting last exchange time of non-bluetooth peer! Can't do it!");
       return null;
     } else {
       Date when = exchangeTimes.get(device.getAddress());
-      if (when == null) {
-        return new Date(0);
-      } else {
-        return when;
-      }
+      return when;
     }
   }
 
