@@ -183,6 +183,42 @@ public class CryptoTest {
   }
 
   /**
+   * Tests what happens if a friend is repeated.
+   */
+  @Test
+  public void repeatedFriendTest() throws NoSuchAlgorithmException {
+    byte[] oneone = new byte[] { 1, 1 };
+    byte[] twoone = new byte[] { 2, 1 };
+    byte[] twotwo = new byte[] { 2, 2 };
+
+    final int NUM_CLIENT_VALUES = 3;
+    final int NUM_SERVER_VALUES = 3;
+    final int INTERSECTION_CARDINALITY = 1;
+    ArrayList<byte[]> clientValues = new ArrayList<>(Arrays.asList(oneone, oneone, oneone));
+    ArrayList<byte[]> serverValues = new ArrayList<>(Arrays.asList(oneone, twoone, twotwo));
+
+    Crypto.PrivateSetIntersection client = new Crypto.PrivateSetIntersection(clientValues);
+    Crypto.PrivateSetIntersection server = new Crypto.PrivateSetIntersection(serverValues);
+    // Test normal intersection.
+    ArrayList<byte[]> clientBlindedItems = client.encodeBlindedItems();
+
+    assertEquals("Testing that the client produces the right number of items",
+                 NUM_CLIENT_VALUES, clientBlindedItems.size());
+
+    Crypto.PrivateSetIntersection.ServerReplyTuple serverReply =
+        server.replyToBlindedItems(clientBlindedItems);
+    
+    assertEquals("Testing that the server produces the right number of double blinded items",
+                 NUM_CLIENT_VALUES, serverReply.doubleBlindedItems.size());
+    assertEquals("Testing that the server produces the right number of hashed blinded items",
+                 NUM_SERVER_VALUES, serverReply.hashedBlindedItems.size());
+
+    int cardinality = client.getCardinality(serverReply);
+    assertEquals("Testing that the client gets the right cardinality",
+                 INTERSECTION_CARDINALITY, cardinality);
+  }
+
+  /**
    * Tests that from a functionality perspective, the PSI protocol returns accurate results.
    */
   @Test
