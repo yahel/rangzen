@@ -13,6 +13,7 @@ android_library(
     'PostActivity.java',
     'QRCodeViewPager.java',
     'SavedFeedListAdapter.java',
+    'SearchableActivity.java',
     'SidebarListAdapter.java',
     'SlidingPageIndicator.java',
   ],

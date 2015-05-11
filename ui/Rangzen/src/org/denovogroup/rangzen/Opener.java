@@ -31,15 +31,18 @@
 
 package org.denovogroup.rangzen;
 
+<<<<<<< HEAD
 import java.util.Stack;
 
 import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
 import org.denovogroup.rangzen.R.drawable;
 
+=======
+>>>>>>> Added Search Functionality back from before, activity and xml
 import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.TaskStackBuilder;
+import android.app.SearchManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -51,27 +54,29 @@ import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTabHost;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ImageView;
-import android.support.v4.app.FragmentTabHost;
 
 /**
  * This class is the manager of all of the fragments that are clickable in the
@@ -104,7 +109,25 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     /** Initialize the contents of the activities menu. */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu, menu);
+
+        // Inflate the options menu from XML
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu, menu);
+
+        MenuItem searchItem = menu.findItem(R.id.menu_search);
+        Log.d(TAG, "oncreate");
+        if (searchItem != null) {
+            SearchView searchView = (SearchView) searchItem.getActionView();
+            if (searchView != null) {
+                Log.d(TAG, "SearchView Not Null");
+                SearchManager searchManager = (SearchManager) getSystemService(SEARCH_SERVICE);
+                searchView.setSearchableInfo(searchManager
+                        .getSearchableInfo(getComponentName()));
+            } else 
+                Log.d(TAG, "SearchView Null");
+        }
+        // searchView.setIconifiedByDefault(false); // Do not iconify the
+        // widget; expand it by default
 
         MessageStore messageStore = new MessageStore(this,
                 StorageBase.ENCRYPTION_DEFAULT);
@@ -454,13 +477,16 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     @Override
     protected void onResume() {
         super.onResume();
+        notifyDataSetChanged();
         registerReceiver(receiver, filter);
         Log.i(TAG, "Registered receiver");
     }
 
     /**
-     * A custom broadcast receiver object that receives a signal whenever a new
-     * message is added to the phone. When the new message is received then
+     * This is the broadcast receiver object that I am registering. I created a
+     * new class in order to override onReceive functionality.
+     * 
+     * @author jesus
      * 
      */
     public class NewMessageReceiver extends BroadcastReceiver {
@@ -468,9 +494,22 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         /**
          * When the receiver is activated then that means a message has been
          * added to the message store, (either by the user or by the active
+<<<<<<< HEAD
          * services).
          * 
          * If the message is a NEW_MESSAGE and not SAVE_MESSAGE then create a notification.
+=======
+         * services). The reason that the instanceof check is necessary is
+         * because there are two possible routes of activity:
+         * 
+         * 1) The previous/current fragment viewed could have been the about
+         * fragment, if it was then the focused fragment is not a
+         * ListFragmentOrganizer and when the user returns to the feed then the
+         * feed will check its own data set and not crash.
+         * 
+         * 2) The previous/current fragment is the feed, it needs to be notified
+         * immediately that there was a change in the underlying dataset.
+>>>>>>> Added Search Functionality back from before, activity and xml
          */
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -484,17 +523,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     }
 
     /**
-     * Find the adapter and call its notifyDataSetChanged method if a
-     * FeedListOrganizer is being shown. The reason that the instanceof check is
-     * necessary is because there are two possible routes of activity:
-     * 
-     * 1) The previous/current fragment viewed could have been the about
-     * fragment, if it was then the focused fragment is not a
-     * ListFragmentOrganizer and when the user returns to the feed then the feed
-     * will check its own data set and not crash.
-     * 
-     * 2) The previous/current fragment is the feed, it needs to be notified
-     * immediately that there was a change in the underlying dataset.
+     * Find the adapter and call its notifyDataSetChanged method.
      */
     private void notifyDataSetChanged() {
         Fragment feed = getSupportFragmentManager().findFragmentById(

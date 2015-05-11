@@ -31,25 +31,25 @@
         android:layout_below="@+id/hashtagView" >
 
         <ImageButton
-            android:focusable="false"
             android:id="@+id/eraseButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
             android:layout_alignParentTop="true"
             android:background="@android:color/transparent"
+            android:focusable="false"
             android:onClick="onDelete"
             android:padding="10dip"
             android:src="@drawable/ic_action_discard" />
 
         <ImageButton
-            android:focusable="false"
             android:id="@+id/saveButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_toLeftOf="@+id/eraseButton"
             android:background="@android:color/transparent"
+            android:focusable="false"
             android:onClick="onSave"
             android:padding="10dip"
             android:src="@drawable/ic_action_important_dark" />
@@ -68,17 +68,16 @@
             android:textStyle="bold" />
 
         <ImageButton
-            android:focusable="false"
             android:id="@+id/retweetButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_toLeftOf="@+id/saveButton"
             android:background="@android:color/transparent"
+            android:focusable="false"
             android:onClick="onRetweet"
             android:padding="10dip"
             android:src="@drawable/ic_action_repeat" />
-
     </RelativeLayout>
 
 </RelativeLayout>

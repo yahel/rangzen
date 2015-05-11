@@ -4,7 +4,6 @@
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
-
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
@@ -13,33 +12,31 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical" >
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="50dip"
-            android:orientation="vertical"
-            android:background="#ecf0f1" >
+            android:background="#ecf0f1"
+            android:orientation="vertical" >
         </LinearLayout>
 
         <ListView
-            android:paddingLeft="5dp"
-            android:paddingRight="5dp"
             android:id="@android:id/list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:clipToPadding="false"
-            android:divider="@android:color/darker_gray"
-            android:dividerHeight="7.0sp"
-            android:listSelector="@drawable/listitem_selector" />
-        
-        <TextView 
-            android:gravity="top"
-            android:background="@android:color/darker_gray"
-            android:layout_height="7.0sp"
             android:paddingLeft="5dp"
-            android:paddingRight="5dp"
-            android:layout_width="match_parent"/>
+            android:paddingRight="5dp" >
+        </ListView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="7.0sp"
+            android:background="@android:color/darker_gray"
+            android:gravity="top"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp" />
     </LinearLayout>
 
 </FrameLayout>
