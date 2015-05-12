@@ -60,6 +60,7 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
@@ -74,7 +75,6 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -115,16 +115,15 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         inflater.inflate(R.menu.menu, menu);
 
         MenuItem searchItem = menu.findItem(R.id.menu_search);
-        Log.d(TAG, "oncreate");
+        SearchManager searchManager = (SearchManager) getSystemService(SEARCH_SERVICE);
         if (searchItem != null) {
             SearchView searchView = (SearchView) searchItem.getActionView();
             if (searchView != null) {
-                Log.d(TAG, "SearchView Not Null");
-                SearchManager searchManager = (SearchManager) getSystemService(SEARCH_SERVICE);
+                Log.e(TAG, "SearchView Not Null");
                 searchView.setSearchableInfo(searchManager
                         .getSearchableInfo(getComponentName()));
             } else 
-                Log.d(TAG, "SearchView Null");
+                Log.e(TAG, "SearchView Null");
         }
         // searchView.setIconifiedByDefault(false); // Do not iconify the
         // widget; expand it by default

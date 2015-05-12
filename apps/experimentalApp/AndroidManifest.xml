@@ -149,5 +149,23 @@
             </intent-filter>
     </activity>
 
+    <activity
+      android:label="@string/rangzen_app_name"
+      android:launchMode="singleTop"
+      android:name="org.denovogroup.rangzen.SearchableActivity" >
+      <intent-filter >
+         <action android:name="android.intent.action.SEARCH" />
+      </intent-filter>
+      <intent-filter >
+         <action android:name="android.intent.action.VIEW" />
+      </intent-filter>
+      <meta-data
+         android:name="android.app.searchable"
+         android:resource="@xml/searchable" />
+   </activity>
+
+	<meta-data android:name="android.app.default_searchable" android:value=".SearchableActivity" />
+
+
   </application>
 </manifest>

@@ -36,26 +36,34 @@ import org.denovogroup.rangzen.MessageStore.Message;
 import android.app.Activity;
 import android.content.Context;
 import android.text.SpannableString;
-import android.text.Spanned;
-import android.text.TextPaint;
 import android.text.method.LinkMovementMethod;
-import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 import android.widget.TextView;
 import android.widget.TextView.BufferType;
 
-public class FeedListAdapter extends BaseAdapter {
+/**
+ * This class extends FeedListAdapter and has all of the same functionality as
+ * that class except in two places. Getting the count of the messages to show
+ * now returns the number of saved messages and the messages that are going to
+ * be shown are only saved messages.
+ * 
+ * @author jesus
+ * 
+ */
+public class SavedFeedListAdapter extends FeedListAdapter {
+
+    public SavedFeedListAdapter(Context context) {
+        super(context);
+        this.mContext = context;
+    }
 
     /** Activity context passed in to the FeedListAdapter. */
     private Context mContext;
     /** Message store to be used to get the messages and trust score. */
     private MessageStore mMessageStore;
-
-    protected final static String TAG = "FeedListAdapter";
 
     /**
      * Holds references to views so that findViewById() is not needed to be
@@ -63,23 +71,11 @@ public class FeedListAdapter extends BaseAdapter {
      */
     private ViewHolder mViewHolder;
 
-    /**
-     * Sets the feed text fields to be their values from messages from memory.
-     * This finds the correct message at what position and populates recycled
-     * views.
-     * 
-     * @param context
-     *            The context of the activity that spawned this class.
-     */
-    public FeedListAdapter(Context context) {
-        this.mContext = context;
-    }
-
     @Override
     public int getCount() {
         mMessageStore = new MessageStore((Activity) mContext,
                 StorageBase.ENCRYPTION_DEFAULT);
-        return mMessageStore.getMessageCount();
+        return mMessageStore.getSavedMessageCount();
     }
 
     /**
@@ -99,7 +95,7 @@ public class FeedListAdapter extends BaseAdapter {
     /**
      * Navigates the treemap and finds the correct message from memory to
      * display at this position in the feed, then returns the row's view object,
-     * fully populated with information.
+     * fully populated with information. This only shows saved messages.
      * 
      * @param position
      *            The current row index in the feed.
@@ -113,11 +109,12 @@ public class FeedListAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         MessageStore messageStore = new MessageStore((Activity) mContext,
                 StorageBase.ENCRYPTION_DEFAULT);
-        Message message = messageStore.getKthMessage(position, 0);
+        Message message = messageStore.getKthMessage(position, 1);
         if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater) mContext
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = inflater.inflate(R.layout.feed_row, parent, false);
+            convertView = inflater.inflate(R.layout.feed_row_save, parent,
+                    false);
 
             mViewHolder = new ViewHolder();
             mViewHolder.mUpvoteView = (TextView) convertView
@@ -132,66 +129,12 @@ public class FeedListAdapter extends BaseAdapter {
 
         mViewHolder.mHashtagView.setMovementMethod(LinkMovementMethod
                 .getInstance());
-        mViewHolder.mHashtagView.setText(applySpan(message.getMessage()),
-                BufferType.SPANNABLE);
+        mViewHolder.mHashtagView.setText(applySpan(message.getMessage()), BufferType.SPANNABLE);
 
         mViewHolder.mUpvoteView.setText(Integer.toString((int) (100 * message
                 .getPriority())));
 
         return convertView;
-    }
-
-    /**
-     * Creates a span object for use in a spannable string in the list view for
-     * the feed. It removes the underline usually in a span and has a custom
-     * onClickListener.
-     * 
-     * @author jesus
-     * 
-     */
-    class InnerSpan extends ClickableSpan {
-
-        public void onClick(View tv) {
-            Log.d(TAG, "spannable click");
-        }
-
-        @Override
-        public void updateDrawState(TextPaint ds) {
-            super.updateDrawState(ds);
-            ds.setUnderlineText(false);
-        }
-    }
-
-    /**
-     * Creates a SpannableString object for the TextView from the feed. It
-     * applies multiple spans (for the possibly multiple) hashtags in a feed
-     * message.
-     * 
-     * @param feedText
-     *            - Text in a feed ListView item.
-     * @return String to be placed in ListView TextView.
-     */
-    protected SpannableString applySpan(String feedText) {
-        SpannableString spannable = new SpannableString(feedText);
-        final String spannableString = spannable.toString();
-        int start = 0;
-        int end = 0;
-        while (true) {
-            ClickableSpan spany = new InnerSpan();
-            start = spannableString.indexOf("#", end);
-
-            if (start < 0) {
-                break;
-            }
-
-            end = spannableString.indexOf(" ", start);
-            if (end < 0) {
-                end = spannableString.length();
-            }
-            spannable.setSpan(spany, start, end,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-        return spannable;
     }
 
     /**
