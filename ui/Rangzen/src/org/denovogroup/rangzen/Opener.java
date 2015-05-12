@@ -34,6 +34,7 @@ package org.denovogroup.rangzen;
 import java.util.Stack;
 
 import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
+import org.denovogroup.rangzen.R.drawable;
 
 import android.app.Activity;
 import android.app.NotificationManager;
@@ -97,7 +98,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
 
     private final static int QR = 10;
     private final static int MESSAGE = 20;
-
     private final static int UPVOTE = 1;
     private final static int DOWNVOTE = 0;
 
@@ -113,7 +113,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                 .addMessage(
                         "This is the Rangzen message feed. Messages in the ether will appear here.",
                         1L);
-
         messageStore.saveMessage("hello.", 1L);
 
         messageStore
@@ -193,7 +192,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                 ListFragmentOrganizer.class, b);
         mTabHost.addTab(mTabHost.newTabSpec("New").setIndicator("New"),
                 ListFragmentOrganizer.class, b2);
-        mTabHost.addTab(mTabHost.newTabSpec("Saved").setIndicator("Saved"),
+        mTabHost.addTab(mTabHost.newTabSpec("Favorite").setIndicator("Favorite"),
                 ListFragmentOrganizer.class, b3);
     }
 
@@ -510,7 +509,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     
     private void createNotification() {
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(
-                this).setSmallIcon(R.mipmap.ic_launcher)
+                this).setSmallIcon(R.drawable.ic_launcher)
                 .setContentTitle("New Message")
                 .setContentText("You've received new messages.").setNumber(1);
 
@@ -538,86 +537,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     }
 
     /**
-     * This is an onclick listener created in feed_row.xml or feed_row_save.xml.
-     * It's a button that allows the user to up vote a message.
-     * 
-     * @param view
-     *            - This is the button image view for the upvote.
-     */
-    public void upVote(View view) {
-        handleVoting(UPVOTE, view);
-    }
-
-    /**
-     * This is an onclick listener created in feed_row.xml or feed_row_save.xml.
-     * It's a button that allows the user to down vote a message.
-     * 
-     * @param view
-     *            - This is the button image view for the downvote.
-     */
-    public void downVote(View view) {
-        handleVoting(DOWNVOTE, view);
-    }
-
-    /**
-     * Finds the textviews containing the up/down vote score and the textview
-     * for the message. It places a cap and a floor on the score that a message
-     * can be and increments the score by some number.
-     * 
-     * @param i
-     *            - Constant indicating up vote or down vote.
-     * @param view
-     *            - The up/down vote image button view.
-     */
-    private void handleVoting(int i, View view) {
-        /**
-         * The view that we have is to a specific instance of a feed element. We
-         * cannot call findViewById here because it would give a reference to
-         * only the first instance of a feed element. To get around this I sift
-         * through the layers of xml.
-         */
-        ViewGroup vg = (ViewGroup) view.getParent();
-        ViewGroup vg2 = (ViewGroup) vg.getParent();
-        ViewGroup vg3 = (ViewGroup) vg2.getParent();
-        LinearLayout l = (LinearLayout) vg3.getChildAt(2);
-
-        TextView upvoteView = (TextView) vg2.getChildAt(1);
-        TextView hashtagView = (TextView) l.getChildAt(0);
-
-        ImageView iv = (ImageView) view;
-        MessageStore messageStore = new MessageStore(this,
-                StorageBase.ENCRYPTION_DEFAULT);
-
-        if (i == 1) {
-            Toast.makeText(this, "upVote", Toast.LENGTH_SHORT).show();
-            iv.setImageResource(R.drawable.uparrowgreen);
-            LinearLayout l2 = (LinearLayout) vg2.getChildAt(2);
-            ImageButton ib = (ImageButton) l2.getChildAt(0);
-            ib.setImageResource(R.drawable.downarrow);
-        } else {
-            Toast.makeText(this, "downVote", Toast.LENGTH_SHORT).show();
-            iv.setImageResource(R.drawable.downarrowred);
-            LinearLayout l2 = (LinearLayout) vg2.getChildAt(0);
-            ImageButton ib = (ImageButton) l2.getChildAt(0);
-            ib.setImageResource(R.drawable.uparrow);
-        }
-
-        String text = hashtagView.getText().toString();
-
-        if (100 * messageStore.getPriority((text)) < 86 && i == 1) { // max
-            messageStore.updatePriority(text,
-                    messageStore.getPriority((text)) + .15);
-        } else if (100 * messageStore.getPriority((text)) > 15 && i == 0) { // min
-            messageStore.updatePriority(text,
-                    messageStore.getPriority((text)) - .15);
-        } else {
-            return;
-        }
-        upvoteView.setText(Integer.toString((int) (100 * messageStore
-                .getPriority(text))));
-    }
-
-    /**
      * This is an onclick listener created in feed_row.xml. It's a button that
      * allows the user to save a message.
      * 
@@ -625,17 +544,47 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      *            - This is the button view.
      */
     public void onSave(View view) {
-        ViewGroup vg = (ViewGroup) view.getParent(); // root
-        LinearLayout l = (LinearLayout) vg.getChildAt(0); // id-messageAndScore
-        LinearLayout l2 = (LinearLayout) l.getChildAt(2); // id-hashtagHolder
+        
+        ImageView iv = (ImageView) view;
+        iv.setAdjustViewBounds(true);
+        iv.setImageResource(R.drawable.ic_action_important_yellow);
+        
+        
+        ViewGroup vg = (ViewGroup) view.getParent(); // rel layout
+        ViewGroup vg2 = (ViewGroup) vg.getParent(); //root
+        TextView hashtagView = (TextView) vg2.getChildAt(0); // id-messageAndScore
 
-        TextView hashtagView = (TextView) l2.getChildAt(0);
         MessageStore messageStore = new MessageStore(this,
                 StorageBase.ENCRYPTION_DEFAULT);
         String text = hashtagView.getText().toString();
         double p = messageStore.getPriority((text));
 
         messageStore.saveMessage(text, p);
+    }
+
+    /**
+     * This is an onclick listener created in feed_row.xml. It's a button that
+     * allows the user to delete a message.
+     * 
+     * @param view
+     *            - This is the button view.
+     */
+    public void onDelete(View view) {
+        ImageView iv = (ImageView) view;
+        iv.setImageResource(R.drawable.ic_action_discard_red);
+    }
+    
+    /**
+     * This is an onclick listener created in feed_row.xml. It's a button that
+     * allows the user to retweet a message.
+     * 
+     * @param view
+     *            - This is the button view.
+     */
+    public void onRetweet(View view) {
+        ImageView iv = (ImageView) view;
+        iv.setAdjustViewBounds(true);
+        iv.setImageResource(R.drawable.ic_action_repeat_green);
     }
 
 }

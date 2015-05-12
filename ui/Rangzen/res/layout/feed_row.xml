@@ -1,109 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/RelativeLayout1"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/listitem_selector"
     android:minHeight="100dp"
     android:orientation="vertical"
-    android:paddingBottom="3dp"
+    android:paddingBottom="5dp"
     android:paddingEnd="0dp"
     android:paddingStart="0dp"
-    android:paddingTop="0dp" >
+    android:paddingTop="5dp" >
 
-    <LinearLayout
-        android:id="@+id/messageAndScore"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:paddingBottom="10dp" >
+    <TextView
+        android:id="@+id/hashtagView"
+        android:layout_width="296dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:paddingLeft="12dp"
+        android:paddingRight="12dp"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@android:color/black" />
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:paddingTop="5dp" >
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/hashtagView" >
 
-            <LinearLayout
-                android:id="@+id/container"
-                android:layout_width="40dp"
-                android:layout_height="35dp"
-                android:layout_gravity="center"
-                android:paddingBottom="0dp"
-                android:paddingStart="12dp" >
-
-                <ImageButton
-                    android:id="@+id/upArrow"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@android:color/transparent"
-                    android:onClick="upVote"
-                    android:scaleType="fitXY"
-                    android:src="@drawable/uparrow" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/upvoteView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:paddingEnd="15dp"
-                android:paddingStart="28dp"
-                android:textColor="@android:color/black" />
-
-            <LinearLayout
-                android:id="@+id/container2"
-                android:layout_width="40dp"
-                android:layout_height="35dp"
-                android:layout_gravity="center"
-                android:paddingStart="12dp"
-                android:paddingTop="0dp" >
-
-                <ImageButton
-                    android:id="@+id/downArrow"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@android:color/transparent"
-                    android:onClick="downVote"
-                    android:scaleType="fitXY"
-                    android:src="@drawable/downarrow" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="1dp"
-            android:layout_height="fill_parent"
-            android:paddingEnd="15dp"
-            android:paddingStart="0dp"
-            android:textColor="@android:color/black" />
-
-        <LinearLayout
-            android:id="@+id/hashtagHolder"
+        <ImageButton
+            android:focusable="false"
+            android:id="@+id/eraseButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingBottom="5dp"
-            android:paddingEnd="20dp"
-            android:paddingStart="15dp"
-            android:paddingTop="17dp" >
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:background="@android:color/transparent"
+            android:onClick="onDelete"
+            android:padding="10dip"
+            android:src="@drawable/ic_action_discard" />
 
-            <TextView
-                android:id="@+id/hashtagView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="start"
-                android:maxWidth="320dp"
-                android:minLines="3"
-                android:minWidth="250dp"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:textColor="@android:color/black" />
-        </LinearLayout>
-    </LinearLayout>
-    
-    <Button
-        android:text="Save"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:gravity="center"
-        android:onClick="onSave"
-        />
+        <ImageButton
+            android:focusable="false"
+            android:id="@+id/saveButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_toLeftOf="@+id/eraseButton"
+            android:background="@android:color/transparent"
+            android:onClick="onSave"
+            android:padding="10dip"
+            android:src="@drawable/ic_action_important_dark" />
 
-</LinearLayout>
+        <TextView
+            android:id="@+id/upvoteView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:gravity="center"
+            android:paddingEnd="15dp"
+            android:paddingStart="28dp"
+            android:textColor="@android:color/black"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:focusable="false"
+            android:id="@+id/retweetButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_toLeftOf="@+id/saveButton"
+            android:background="@android:color/transparent"
+            android:onClick="onRetweet"
+            android:padding="10dip"
+            android:src="@drawable/ic_action_repeat" />
+
+    </RelativeLayout>
+
+</RelativeLayout>

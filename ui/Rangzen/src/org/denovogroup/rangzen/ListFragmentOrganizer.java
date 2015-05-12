@@ -89,7 +89,7 @@ public class ListFragmentOrganizer extends ListFragment {
                 .getSerializable("whichScreen");
         View view = (View) inflater.inflate(R.layout.feed, container, false);
 
-        ImageView iv = (ImageView) view.findViewById(R.id.normal_image);
+//        ImageView iv = (ImageView) view.findViewById(R.id.normal_image);
 
         Display display = getActivity().getWindowManager().getDefaultDisplay();
         Point size = new Point();
@@ -97,10 +97,10 @@ public class ListFragmentOrganizer extends ListFragment {
         int width = size.x;
         int height = (int) (size.y);
 
-        Bitmap bd = FragmentOrganizer.decodeSampledBitmapFromResource(
-                getResources(), R.drawable.firstb, width, height);
-        BitmapDrawable ob = new BitmapDrawable(bd);
-        iv.setBackgroundDrawable(ob);
+//        Bitmap bd = FragmentOrganizer.decodeSampledBitmapFromResource(
+//                getResources(), R.drawable.firstb, width, height);
+//        BitmapDrawable ob = new BitmapDrawable(bd);
+//        iv.setBackgroundDrawable(ob);
 
         ListView listView = (ListView) view.findViewById(android.R.id.list);
         Log.d("Opener", whichScreen.toString());

@@ -111,6 +111,7 @@ public class InfoActivity extends FragmentActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+
     }
 
     /**

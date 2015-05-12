@@ -129,7 +129,6 @@ public class FeedListAdapter extends BaseAdapter {
         } else {
             mViewHolder = (ViewHolder) convertView.getTag();
         }
-
         mViewHolder.mHashtagView.setMovementMethod(LinkMovementMethod
                 .getInstance());
         mViewHolder.mHashtagView.setText(applySpan(message.getMessage()),
