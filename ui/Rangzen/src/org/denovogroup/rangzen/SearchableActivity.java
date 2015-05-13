@@ -27,10 +27,19 @@ public class SearchableActivity extends ActionBarActivity {
         setUpActionBar();
         handleIntent(getIntent());
         setContentView(R.layout.feed);
-        ListView lv = (ListView) findViewById(android.R.id.list);
-        lv.setAdapter(new FeedListAdapter(this));
+        
+     // Get the intent, verify the action and get the query
+        Intent intent = getIntent();
+        if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
+          String query = intent.getStringExtra(SearchManager.QUERY);
+          doSearch(query);
+          ListView lv = (ListView) findViewById(android.R.id.list);
+          lv.setAdapter(new SearchFeedListAdapter(this, query));
+        }
+
         LinearLayout listCarrier = (LinearLayout) findViewById(R.id.listCarrier);
         listCarrier.removeViewAt(0);
+        
      } 
 
      public void onNewIntent(Intent intent) {
@@ -79,7 +88,7 @@ public class SearchableActivity extends ActionBarActivity {
      
      private void setUpActionBar() {
          getActionBar().setDisplayHomeAsUpEnabled(true);
-         getActionBar().setTitle("Info");
+         getActionBar().setTitle("Search Hashtags");
          int titleId = getResources().getIdentifier("action_bar_title", "id",
                  "android");
          TextView abTitle = (TextView) findViewById(titleId);

@@ -31,14 +31,11 @@
 
 package org.denovogroup.rangzen;
 
-<<<<<<< HEAD
 import java.util.Stack;
 
 import org.denovogroup.rangzen.FragmentOrganizer.FragmentType;
 import org.denovogroup.rangzen.R.drawable;
 
-=======
->>>>>>> Added Search Functionality back from before, activity and xml
 import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -492,11 +489,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         /**
          * When the receiver is activated then that means a message has been
          * added to the message store, (either by the user or by the active
-<<<<<<< HEAD
-         * services).
-         * 
-         * If the message is a NEW_MESSAGE and not SAVE_MESSAGE then create a notification.
-=======
          * services). The reason that the instanceof check is necessary is
          * because there are two possible routes of activity:
          * 
@@ -507,7 +499,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
          * 
          * 2) The previous/current fragment is the feed, it needs to be notified
          * immediately that there was a change in the underlying dataset.
->>>>>>> Added Search Functionality back from before, activity and xml
          */
         @Override
         public void onReceive(Context context, Intent intent) {

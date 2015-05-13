@@ -55,6 +55,7 @@ import android.widget.TextView.BufferType;
  */
 public class SavedFeedListAdapter extends FeedListAdapter {
 
+
     public SavedFeedListAdapter(Context context) {
         super(context);
         this.mContext = context;

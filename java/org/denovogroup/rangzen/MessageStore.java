@@ -67,7 +67,7 @@ public class MessageStore {
 
     /** Intent action for new message arrival in the store. */
     public static final String NEW_MESSAGE = "org.denovogroup.rangzen.NEW_MESSAGE_ACTION";
-    
+
     /** Intent action for new saved message in the store. */
     public static final String SAVE_MESSAGE = "org.denovogroup.rangzen.SAVE_MESSAGE";
 
@@ -79,6 +79,7 @@ public class MessageStore {
 
     public static final int SAVED_MESSAGES = 1;
     public static final int NOT_SAVED_MESSAGES = -0;
+    public static final int ALL_MESSAGES = -1;
 
     /**
      * The number of bins to use for storing messages. Each bin stores
@@ -384,7 +385,6 @@ public class MessageStore {
                 count++;
             }
         }
-        Log.d(TAG, "message count = " + Integer.toString(count));
         return count - getSavedMessageCount();
     }
 
@@ -410,7 +410,6 @@ public class MessageStore {
                 }
             }
         }
-        Log.d(TAG, "saved message count = " + Integer.toString(count));
         return count;
     }
 
@@ -427,7 +426,6 @@ public class MessageStore {
      * @return A message object that is the kth most trusted.
      */
     public Message getKthMessage(int k, int type) {
-        Log.d(TAG, "type " + Integer.toString(type));
         ArrayList<Message> topk = new ArrayList<Message>();
 
         for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
@@ -451,6 +449,84 @@ public class MessageStore {
                     if (priority != -1) {
                         topk.add(new Message(priority, m));
                     }
+                }
+            }
+        }
+        Collections.sort(topk, new Comparator<Message>() {
+
+            @Override
+            public int compare(Message lhs, Message rhs) {
+                Message left = (Message) lhs;
+                Message right = (Message) rhs;
+                if (left.getPriority() > right.getPriority()) {
+                    return -1;
+                } else if (left.getPriority() < right.getPriority()) {
+                    return 1;
+                } else {
+                    return left.getMessage().compareTo(right.getMessage());
+                }
+            }
+        });
+        if (topk.size() - 1 < k) {
+            return null;
+        }
+        return topk.get(k);
+    }
+    
+    public int getSearchMessageCount(String hashtag) {
+        ArrayList<Message> topk = new ArrayList<Message>();
+
+        for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
+            String binKey = getBinKey(bin);
+            Set<String> msgs = store.getSet(binKey);
+            if (msgs == null)
+                continue;
+
+            for (String m : msgs) {
+                if (m.indexOf(hashtag) != -1) {
+                    Log.d(TAG, "matches saved hashtag: " + m);
+                    double priority = getMessagePriority(m, -1);
+                    if (priority != -1) {
+                        topk.add(new Message(priority, m));
+                    } 
+                }
+            }
+        }
+        Collections.sort(topk, new Comparator<Message>() {
+
+            @Override
+            public int compare(Message lhs, Message rhs) {
+                Message left = (Message) lhs;
+                Message right = (Message) rhs;
+                if (left.getPriority() > right.getPriority()) {
+                    return -1;
+                } else if (left.getPriority() < right.getPriority()) {
+                    return 1;
+                } else {
+                    return left.getMessage().compareTo(right.getMessage());
+                }
+            }
+        });
+
+        return topk.size();
+    }
+
+    public Message getKthMessage(int k, String hashtag) {
+
+        ArrayList<Message> topk = new ArrayList<Message>();
+
+        for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
+            String binKey = getBinKey(bin);
+            Set<String> msgs = store.getSet(binKey);
+            if (msgs == null)
+                continue;
+
+            for (String m : msgs) {
+                if (m.contains(hashtag)) {
+                    double priority = getMessagePriority(m, -1);
+                    if (priority != -1) {
+                        topk.add(new Message(priority, m));
+                    } 
                 }
             }
         }

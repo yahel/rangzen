@@ -53,10 +53,13 @@ import android.widget.TextView.BufferType;
  * @author jesus
  * 
  */
-public class SavedFeedListAdapter extends FeedListAdapter {
+public class SearchFeedListAdapter extends FeedListAdapter {
 
-    public SavedFeedListAdapter(Context context) {
+    private String mHashtag;
+
+    public SearchFeedListAdapter(Context context, String hashtag) {
         super(context);
+        this.mHashtag = hashtag;
         this.mContext = context;
     }
 
@@ -75,7 +78,7 @@ public class SavedFeedListAdapter extends FeedListAdapter {
     public int getCount() {
         mMessageStore = new MessageStore((Activity) mContext,
                 StorageBase.ENCRYPTION_DEFAULT);
-        return mMessageStore.getSavedMessageCount();
+        return mMessageStore.getSearchMessageCount(mHashtag);
     }
 
     /**
@@ -109,7 +112,7 @@ public class SavedFeedListAdapter extends FeedListAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         MessageStore messageStore = new MessageStore((Activity) mContext,
                 StorageBase.ENCRYPTION_DEFAULT);
-        Message message = messageStore.getKthMessage(position, 1);
+        Message message = messageStore.getKthMessage(position, mHashtag);
         if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater) mContext
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);

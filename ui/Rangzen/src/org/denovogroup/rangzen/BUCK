@@ -14,6 +14,7 @@ android_library(
     'QRCodeViewPager.java',
     'SavedFeedListAdapter.java',
     'SearchableActivity.java',
+    'SearchFeedListAdapter.java',
     'SidebarListAdapter.java',
     'SlidingPageIndicator.java',
   ],
