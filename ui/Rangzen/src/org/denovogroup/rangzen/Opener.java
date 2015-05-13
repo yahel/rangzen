@@ -124,9 +124,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                         .getSearchableInfo(getComponentName()));
             } else 
                 Log.e(TAG, "SearchView Null");
+            searchView.setIconifiedByDefault(false);
         }
-        // searchView.setIconifiedByDefault(false); // Do not iconify the
-        // widget; expand it by default
 
         MessageStore messageStore = new MessageStore(this,
                 StorageBase.ENCRYPTION_DEFAULT);

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/listitem_selector"
+    android:minHeight="100dp"
+    android:orientation="vertical"
+    android:paddingBottom="3dp"
+    android:paddingEnd="0dp"
+    android:paddingStart="0dp"
+    android:paddingTop="0dp" >
+
+    <TextView
+        android:id="@+id/hashtagView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@android:color/black" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingEnd="12dp"
+        android:paddingStart="12dp" >
+
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/upvoteView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/hashtagView"
+        android:layout_marginLeft="15dp"
+        android:gravity="center"
+        android:paddingEnd="12dp"
+        android:paddingStart="12dp"
+        android:textColor="@android:color/black" />
+
+</RelativeLayout>

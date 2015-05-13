@@ -151,6 +151,7 @@
 
     <activity
       android:label="@string/rangzen_app_name"
+      android:theme="@style/MyTheme1"
       android:launchMode="singleTop"
       android:name="org.denovogroup.rangzen.SearchableActivity" >
       <intent-filter >
