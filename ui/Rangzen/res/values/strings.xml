@@ -6,8 +6,8 @@
     <item name="decode_succeeded" type="id"/>
     <item name="quit" type="id"/>
 
-    <string name="search_hint">Hashtag Filter</string>
-    <string name="search">Hashtag Search</string>
+    <string name="search_hint">Filter</string>
+    <string name="search">Search</string>
 
     <!--
       This is a hack to get the name of the app to be "Rangzen".

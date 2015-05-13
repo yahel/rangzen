@@ -88,7 +88,7 @@ public class SearchableActivity extends ActionBarActivity {
      
      private void setUpActionBar() {
          getActionBar().setDisplayHomeAsUpEnabled(true);
-         getActionBar().setTitle("Search Hashtags");
+         getActionBar().setTitle("Search");
          int titleId = getResources().getIdentifier("action_bar_title", "id",
                  "android");
          TextView abTitle = (TextView) findViewById(titleId);
