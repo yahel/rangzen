@@ -34,10 +34,13 @@ package org.denovogroup.rangzen;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
+import java.util.List;
+
+import org.denovogroup.rangzen.MessageStore.Message;
+
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
-import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -55,11 +58,10 @@ public class ListFragmentOrganizer extends ListFragment {
      * page.
      */
     enum FragmentType {
-        FEED, NEW, SAVED
+        FEED, SAVED
     }
 
-    /** Creates and populates the content for the feed fragment. */
-    private FeedListAdapter mFeedListAdaper;
+    private static final String TAG = "ListFragmentOrganizer";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -70,38 +72,28 @@ public class ListFragmentOrganizer extends ListFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
 
-        Log.d("Opener", "feed's on create was called");
         Bundle b = getArguments();
         FragmentType whichScreen = (FragmentType) b
                 .getSerializable("whichScreen");
         View view = (View) inflater.inflate(R.layout.feed, container, false);
 
-//        ImageView iv = (ImageView) view.findViewById(R.id.normal_image);
-
-        Display display = getActivity().getWindowManager().getDefaultDisplay();
-        Point size = new Point();
-        display.getSize(size);
-        int width = size.x;
-        int height = (int) (size.y);
-
-//        Bitmap bd = FragmentOrganizer.decodeSampledBitmapFromResource(
-//                getResources(), R.drawable.firstb, width, height);
-//        BitmapDrawable ob = new BitmapDrawable(bd);
-//        iv.setBackgroundDrawable(ob);
-
         ListView listView = (ListView) view.findViewById(android.R.id.list);
-        Log.d("Opener", whichScreen.toString());
+
+        MessageStore m = new MessageStore(getActivity(),
+                StorageBase.ENCRYPTION_DEFAULT);
 
         if (whichScreen == FragmentType.FEED) {
-            mFeedListAdaper = new FeedListAdapter(getActivity());
-            listView.setAdapter(mFeedListAdaper);
-        }
-        if (whichScreen == FragmentType.NEW) {
-            mFeedListAdaper = new FeedListAdapter(getActivity());
+            List<Message> messages = m.getAllMessages(
+                    MessageStore.NOT_SAVED_MESSAGES, null);
+            FeedListAdapter mFeedListAdaper = new FeedListAdapter(
+                    getActivity(), R.layout.feed_row, messages);
             listView.setAdapter(mFeedListAdaper);
         }
         if (whichScreen == FragmentType.SAVED) {
-            SavedFeedListAdapter f = new SavedFeedListAdapter(getActivity());
+            List<Message> messages = m.getAllMessages(
+                    MessageStore.SAVED_MESSAGES, null);
+            SavedFeedListAdapter f = new SavedFeedListAdapter(getActivity(),
+                    R.layout.feed_row_save, messages);
             listView.setAdapter(f);
         }
 

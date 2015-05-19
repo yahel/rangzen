@@ -79,7 +79,7 @@ public class MessageStore {
 
     public static final int SAVED_MESSAGES = 1;
     public static final int NOT_SAVED_MESSAGES = -0;
-    public static final int ALL_MESSAGES = -1;
+    public static final int SEARCHED_MESSAGES = 3;
 
     /**
      * The number of bins to use for storing messages. Each bin stores
@@ -301,8 +301,30 @@ public class MessageStore {
      *         found, returns false.
      */
     public boolean deleteMessage(String msg) {
+        Log.d(TAG, msg);
         // TODO(barath): Implement.
-        return false;
+        String msgPriorityKey = MESSAGE_PRIORITY_KEY + msg;
+        String saveKey = "RangzenSavedMessage-" + msg;
+        Double d = store.getDouble(msgPriorityKey, NOT_FOUND);
+        Log.d(TAG, d.toString());
+        // Get the existing message set for the bin, if it exists.
+        String binKey = getBinKeyForPriority(d);
+        Set<String> msgs = store.getSet(binKey);
+        Log.d(TAG, Boolean.toString(msgs.contains(msg)));
+        
+        store.removeDouble(msgPriorityKey);
+        store.removeDouble(saveKey); //removing the saved message
+        msgs.remove(msg);
+        Log.d(TAG, Boolean.toString(msgs.contains(msg)));
+        store.putSet(binKey, msgs);
+        d = store.getDouble(msgPriorityKey, NOT_FOUND);
+        Log.d(TAG, d.toString());
+        
+        //Remove the saved and retweet storage base ints if any
+        store.removeInt("SAVE" + msg);
+        store.removeInt("RETWEET" + msg);
+
+        return true;
     }
 
     /**
@@ -320,100 +342,6 @@ public class MessageStore {
     }
 
     /**
-     * Returns the messages with highest priority values.
-     * 
-     * @param k
-     *            The number of messages to return.
-     * 
-     * @return Returns up to k messages with the highest priority values.
-     */
-    public TreeMap<Double, Collection<String>> getTopK(int k) {
-        TreeMap<Double, Collection<String>> topk = new TreeMap<Double, Collection<String>>();
-
-        int msgsStored = 0;
-
-        binloop: for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
-            String binKey = getBinKey(bin);
-            Set<String> msgs = store.getSet(binKey);
-            if (msgs == null)
-                continue;
-
-            TreeMap<Double, List<String>> sortedmsgs = new TreeMap<Double, List<String>>();
-            for (String m : msgs) {
-                double priority = getMessagePriority(m, -1);
-                if (!sortedmsgs.containsKey(priority)) {
-                    sortedmsgs.put(priority, new ArrayList<String>());
-                }
-                sortedmsgs.get(priority).add(m);
-            }
-
-            NavigableMap<Double, List<String>> descMap = sortedmsgs
-                    .descendingMap();
-            for (Entry<Double, List<String>> e : descMap.entrySet()) {
-                for (String m : e.getValue()) {
-                    if (msgsStored >= k)
-                        break binloop;
-
-                    double priority = e.getKey();
-                    if (!topk.containsKey(priority)) {
-                        topk.put(priority, new HashSet<String>());
-                    }
-                    topk.get(priority).add(m);
-                    msgsStored++;
-                }
-            }
-        }
-
-        return topk;
-    }
-
-    /**
-     * This will iterate over all of the messages in the message store and
-     * return the number of messages
-     * 
-     * @return count The total number of messages in the message store.
-     */
-    public int getMessageCount() {
-        int count = 0;
-        for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
-            String binKey = getBinKey(bin);
-            Set<String> msgs = store.getSet(binKey);
-            if (msgs == null)
-                continue;
-
-            for (String m : msgs) {
-                count++;
-            }
-        }
-        return count - getSavedMessageCount();
-    }
-
-    /**
-     * This will iterate over all of the messages in the message store and
-     * return the number of saved messages
-     * 
-     * @return count The total number of saved messages in the message store.
-     */
-    public int getSavedMessageCount() {
-        int count = 0;
-        for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
-            String binKey = getBinKey(bin);
-            Set<String> msgs = store.getSet(binKey);
-            if (msgs == null)
-                continue;
-
-            for (String m : msgs) {
-                String msgPriorityKey = "RangzenSavedMessage-" + m;
-                double p = store.getDouble(msgPriorityKey, -2);
-                if (p != -2) {
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
-    /**
      * This method goes through every message in all of the bins and inserts
      * them into an array list by trust score and then in the case of a tie,
      * alphabetically.
@@ -425,7 +353,8 @@ public class MessageStore {
      *            0 - regular messages, 1 - saved messages
      * @return A message object that is the kth most trusted.
      */
-    public Message getKthMessage(int k, int type) {
+    public ArrayList<Message> getAllMessages(int type, String query) {
+        //Log.d(TAG, "type " + Integer.toString(type));
         ArrayList<Message> topk = new ArrayList<Message>();
 
         for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
@@ -444,10 +373,17 @@ public class MessageStore {
                     if (p != NOT_FOUND) {
                         topk.add(new Message(p, m));
                     }
-                } else {
+                } else if (type == NOT_SAVED_MESSAGES) {
                     double priority = getMessagePriority(m, -1);
                     if (priority != -1) {
                         topk.add(new Message(priority, m));
+                    }
+                } else {
+                    if (m.contains(query)) {
+                        double priority = getMessagePriority(m, -1);
+                        if (priority != -1) {
+                            topk.add(new Message(priority, m));
+                        } 
                     }
                 }
             }
@@ -467,84 +403,11 @@ public class MessageStore {
                 }
             }
         });
-        if (topk.size() - 1 < k) {
-            return null;
-        }
-        return topk.get(k);
+        return topk;
     }
     
-    public int getSearchMessageCount(String hashtag) {
-        ArrayList<Message> topk = new ArrayList<Message>();
-
-        for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
-            String binKey = getBinKey(bin);
-            Set<String> msgs = store.getSet(binKey);
-            if (msgs == null)
-                continue;
-
-            for (String m : msgs) {
-                if (m.indexOf(hashtag) != -1) {
-                    Log.d(TAG, "matches saved hashtag: " + m);
-                    double priority = getMessagePriority(m, -1);
-                    if (priority != -1) {
-                        topk.add(new Message(priority, m));
-                    } 
-                }
-            }
-        }
-        Collections.sort(topk, new Comparator<Message>() {
-
-            @Override
-            public int compare(Message lhs, Message rhs) {
-                Message left = (Message) lhs;
-                Message right = (Message) rhs;
-                if (left.getPriority() > right.getPriority()) {
-                    return -1;
-                } else if (left.getPriority() < right.getPriority()) {
-                    return 1;
-                } else {
-                    return left.getMessage().compareTo(right.getMessage());
-                }
-            }
-        });
-
-        return topk.size();
-    }
-
-    public Message getKthMessage(int k, String hashtag) {
-
-        ArrayList<Message> topk = new ArrayList<Message>();
-
-        for (int bin = NUM_BINS - 1; bin >= 0; bin--) {
-            String binKey = getBinKey(bin);
-            Set<String> msgs = store.getSet(binKey);
-            if (msgs == null)
-                continue;
-
-            for (String m : msgs) {
-                if (m.contains(hashtag)) {
-                    double priority = getMessagePriority(m, -1);
-                    if (priority != -1) {
-                        topk.add(new Message(priority, m));
-                    } 
-                }
-            }
-        }
-        Collections.sort(topk, new Comparator<Message>() {
-
-            @Override
-            public int compare(Message lhs, Message rhs) {
-                Message left = (Message) lhs;
-                Message right = (Message) rhs;
-                if (left.getPriority() > right.getPriority()) {
-                    return -1;
-                } else if (left.getPriority() < right.getPriority()) {
-                    return 1;
-                } else {
-                    return left.getMessage().compareTo(right.getMessage());
-                }
-            }
-        });
+    public Message getKthMessage(int k, int type, String query) {
+        ArrayList<Message> topk = getAllMessages(type, query);
         if (topk.size() - 1 < k) {
             return null;
         }
@@ -596,7 +459,6 @@ public class MessageStore {
          * Sending the broadcast here when a message is added to the phone.
          **/
         Intent intent = new Intent();
-        Bundle b = new Bundle();
         intent.setAction(SAVE_MESSAGE);
         mContext.sendBroadcast(intent);
         return true;

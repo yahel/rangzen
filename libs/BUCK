@@ -94,3 +94,8 @@ prebuilt_jar(
   visibility = [ 'PUBLIC' ],
 )
 
+prebuilt_jar(
+  name = 'acra',
+  binary_jar = 'acra-4.5.0.jar',
+  visibility = [ 'PUBLIC' ],
+)

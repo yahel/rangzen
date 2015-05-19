@@ -168,6 +168,23 @@ public class StorageBase {
     // TODO(barath): Consider whether we should use .commit() instead of apply().
     editor.apply();
   }
+  
+  /**
+   * Removes the given float from the Rangzen generic store.
+   *
+   * @param key The key under which the data is stored.
+   */
+  public void removeDouble(String key) {
+    editor.remove(key);
+
+    // TODO(barath): Consider whether we should use .commit() instead of apply().
+    editor.apply();
+  }
+  
+  public void removeInt(String key) {
+      editor.remove(key);
+      editor.apply();
+  }
 
   /**
    * Stores the given int in the Rangzen generic store.

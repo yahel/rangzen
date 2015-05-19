@@ -347,7 +347,7 @@ public class FragmentOrganizer extends Fragment {
                 messageStore.addMessage(message, priority);
                 Toast.makeText(getActivity(), "Message sent!",
                         Toast.LENGTH_SHORT).show();
-                getActivity().setResult(1);
+                getActivity().setResult(Opener.POSTED_MESSAGE);
                 getActivity().finish();
             }
 

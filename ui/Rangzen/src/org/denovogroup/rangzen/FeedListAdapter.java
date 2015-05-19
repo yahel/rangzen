@@ -31,10 +31,18 @@
 
 package org.denovogroup.rangzen;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import org.denovogroup.rangzen.MessageStore.Message;
 
 import android.app.Activity;
+import android.app.SearchManager;
 import android.content.Context;
+import android.content.Intent;
+import android.database.DataSetObserver;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -43,25 +51,33 @@ import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
+import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.TextView.BufferType;
 
-public class FeedListAdapter extends BaseAdapter {
+public class FeedListAdapter extends ArrayAdapter<Message> {
 
-    /** Activity context passed in to the FeedListAdapter. */
-    private Context mContext;
-    /** Message store to be used to get the messages and trust score. */
-    private MessageStore mMessageStore;
+    HashMap<String, Integer> mIdMap = new HashMap<String, Integer>();
 
     protected final static String TAG = "FeedListAdapter";
+
+    protected int[] a = { R.drawable.ic_action_important_yellow,
+            R.drawable.ic_action_repeat_green, R.drawable.ic_action_discard_red };
+
+    protected int[] b = { R.drawable.ic_action_important,
+            R.drawable.ic_action_repeat, R.drawable.ic_action_discard };
 
     /**
      * Holds references to views so that findViewById() is not needed to be
      * called so many times.
      */
-    private ViewHolder mViewHolder;
+    protected ViewHolder mVH;
+    
 
     /**
      * Sets the feed text fields to be their values from messages from memory.
@@ -71,29 +87,12 @@ public class FeedListAdapter extends BaseAdapter {
      * @param context
      *            The context of the activity that spawned this class.
      */
-    public FeedListAdapter(Context context) {
-        this.mContext = context;
+    public FeedListAdapter(Context context, int resource, List<Message> items) {
+        super(context, resource, items);
     }
 
-    @Override
-    public int getCount() {
-        mMessageStore = new MessageStore((Activity) mContext,
-                StorageBase.ENCRYPTION_DEFAULT);
-        return mMessageStore.getMessageCount();
-    }
-
-    /**
-     * Returns the name of the item in the ListView of the NavigationDrawer at
-     * this position.
-     */
-    @Override
-    public Object getItem(int position) {
-        return "No Name";
-    }
-
-    @Override
-    public long getItemId(int position) {
-        return position;
+    public FeedListAdapter(Context context, int resource) {
+        super(context, resource);
     }
 
     /**
@@ -111,34 +110,49 @@ public class FeedListAdapter extends BaseAdapter {
      */
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        MessageStore messageStore = new MessageStore((Activity) mContext,
+
+        StorageBase s = new StorageBase(getContext(),
                 StorageBase.ENCRYPTION_DEFAULT);
-        Message message = messageStore.getKthMessage(position, 0);
-        if (convertView == null) {
-            LayoutInflater inflater = (LayoutInflater) mContext
+        View v = convertView;
+
+        if (v == null) {
+            LayoutInflater inflater = (LayoutInflater) getContext()
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = inflater.inflate(R.layout.feed_row, parent, false);
+            v = inflater.inflate(R.layout.feed_row, parent, false);
 
-            mViewHolder = new ViewHolder();
-            mViewHolder.mUpvoteView = (TextView) convertView
-                    .findViewById(R.id.upvoteView);
-            mViewHolder.mHashtagView = (TextView) convertView
-                    .findViewById(R.id.hashtagView);
+            mVH = new ViewHolder();
+            mVH.mUpvoteView = (TextView) v.findViewById(R.id.upvoteView);
+            mVH.mHashtagView = (TextView) v.findViewById(R.id.hashtagView);
 
-            convertView.setTag(mViewHolder);
+            mVH.mFavorite = (ImageButton) v.findViewById(R.id.saveButton);
+            mVH.mTrash = (ImageButton) v.findViewById(R.id.eraseButton);
+            mVH.mRetweet = (ImageButton) v.findViewById(R.id.retweetButton);
+
+            v.setTag(mVH);
         } else {
-            mViewHolder = (ViewHolder) convertView.getTag();
+            mVH = (ViewHolder) v.getTag();
         }
 
-        mViewHolder.mHashtagView.setMovementMethod(LinkMovementMethod
-                .getInstance());
-        mViewHolder.mHashtagView.setText(applySpan(message.getMessage()),
+        Message m = getItem(position);
+        ImageButton[] ib = { mVH.mFavorite, mVH.mRetweet, mVH.mTrash };
+        String[] saveRetweet = { Opener.SAVE, Opener.RETWEET, "" };
+
+        for (int i = 0; i < ib.length; i++) {
+            if (s.getInt(saveRetweet[i] + m.getMessage(), 0) == 0) {
+                ib[i].setImageResource(b[i]);
+            } else {
+                ib[i].setImageResource(a[i]);
+            }
+        }
+
+        mVH.mHashtagView.setMovementMethod(LinkMovementMethod.getInstance());
+        mVH.mHashtagView.setText(applySpan(m.getMessage()),
                 BufferType.SPANNABLE);
+        mVH.mUpvoteView
+                .setText(Integer.toString((int) (100 * m.getPriority())));
 
-        mViewHolder.mUpvoteView.setText(Integer.toString((int) (100 * message
-                .getPriority())));
-
-        return convertView;
+        v.setId(position);
+        return v;
     }
 
     /**
@@ -152,7 +166,17 @@ public class FeedListAdapter extends BaseAdapter {
     class InnerSpan extends ClickableSpan {
 
         public void onClick(View tv) {
-            Log.d(TAG, "spannable click");
+            TextView t = (TextView) tv;
+            Log.d(TAG, t.getText().toString());
+            Spanned s = (Spanned) t.getText();
+            int start = s.getSpanStart(this);
+            int end = s.getSpanEnd(this);
+            Log.d(TAG, "onClick [" + s.subSequence(start, end) + "]");
+            Intent intent = new Intent();
+            intent.setClass(getContext(), SearchableActivity.class);
+            intent.setAction(Intent.ACTION_SEARCH);
+            intent.putExtra(SearchManager.QUERY, s.subSequence(start, end).toString());
+            getContext().startActivity(intent);
         }
 
         @Override
@@ -160,6 +184,10 @@ public class FeedListAdapter extends BaseAdapter {
             super.updateDrawState(ds);
             ds.setUnderlineText(false);
         }
+    }
+
+    String getType() {
+        return TAG;
     }
 
     /**
@@ -193,19 +221,36 @@ public class FeedListAdapter extends BaseAdapter {
         }
         return spannable;
     }
+    
+    public void refresh() {
+        MessageStore m = new MessageStore(getContext(),
+                StorageBase.ENCRYPTION_DEFAULT);
+        List<Message> messages = m.getAllMessages(
+                MessageStore.NOT_SAVED_MESSAGES, null);
+        Log.d(TAG, "get count = " + Integer.toString(getCount()));
+        clear();
+        if (messages.size() > 0) {
+            Log.d(TAG, "messages size = " + Integer.toString(messages.size()));
+            addAll(messages);
+        }
+    }
 
     /**
      * This is used to recycle the views and increase speed of scrolling. This
      * is held by the row object that keeps references to the views so that they
      * do not have to be looked up every time they are populated or reshown.
      */
-    static class ViewHolder {
+    protected static class ViewHolder {
         /** The view object that holds the hashtag for this current row item. */
-        private TextView mHashtagView;
+        protected TextView mHashtagView;
         /**
          * The view object that holds the trust score for this current row item.
          */
-        private TextView mUpvoteView;
+        protected TextView mUpvoteView;
 
+        protected ImageButton mFavorite;
+        protected ImageButton mTrash;
+        protected ImageButton mRetweet;
     }
+
 }
