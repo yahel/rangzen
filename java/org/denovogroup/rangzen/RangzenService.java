@@ -103,7 +103,7 @@ public class RangzenService extends Service {
     public Peer currentPeer;
 
     /** Message store. */
-    private MessageStore mMessageStore; 
+    private RangzenMessageStore mMessageStore;
     /** Ongoing exchange. */
     private Exchange mExchange;
 
@@ -179,7 +179,7 @@ public class RangzenService extends Service {
                                                    mBluetoothSpeaker,
                                                    new WifiDirectFrameworkGetter());
 
-        mMessageStore = new MessageStore(RangzenService.this, StorageBase.ENCRYPTION_DEFAULT);
+        mMessageStore = RangzenMessageStore.getInstance(this);
 
 
         String btAddress = mBluetoothSpeaker.getAddress();
@@ -212,8 +212,8 @@ public class RangzenService extends Service {
      * milliseconds since the last exchange and that we're not already connecting.
      *
      * @return Whether or not we're ready to connect to a peer.
-     * @see TIME_BETWEEN_EXCHANGES_MILLIS
-     * @see getConnecting
+     * @see {@link RangzenService#TIME_BETWEEN_EXCHANGES_MILLIS}
+     * @see {@link RangzenService#getConnecting()}
      */
     private boolean readyToConnect() {
       long now = System.currentTimeMillis();
@@ -330,7 +330,7 @@ public class RangzenService extends Service {
                 socket.getOutputStream(),
                 true,
                 new FriendStore(RangzenService.this, StorageBase.ENCRYPTION_DEFAULT),
-                new MessageStore(RangzenService.this, StorageBase.ENCRYPTION_DEFAULT),
+                RangzenService.this.mMessageStore,
                 RangzenService.this.mExchangeCallback);
             (new Thread(mExchange)).start();
           } catch (IOException e) {
@@ -393,20 +393,14 @@ public class RangzenService extends Service {
         Log.i(TAG, "Got " + friendOverlap + " common friends in exchangeCallback");
         for (RangzenMessage message : newMessages) {
           Set<String> myFriends = mFriendStore.getAllFriends();
-          double stored = mMessageStore.getPriority(message.text);
-          double remote = message.priority;
-          double newPriority = Exchange.newPriority(remote, stored, friendOverlap, myFriends.size());
-          try {
-            if (mMessageStore.contains(message.text)) {
-              mMessageStore.updatePriority(message.text, newPriority);
-            } else {
-              mMessageStore.addMessage(message.text, newPriority);
-            }
-          } catch (IllegalArgumentException e) {
-            Log.e(TAG, String.format("Attempted to add/update message %s with priority (%f/%f)" +
-                                    ", %d friends, %d friends in common",
-                                    message.text, newPriority, message.priority, 
-                                    myFriends.size(), friendOverlap));
+          final RangzenMessageStore.RangzenAppMessage stored = mMessageStore.lookupByMessage(message.text);
+          if (stored != null) {
+            double storedPriority = stored.mPriority;
+            double remotePriority = message.priority;
+            double newPriority = Exchange.newPriority(remotePriority, storedPriority, friendOverlap, myFriends.size());
+            mMessageStore.updatePriority(message.text, newPriority);
+          } else {
+            mMessageStore.insertMessage(message);
           }
         }
         RangzenService.this.mPeerManager.recordExchangeTime(currentPeer, new Date());

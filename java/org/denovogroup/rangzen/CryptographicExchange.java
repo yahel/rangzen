@@ -30,16 +30,16 @@
  */
 package org.denovogroup.rangzen;
 
+import android.util.Log;
+
 import org.denovogroup.rangzen.Crypto.PrivateSetIntersection;
 import org.denovogroup.rangzen.Crypto.PrivateSetIntersection.ServerReplyTuple;
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-
-import android.util.Log;
 
 import okio.ByteString;
 
@@ -266,7 +266,7 @@ public class CryptographicExchange extends Exchange {
    * Pass-through constructor to superclass constructor.
    */
   public CryptographicExchange(InputStream in, OutputStream out, boolean asInitiator, 
-                               FriendStore friendStore, MessageStore messageStore, 
+                               FriendStore friendStore, RangzenMessageStore messageStore,
                                ExchangeCallback callback) throws IllegalArgumentException {
     super(in, out, asInitiator, friendStore, messageStore, callback);
   }
