@@ -46,7 +46,11 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
     private final Lock mWriteLock;
 
     public RangzenMessageStore(final Context context) {
-        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        this(context, DATABASE_NAME);
+    }
+
+    public RangzenMessageStore(final Context context, final String debugDatabaseName) {
+        super(context, debugDatabaseName, null, DATABASE_VERSION);
 
         mDbConnection = getWritableDatabase();
 
@@ -418,8 +422,8 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
 
     /* Sqlite Constants */
 
-    private static final String DATABASE_NAME = "message.db";
-    private static final int DATABASE_VERSION = 1;
+    public static final String DATABASE_NAME = "message.db";
+    public static final int DATABASE_VERSION = 1;
     public static final String MSG_TABLE = "messages";
 
     public static final String DROP_MSG_TABLE = "DROP TABLE IF EXISTS " + MSG_TABLE;
