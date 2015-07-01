@@ -31,11 +31,6 @@
 
 package org.denovogroup.rangzen;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.denovogroup.rangzen.MessageStore.Message;
-
 import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -48,15 +43,10 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.SystemClock;
-import android.os.Handler;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTabHost;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
@@ -73,10 +63,8 @@ import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -96,7 +84,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private static TextView mCurrentTextView;
     private static boolean mFirstTime = true;
     private static final String TAG = "Opener";
-    
+
     public static final String SAVE = "SAVE";
     public static final String RETWEET = "RETWEET";
 
@@ -106,7 +94,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private BroadcastReceiver receiver = new NewMessageReceiver();
 
     // Set When broadcast event will fire.
-    private IntentFilter filter = new IntentFilter(MessageStore.NEW_MESSAGE);
+    private IntentFilter filter = new IntentFilter("");
     public final static int POSTED_MESSAGE = 999;
 
     private final static int QR = 10;
@@ -128,8 +116,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                 Log.e(TAG, "SearchView Not Null");
                 searchView.setSearchableInfo(searchManager
                         .getSearchableInfo(getComponentName()));
-            } else 
-                Log.e(TAG, "SearchView Null");
+            } else { Log.e(TAG, "SearchView Null"); }
             searchView.setIconifiedByDefault(false);
         }
         return true;
@@ -177,15 +164,11 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
 
         setUpTabHost();
     }
-    
-    private void addMessagesToStore() {
-        MessageStore messageStore = new MessageStore(this,
-                StorageBase.ENCRYPTION_DEFAULT);
 
-        messageStore
-                .addMessage(
-                        "This is the Rangzen message feed. Messages in the ether will appear here.",
-                        1L);
+    private void addMessagesToStore() {
+        RangzenMessageStore.getInstance(getApplicationContext()).insertMessage(
+                "This is the Rangzen message feed. Messages in the ether will appear here.",
+                1D);
     }
 
     private void setUpTabHost() {
@@ -203,7 +186,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         mTabHost.addTab(mTabHost.newTabSpec("Trust").setIndicator("Trust"),
                 ListFragmentOrganizer.class, b);
         mTabHost.addTab(mTabHost.newTabSpec("Favorite")
-                .setIndicator("Favorite"), ListFragmentOrganizer.class, b3);
+                                .setIndicator("Favorite"), ListFragmentOrganizer.class, b3);
     }
 
     /**
@@ -249,7 +232,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      */
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position,
-            long id) {
+                            long id) {
         if (position != 1) {
             selectItem(position);
         }
@@ -277,9 +260,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     /**
      * Sets the title located in the ActionBar to be the title of the chosen
      * fragment.
-     * 
-     * @param title
-     *            The title of the page the user has chosen to navigate to.
+     *
+     * @param title The title of the page the user has chosen to navigate to.
      */
     public void setTitle(String title) {
         getSupportActionBar().setTitle(title);
@@ -306,7 +288,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      * Called whenever any activity launched from this activity exits. For
      * example, this is called when returning from the QR code activity,
      * providing us with the QR code (if any) that was scanned.
-     * 
+     *
      * @see Activity.onActivityResult
      */
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
@@ -337,10 +319,10 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                         + " friends.");
                 if (wasAdded) {
                     Toast.makeText(this, "Friend Added", Toast.LENGTH_SHORT)
-                            .show();
+                         .show();
                 } else {
                     Toast.makeText(this, "Already Friends", Toast.LENGTH_SHORT)
-                            .show();
+                         .show();
                 }
             } else {
                 // This can happen if the URI is well-formed (rangzen://<stuff>)
@@ -352,10 +334,10 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                         "Opener got back a supposed rangzen scheme code that didn't process to produce a public id:"
                                 + code);
                 Toast.makeText(this, "Invalid Friend Code", Toast.LENGTH_SHORT)
-                        .show();
+                     .show();
             }
         }
-        if (requestCode == POSTED_MESSAGE ) {
+        if (requestCode == POSTED_MESSAGE) {
             notifyDataSetChanged();
         }
     }
@@ -364,10 +346,9 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      * This handles the instantiation of all of the fragments when they are
      * chosen. This also transforms the title of the item in the list to bold
      * and a larger font.
-     * 
-     * @param position
-     *            The specific position in the ListView of the current fragment
-     *            chosen.
+     *
+     * @param position The specific position in the ListView of the current fragment
+     *                 chosen.
      */
     public void showFragment(int position) {
         if (position == 1) {
@@ -384,7 +365,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             Intent intent = new Intent();
             intent.setClass(this, InfoActivity.class);
             startActivityForResult(intent, MESSAGE); // reverts action bar back
-                                                     // to feed
+            // to feed
             return;
         } else {
             // debug screen
@@ -426,9 +407,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     /**
      * This is the broadcast receiver object that I am registering. I created a
      * new class in order to override onReceive functionality.
-     * 
+     *
      * @author jesus
-     * 
      */
     public class NewMessageReceiver extends BroadcastReceiver {
 
@@ -437,33 +417,32 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
          * added to the message store, (either by the user or by the active
          * services). The reason that the instanceof check is necessary is
          * because there are two possible routes of activity:
-         * 
+         * <p/>
          * 1) The previous/current fragment viewed could have been the about
          * fragment, if it was then the focused fragment is not a
          * ListFragmentOrganizer and when the user returns to the feed then the
          * feed will check its own data set and not crash.
-         * 
-<<<<<<< HEAD
-<<<<<<< HEAD
+         * <p/>
+         * <<<<<<< HEAD
+         * <<<<<<< HEAD
          * 2) The previous/current fragment is the feed, it needs to be notified
          * immediately that there was a change in the underlying dataset.
-=======
+         * =======
          * If the message is a NEW_MESSAGE and not SAVE_MESSAGE then create a
          * notification.
->>>>>>> Added remove, but it creates an error, fixed the saved count and regular count, fixed rows keeping their button clicks.
-=======
+         * >>>>>>> Added remove, but it creates an error, fixed the saved count and regular count, fixed rows keeping their button clicks.
+         * =======
          * If the message is a NEW_MESSAGE and not SAVE_MESSAGE then create a
          * notification.
->>>>>>> refs/remotes/origin/garcia43_favorite
+         * >>>>>>> refs/remotes/origin/garcia43_favorite
          */
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent.getAction() == MessageStore.NEW_MESSAGE) {
-                notifyDataSetChanged();
-                createNotification();
-            } else {
-                notifyDataSetChanged();
-            }
+//            if (intent.getAction() == MessageStore.NEW_MESSAGE) {
+//                notifyDataSetChanged();
+//                createNotification();
+//            }
+            notifyDataSetChanged();
         }
     }
 
@@ -477,7 +456,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             Log.d(TAG, "inside instanceof");
             ListFragmentOrganizer org = (ListFragmentOrganizer) feed;
             FeedListAdapter adapt = (FeedListAdapter) org.getListView()
-                    .getAdapter();
+                                                         .getAdapter();
 
             adapt.refresh();
             adapt.notifyDataSetChanged();
@@ -487,8 +466,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private void createNotification() {
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(
                 this).setSmallIcon(R.drawable.ic_launcher)
-                .setContentTitle("New Message")
-                .setContentText("You've received new messages.").setNumber(1);
+                     .setContentTitle("New Message")
+                     .setContentText("You've received new messages.").setNumber(1);
 
         NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
 
@@ -516,9 +495,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     /**
      * This is an onclick listener created in feed_row.xml. It's a button that
      * allows the user to save a message.
-     * 
-     * @param view
-     *            - This is the button view.
+     *
+     * @param view - This is the button view.
      */
     public void onSave(View view) {
 
@@ -530,12 +508,11 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         ViewGroup vg2 = (ViewGroup) vg.getParent(); // root
         TextView hashtagView = (TextView) vg2.getChildAt(0); // id-messageAndScore
 
-        MessageStore messageStore = new MessageStore(this,
-                StorageBase.ENCRYPTION_DEFAULT);
-        String text = hashtagView.getText().toString();
-        double p = messageStore.getPriority((text));
+//        MessageStore messageStore = new MessageStore(this, StorageBase.ENCRYPTION_DEFAULT);
+//        double p = messageStore.getPriority(text);
 
-        messageStore.saveMessage(text, p);
+        String text = hashtagView.getText().toString();
+        RangzenMessageStore.getInstance(getApplicationContext()).insertMessage(text, 1D);
 
         StorageBase m = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
         m.putInt(SAVE + hashtagView.getText().toString(), 1);
@@ -544,9 +521,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     /**
      * This is an onclick listener created in feed_row.xml. It's a button that
      * allows the user to delete a message.
-     * 
-     * @param view
-     *            - This is the button view.
+     *
+     * @param view - This is the button view.
      */
     public void onDelete(View view) {
         ViewGroup vg = (ViewGroup) view.getParent(); // rel layout
@@ -562,7 +538,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         if (feed instanceof ListFragmentOrganizer) {
             ListFragmentOrganizer org = (ListFragmentOrganizer) feed;
             final FeedListAdapter adapt = (FeedListAdapter) org.getListView()
-                    .getAdapter();
+                                                               .getAdapter();
 
             Animation anim = AnimationUtils.loadAnimation(this,
                     android.R.anim.slide_out_right);
@@ -580,9 +556,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
 
                 @Override
                 public void onAnimationEnd(Animation animation) {
-                    MessageStore ms = new MessageStore(getApplicationContext(),
-                            StorageBase.ENCRYPTION_DEFAULT);
-                    ms.deleteMessage(item);
+                    RangzenMessageStore.getInstance(getApplicationContext()).deleteMessage(item);
                     adapt.refresh();
                     adapt.notifyDataSetChanged();
                 }
@@ -594,15 +568,14 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     /**
      * This is an onclick listener created in feed_row.xml. It's a button that
      * allows the user to retweet a message.
-     * 
-     * @param view
-     *            - This is the button view.
+     *
+     * @param view - This is the button view.
      */
     public void onRetweet(View view) {
         ViewGroup vg = (ViewGroup) view.getParent(); // rel layout
         final RelativeLayout vg2 = (RelativeLayout) vg.getParent(); // root
         final TextView hashtagView = (TextView) vg2.getChildAt(0); // id-messageAndScore
-        
+
         ImageButton iv = (ImageButton) view;
         iv.setAdjustViewBounds(true);
         iv.setImageResource(R.drawable.ic_action_repeat_green);

@@ -31,18 +31,9 @@
 
 package org.denovogroup.rangzen;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
-import org.denovogroup.rangzen.MessageStore.Message;
-
-import android.app.Activity;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
-import android.database.DataSetObserver;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -51,43 +42,43 @@ import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.TextView.BufferType;
 
-public class FeedListAdapter extends ArrayAdapter<Message> {
+import org.denovogroup.rangzen.RangzenMessageStore.RangzenAppMessage;
+
+import java.util.HashMap;
+import java.util.List;
+
+public class FeedListAdapter extends ArrayAdapter<RangzenAppMessage> {
 
     HashMap<String, Integer> mIdMap = new HashMap<String, Integer>();
 
     protected final static String TAG = "FeedListAdapter";
 
-    protected int[] a = { R.drawable.ic_action_important_yellow,
-            R.drawable.ic_action_repeat_green, R.drawable.ic_action_discard_red };
+    protected int[] a = {R.drawable.ic_action_important_yellow,
+            R.drawable.ic_action_repeat_green, R.drawable.ic_action_discard_red};
 
-    protected int[] b = { R.drawable.ic_action_important,
-            R.drawable.ic_action_repeat, R.drawable.ic_action_discard };
+    protected int[] b = {R.drawable.ic_action_important,
+            R.drawable.ic_action_repeat, R.drawable.ic_action_discard};
 
     /**
      * Holds references to views so that findViewById() is not needed to be
      * called so many times.
      */
     protected ViewHolder mVH;
-    
 
     /**
      * Sets the feed text fields to be their values from messages from memory.
      * This finds the correct message at what position and populates recycled
      * views.
-     * 
-     * @param context
-     *            The context of the activity that spawned this class.
+     *
+     * @param context The context of the activity that spawned this class.
      */
-    public FeedListAdapter(Context context, int resource, List<Message> items) {
+    public FeedListAdapter(Context context, int resource, List<RangzenAppMessage> items) {
         super(context, resource, items);
     }
 
@@ -99,14 +90,11 @@ public class FeedListAdapter extends ArrayAdapter<Message> {
      * Navigates the treemap and finds the correct message from memory to
      * display at this position in the feed, then returns the row's view object,
      * fully populated with information.
-     * 
-     * @param position
-     *            The current row index in the feed.
-     * @param convertView
-     *            The view object that contains the row, or null is one has not
-     *            been initialized.
-     * @param parent
-     *            The parent of convertView.
+     *
+     * @param position    The current row index in the feed.
+     * @param convertView The view object that contains the row, or null is one has not
+     *                    been initialized.
+     * @param parent      The parent of convertView.
      */
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
@@ -133,12 +121,12 @@ public class FeedListAdapter extends ArrayAdapter<Message> {
             mVH = (ViewHolder) v.getTag();
         }
 
-        Message m = getItem(position);
-        ImageButton[] ib = { mVH.mFavorite, mVH.mRetweet, mVH.mTrash };
-        String[] saveRetweet = { Opener.SAVE, Opener.RETWEET, "" };
+        RangzenAppMessage m = getItem(position);
+        ImageButton[] ib = {mVH.mFavorite, mVH.mRetweet, mVH.mTrash};
+        String[] saveRetweet = {Opener.SAVE, Opener.RETWEET, ""};
 
         for (int i = 0; i < ib.length; i++) {
-            if (s.getInt(saveRetweet[i] + m.getMessage(), 0) == 0) {
+            if (s.getInt(saveRetweet[i] + m.mMessage, 0) == 0) {
                 ib[i].setImageResource(b[i]);
             } else {
                 ib[i].setImageResource(a[i]);
@@ -146,10 +134,10 @@ public class FeedListAdapter extends ArrayAdapter<Message> {
         }
 
         mVH.mHashtagView.setMovementMethod(LinkMovementMethod.getInstance());
-        mVH.mHashtagView.setText(applySpan(m.getMessage()),
+        mVH.mHashtagView.setText(applySpan(m.mMessage),
                 BufferType.SPANNABLE);
         mVH.mUpvoteView
-                .setText(Integer.toString((int) (100 * m.getPriority())));
+                .setText(Integer.toString((int) (100 * m.mPriority)));
 
         v.setId(position);
         return v;
@@ -159,9 +147,8 @@ public class FeedListAdapter extends ArrayAdapter<Message> {
      * Creates a span object for use in a spannable string in the list view for
      * the feed. It removes the underline usually in a span and has a custom
      * onClickListener.
-     * 
+     *
      * @author jesus
-     * 
      */
     class InnerSpan extends ClickableSpan {
 
@@ -194,9 +181,8 @@ public class FeedListAdapter extends ArrayAdapter<Message> {
      * Creates a SpannableString object for the TextView from the feed. It
      * applies multiple spans (for the possibly multiple) hashtags in a feed
      * message.
-     * 
-     * @param feedText
-     *            - Text in a feed ListView item.
+     *
+     * @param feedText - Text in a feed ListView item.
      * @return String to be placed in ListView TextView.
      */
     protected SpannableString applySpan(String feedText) {
@@ -221,12 +207,10 @@ public class FeedListAdapter extends ArrayAdapter<Message> {
         }
         return spannable;
     }
-    
+
     public void refresh() {
-        MessageStore m = new MessageStore(getContext(),
-                StorageBase.ENCRYPTION_DEFAULT);
-        List<Message> messages = m.getAllMessages(
-                MessageStore.NOT_SAVED_MESSAGES, null);
+        RangzenMessageStore m = RangzenMessageStore.getInstance(getContext());
+        List<RangzenAppMessage> messages = m.getAllMessages();
         Log.d(TAG, "get count = " + Integer.toString(getCount()));
         clear();
         if (messages.size() > 0) {

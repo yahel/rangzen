@@ -1,9 +1,5 @@
 package org.denovogroup.rangzen;
 
-import java.util.List;
-
-import org.denovogroup.rangzen.MessageStore.Message;
-
 import android.app.SearchManager;
 import android.content.Intent;
 import android.graphics.Color;
@@ -17,6 +13,10 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import org.denovogroup.rangzen.RangzenMessageStore.RangzenAppMessage;
+
+import java.util.List;
 
 public class SearchableActivity extends ActionBarActivity {
 
@@ -35,9 +35,8 @@ public class SearchableActivity extends ActionBarActivity {
             String query = intent.getStringExtra(SearchManager.QUERY);
             doSearch(query);
             ListView lv = (ListView) findViewById(android.R.id.list);
-            List<Message> messages = new MessageStore(this,
-                    StorageBase.ENCRYPTION_DEFAULT).getAllMessages(
-                    MessageStore.SEARCHED_MESSAGES, query);
+            List<RangzenAppMessage> messages =
+                    RangzenMessageStore.getInstance(getApplicationContext()).queryMessages(query);
 
             lv.setAdapter(new FeedListAdapter(this,
                     R.layout.feed_row_search, messages));
