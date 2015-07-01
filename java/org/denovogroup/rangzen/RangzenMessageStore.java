@@ -64,7 +64,8 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // Obviously, this will not do if you upgrade in the future, it will to have a data migration.
+        // Obviously, this will not do if you upgrade
+        // in the future, it will to have a data migration.
         db.execSQL(DROP_MSG_TABLE);
         onCreate(db);
     }
@@ -242,10 +243,12 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
     }
 
     /**
-     * Looks up a {@link RangzenMessageStore.RangzenAppMessage} by it's {@link RangzenMessageStore.RangzenAppMessage#mMessage}
+     * Looks up a {@link RangzenMessageStore.RangzenAppMessage}
+     * by it's {@link RangzenMessageStore.RangzenAppMessage#mMessage}
      *
      * @param messageString
-     * @return null if we don't find a message, otherwise the referenced {@link RangzenMessageStore.RangzenAppMessage}
+     * @return null if we don't find a message,
+     * otherwise the referenced {@link RangzenMessageStore.RangzenAppMessage}
      */
     public RangzenAppMessage lookupByMessage(final String messageString) {
         if (messageString == null) {
@@ -322,7 +325,8 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
         public final int _id;
 
         /**
-         * Used when we receive a message over the network, we can then serialize it for local storage
+         * Used when we receive a message over the network,
+         * we can then serialize it for local storage
          *
          * @param rangzenMessage - non-null Rangzen message
          */
@@ -360,7 +364,7 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
             mPriority = cursor.getDouble(cursor.getColumnIndex(RangzenMessageColumns.priority));
             mTimeStored = cursor.getLong(cursor.getColumnIndex(RangzenMessageColumns.timeStored));
             _id = cursor.getInt(cursor.getColumnIndex(RangzenMessageColumns._ID));
-            final String uuidString = cursor.getString(cursor.getColumnIndex(RangzenMessageColumns.id));
+            String uuidString = cursor.getString(cursor.getColumnIndex(RangzenMessageColumns.id));
             UUID uuid = null;
             if (!TextUtils.isEmpty(uuidString)) {
                 try {
@@ -430,8 +434,13 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
 
     public static final String WHERE_MESSAGE = RangzenMessageColumns.message + "=?";
 
-    public static final String SEARCH_FOR_MSG = "SELECT * FROM " + MSG_TABLE + " WHERE " + RangzenMessageColumns.message + " LIKE '%%%s%%' COLLATE NOCASE ORDER BY " + RangzenMessageColumns.priority + " COLLATE NOCASE;";
+    public static final String SEARCH_FOR_MSG =
+            "SELECT * FROM " + MSG_TABLE + " WHERE " + RangzenMessageColumns.message +
+                    " LIKE '%%%s%%' COLLATE NOCASE ORDER BY " + RangzenMessageColumns.priority +
+                    " COLLATE NOCASE;";
 
-    public static final String ORDER_BY_PRIORITY_THEN_CASE = RangzenMessageColumns.priority + " ASC, " + RangzenMessageColumns.message + "ASC";
-    public static final String ORDER_BY_PRIORITY_THEN_CASE_WITH_LIMIT = ORDER_BY_PRIORITY_THEN_CASE + " Limit = %d";
+    public static final String ORDER_BY_PRIORITY_THEN_CASE =
+            RangzenMessageColumns.priority + " ASC, " + RangzenMessageColumns.message + "ASC";
+    public static final String ORDER_BY_PRIORITY_THEN_CASE_WITH_LIMIT =
+            ORDER_BY_PRIORITY_THEN_CASE + " Limit = %d";
 }

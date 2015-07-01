@@ -393,11 +393,14 @@ public class RangzenService extends Service {
         Log.i(TAG, "Got " + friendOverlap + " common friends in exchangeCallback");
         for (RangzenMessage message : newMessages) {
           Set<String> myFriends = mFriendStore.getAllFriends();
-          final RangzenMessageStore.RangzenAppMessage stored = mMessageStore.lookupByMessage(message.text);
+          final RangzenMessageStore.RangzenAppMessage stored =
+                  mMessageStore.lookupByMessage(message.text);
           if (stored != null) {
             double storedPriority = stored.mPriority;
             double remotePriority = message.priority;
-            double newPriority = Exchange.newPriority(remotePriority, storedPriority, friendOverlap, myFriends.size());
+            double newPriority =
+                    Exchange.newPriority(remotePriority, storedPriority,
+                            friendOverlap, myFriends.size());
             mMessageStore.updatePriority(message.text, newPriority);
           } else {
             mMessageStore.insertMessage(message.text, message.priority);

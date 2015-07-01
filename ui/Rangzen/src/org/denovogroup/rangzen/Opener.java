@@ -430,7 +430,8 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
          * =======
          * If the message is a NEW_MESSAGE and not SAVE_MESSAGE then create a
          * notification.
-         * >>>>>>> Added remove, but it creates an error, fixed the saved count and regular count, fixed rows keeping their button clicks.
+         * >>>>>>> Added remove, but it creates an error, fixed the saved count and
+         * regular count, fixed rows keeping their button clicks.
          * =======
          * If the message is a NEW_MESSAGE and not SAVE_MESSAGE then create a
          * notification.
