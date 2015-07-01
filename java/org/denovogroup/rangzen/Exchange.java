@@ -35,6 +35,8 @@ import android.util.Log;
 import com.squareup.wire.Message;
 import com.squareup.wire.Wire;
 
+import org.denovogroup.rangzen.RangzenMessageStore.RangzenAppMessage;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -200,8 +202,12 @@ public class Exchange implements Runnable {
    * @see {@link Exchange#NUM_MESSAGES_TO_SEND};
    */
   /* package */ List<RangzenMessage> getMessages() {
-    final List<RangzenMessage> messagesToSend = messageStore.getKMessages(NUM_MESSAGES_TO_SEND);
-    return messagesToSend;
+    final List<RangzenAppMessage> messagesFromDb = messageStore.getKMessages(NUM_MESSAGES_TO_SEND);
+    final List<RangzenMessage> messages = new ArrayList<RangzenMessage>(messagesFromDb.size());
+    for (RangzenAppMessage appMessage : messagesFromDb) {
+      messages.add(new RangzenMessage(appMessage.mMessage, appMessage.mPriority));
+    }
+    return messages;
   }
 
   /**
@@ -209,9 +215,13 @@ public class Exchange implements Runnable {
    * object, and write that Message out to the output stream.
    */
   private void sendMessages() {
-    final List<RangzenMessage> messagesToSend = messageStore.getKMessages(NUM_MESSAGES_TO_SEND);
+    final List<RangzenAppMessage> messagesFromDb = messageStore.getKMessages(NUM_MESSAGES_TO_SEND);
+    final List<RangzenMessage> messages = new ArrayList<RangzenMessage>(messagesFromDb.size());
+    for (RangzenAppMessage appMessage : messagesFromDb) {
+      messages.add(new RangzenMessage(appMessage.mMessage, appMessage.mPriority));
+    }
     final CleartextMessages messagesMessage = new CleartextMessages.Builder()
-                                                             .messages(messagesToSend)
+                                                             .messages(messages)
                                                              .build();
     lengthValueWrite(out, messagesMessage); 
   }

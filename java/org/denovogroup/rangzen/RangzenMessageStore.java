@@ -3,6 +3,7 @@ package org.denovogroup.rangzen;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
@@ -44,7 +45,7 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
     private final Lock mReadLock;
     private final Lock mWriteLock;
 
-    private RangzenMessageStore(final Context context) {
+    public RangzenMessageStore(final Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
 
         mDbConnection = getWritableDatabase();
@@ -69,6 +70,10 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
     }
 
     /* Public API */
+
+    public long getMessageCount() {
+        return DatabaseUtils.queryNumEntries(mDbConnection, MSG_TABLE);
+    }
 
     public List<RangzenAppMessage> queryMessages(final String messageQuery) {
         final List<RangzenAppMessage> returnList = new ArrayList<>();
@@ -128,10 +133,11 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
      * @param kMsgs a int > 0, the function will return up to kMsgs of RangzenMessage
      * @return up to kMsgs of RangzenMessages
      */
-    public List<RangzenMessage> getKMessages(final int kMsgs) {
-        if (kMsgs <= 0) { throw new IllegalArgumentException("kMsgs is <= 0"); }
+    public List<RangzenAppMessage> getKMessages(final int kMsgs) {
+        if (kMsgs <= 0) { return null; }
+//        if (kMsgs <= 0) { throw new IllegalArgumentException("kMsgs is <= 0"); }
 
-        final List<RangzenMessage> returnList = new ArrayList<>(kMsgs);
+        final List<RangzenAppMessage> returnList = new ArrayList<>(kMsgs);
 
         Cursor cursor;
 
@@ -139,7 +145,7 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
         try {
             cursor = mDbConnection.query(
                     MSG_TABLE,// Table to query
-                    new String[]{RangzenMessageColumns.message, RangzenMessageColumns.priority},// Return only these two columns
+                    null,// Return only these two columns
                     null,     // no query string
                     null,     // no query string
                     null,     // group by - default
@@ -152,23 +158,11 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
 
         if (cursor != null) {
             while (cursor.moveToNext()) {
-                final String message = cursor.getString(cursor.getColumnIndex(RangzenMessageColumns.message));
-                final double priority = cursor.getDouble(cursor.getColumnIndex(RangzenMessageColumns.priority));
-                returnList.add(new RangzenMessage.Builder().text(message).priority(priority).build());
+                returnList.add(new RangzenAppMessage(cursor));
             }
         }
 
         return returnList;
-    }
-
-    /**
-     * Creates a new row inserting this message, any other message with the same
-     * message body IS REMOVED.
-     *
-     * @param rangzenMessage
-     */
-    public void insertMessage(final RangzenMessage rangzenMessage) {
-        this.insertMessage(new RangzenAppMessage(rangzenMessage));
     }
 
     /**
@@ -403,6 +397,19 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
             public static String id = "rangzen_id";
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) { return true; }
+
+            if (o == null || !(o instanceof RangzenAppMessage) || this.mMessage == null) {
+                return false;
+            }
+
+            final RangzenAppMessage appMessage = (RangzenAppMessage) o;
+            if (appMessage.mMessage == null) { return false; }
+
+            return this.mMessage.equals(appMessage.mMessage);
+        }
     }
 
     /* Sqlite Constants */

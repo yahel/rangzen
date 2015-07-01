@@ -400,7 +400,7 @@ public class RangzenService extends Service {
             double newPriority = Exchange.newPriority(remotePriority, storedPriority, friendOverlap, myFriends.size());
             mMessageStore.updatePriority(message.text, newPriority);
           } else {
-            mMessageStore.insertMessage(message);
+            mMessageStore.insertMessage(message.text, message.priority);
           }
         }
         RangzenService.this.mPeerManager.recordExchangeTime(currentPeer, new Date());
