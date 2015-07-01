@@ -86,7 +86,7 @@ public class ExchangeTest {
   private PipedInputStream testInputStream;
 
   /** A message store to pass to the exchange. */
-  private MessageStore messageStore;
+  private RangzenMessageStore messageStore;
   /** A friend store to pass to the exchange. */
   private FriendStore friendStore;
 
@@ -121,7 +121,7 @@ public class ExchangeTest {
 
     SlidingPageIndicator context = Robolectric.buildActivity(SlidingPageIndicator.class).create().get();
 
-    messageStore = new MessageStore(context, StorageBase.ENCRYPTION_DEFAULT); 
+    messageStore = new RangzenMessageStore(context);
     friendStore = new FriendStore(context, StorageBase.ENCRYPTION_DEFAULT); 
 
 
@@ -184,7 +184,6 @@ public class ExchangeTest {
   public void asInitiatorEmptyLists() throws IOException {
     // friendStore is empty, messageStore is empty.
     assertTrue(friendStore.getAllFriends().isEmpty());
-    assertNull(messageStore.getKthMessage(0, MessageStore.NOT_SAVED_MESSAGES));
 
     // TODO(lerner): Figure out how to send these friends after receiving
     // so we can prove that the Exchange is transmitting first.
@@ -215,7 +214,6 @@ public class ExchangeTest {
   public void notAsInitiatorEmptyLists() throws IOException {
     // friendStore is empty, messageStore is empty.
     assertTrue(friendStore.getAllFriends().isEmpty());
-    assertNull(messageStore.getKthMessage(0, MessageStore.NOT_SAVED_MESSAGES));
 
     // Send some friends
     assertTrue(Exchange.lengthValueWrite(testOutputStream, nullFriends));
@@ -307,8 +305,8 @@ public class ExchangeTest {
     // More complicated for known messages due to the above check about using the
     // max of the computed priority and the local priority.
     for (int inCommon=0; inCommon<NUM_FRIENDS; inCommon++) {
-      assertTrue(Exchange.newPriority(TEST_PRIORITY, MessageStore.NOT_FOUND, inCommon, NUM_FRIENDS) <
-                 Exchange.newPriority(TEST_PRIORITY, MessageStore.NOT_FOUND, inCommon + 1, NUM_FRIENDS));
+      assertTrue(Exchange.newPriority(TEST_PRIORITY, -2.0D, inCommon, NUM_FRIENDS) <
+                 Exchange.newPriority(TEST_PRIORITY, -2.0D, inCommon + 1, NUM_FRIENDS));
     }
     
                                                                         

@@ -20,6 +20,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class RangzenMessageStore extends SQLiteOpenHelper {
 
+    /* Static Access */
+
     private static RangzenMessageStore sRangezenMessageStore;
 
     /**
@@ -39,6 +41,12 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
 
         return sRangezenMessageStore;
     }
+
+    public static boolean priorityAcceptable(final double priority) {
+        return priority >= 0.0D && priority <= 2.0D;
+    }
+
+    /* Start Instance */
 
     private final SQLiteDatabase mDbConnection;
     private final DbCountMonitor mMonitor;
@@ -136,14 +144,17 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
      * alphabetically.
      *
      * @param kMsgs a int > 0, the function will return up to kMsgs of RangzenMessage
-     * @return up to kMsgs of RangzenMessages
+     * @throws IllegalArgumentException - if {@code kMsgs} is <= 0
      */
-    public List<RangzenAppMessage> getKMessages(final int kMsgs) {
-        if (kMsgs <= 0) { return null; }
+    public List<RangzenAppMessage> getKMessages(final int kMsgs) throws IllegalArgumentException {
+        if (kMsgs <= 0) {
+            throw new IllegalArgumentException(String.format("kMsgs is <= 0 kMsgs:%s", kMsgs));
+        }
 //        if (kMsgs <= 0) { throw new IllegalArgumentException("kMsgs is <= 0"); }
 
         final List<RangzenAppMessage> returnList = new ArrayList<>(kMsgs);
-
+        final String query = String.format(ORDER_BY_PRIORITY_THEN_CASE_WITH_LIMIT, kMsgs);
+        System.out.println("XXX- " + query);
         Cursor cursor;
 
         mReadLock.lock();
@@ -155,7 +166,7 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
                     null,     // no query string
                     null,     // group by - default
                     null,     // having   - default
-                    String.format(ORDER_BY_PRIORITY_THEN_CASE_WITH_LIMIT, kMsgs));// order by
+                    query);// order by
         } finally {
             mReadLock.unlock();
         }
@@ -191,7 +202,7 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
         if (rangzenMessage == null) {
             throw new IllegalArgumentException("rangzenMessage can not be null");
         }
-        if (rangzenMessage.mPriority < 0D || rangzenMessage.mPriority > 1D) {
+        if (!priorityAcceptable(rangzenMessage.mPriority)) {
             throw new IllegalArgumentException("rangzenMessage priority out of bounds");
         }
         if (TextUtils.isEmpty(rangzenMessage.mMessage)) {
@@ -221,11 +232,11 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
      * @param messageString
      * @param newPriority
      */
-    public void updatePriority(final String messageString, final double newPriority) {
+    public boolean updatePriority(final String messageString, final double newPriority) {
         if (messageString == null) {
             throw new IllegalArgumentException("messageString can not be null");
         }
-        if (newPriority < 0D || newPriority > 1D) {
+        if (!priorityAcceptable(newPriority)) {
             throw new IllegalArgumentException("rangzenMessage priority out of bounds");
         }
 
@@ -236,11 +247,13 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
         lockForWrite();
 
         try {
-            mDbConnection.update(
+            final int effectedColumns = mDbConnection.update(
                     MSG_TABLE,             // Table to query
                     contentValues,         // update the priority
                     WHERE_MESSAGE,         // get all where the messageString \/
                     new String[]{messageString});// message query string
+
+            return effectedColumns > 0;
         } finally {
             unlockForWrite();
         }
@@ -294,6 +307,12 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
         }
     }
 
+    public void deleteAll() {
+        lockForWrite();
+        mDbConnection.execSQL("delete from " + MSG_TABLE);
+        unlockForWrite();
+    }
+
     /* Private */
 
     private void lockForWrite() {
@@ -345,7 +364,6 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
             mId = UUID.randomUUID();
             _id = -1;
         }
-
 
         /**
          * Empty constructor, object is invalid.
@@ -407,16 +425,42 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) { return true; }
+            if (this == o) {
+                System.out.println("true - 1");
+                return true;
+            }
 
             if (o == null || !(o instanceof RangzenAppMessage) || this.mMessage == null) {
+                System.out.println("false - 1");
                 return false;
             }
 
             final RangzenAppMessage appMessage = (RangzenAppMessage) o;
-            if (appMessage.mMessage == null) { return false; }
+            System.out.println("comparing some shit");
+            System.out.println(this.toString());
+            System.out.println(appMessage.toString());
 
-            return this.mMessage.equals(appMessage.mMessage);
+            if (appMessage.mMessage == null) {
+                System.out.println("false - 2");
+                return false;
+            }
+
+            final boolean compare = this.mMessage.equals(appMessage.mMessage);
+            System.out.println("final" + compare);
+
+            return compare;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append("mId:").append(mId.toString());
+            stringBuilder.append(" mMessage:").append(mMessage);
+            stringBuilder.append(" mPriority:").append(mPriority);
+            stringBuilder.append(" mTimeStored:").append(mTimeStored);
+            stringBuilder.append(" _id:").append(_id);
+
+            return stringBuilder.toString();
         }
     }
 
@@ -444,7 +488,7 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
                     " COLLATE NOCASE;";
 
     public static final String ORDER_BY_PRIORITY_THEN_CASE =
-            RangzenMessageColumns.priority + " ASC, " + RangzenMessageColumns.message + "ASC";
+            RangzenMessageColumns.priority + " DESC, " + RangzenMessageColumns.message + " DESC";
     public static final String ORDER_BY_PRIORITY_THEN_CASE_WITH_LIMIT =
-            ORDER_BY_PRIORITY_THEN_CASE + " Limit = %d";
+            ORDER_BY_PRIORITY_THEN_CASE + " Limit %d";
 }
