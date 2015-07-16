@@ -48,7 +48,6 @@ public class DbCountMonitor {
         mCursorListeners.remove(cursorListener);
     }
 
-
     private void notifyAllListeners() {
         mHandler.post(new Runnable() {
             @Override

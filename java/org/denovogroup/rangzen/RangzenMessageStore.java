@@ -2,6 +2,7 @@ package org.denovogroup.rangzen;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
@@ -21,6 +22,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class RangzenMessageStore extends SQLiteOpenHelper {
 
     /* Static Access */
+
+    public static final String BROADCAST_STRING = "org.denovo.rangzen.MESSAGES_UPDATED";
 
     private static RangzenMessageStore sRangezenMessageStore;
 
@@ -48,6 +51,7 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
 
     /* Start Instance */
 
+    private final Context mContext;
     private final SQLiteDatabase mDbConnection;
     private final DbCountMonitor mMonitor;
     private final Lock mReadLock;
@@ -60,6 +64,7 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
     public RangzenMessageStore(final Context context, final String debugDatabaseName) {
         super(context, debugDatabaseName, null, DATABASE_VERSION);
 
+        mContext = context;
         mDbConnection = getWritableDatabase();
 
         mMonitor = new DbCountMonitor();
@@ -83,6 +88,34 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
     }
 
     /* Public API */
+
+    public void setDbListener(final DbCountMonitor.CursorListener cursorListener) {
+        mMonitor.addListener(cursorListener);
+    }
+
+    public void removeDbListener(final DbCountMonitor.CursorListener cursorListener) {
+        mMonitor.removeListener(cursorListener);
+    }
+
+    public Cursor getAllMessageCursor() {
+        Cursor cursor;
+
+        mReadLock.lock();
+        try {
+            cursor = mDbConnection.query(
+                    MSG_TABLE,// Table to query
+                    null,     // all columns
+                    null,     // no query string
+                    null,     // no query string
+                    null,     // group by - default
+                    null,     // having   - default
+                    null);    // order by
+        } finally {
+            mReadLock.unlock();
+        }
+
+        return cursor;
+    }
 
     public long getMessageCount() {
         return DatabaseUtils.queryNumEntries(mDbConnection, MSG_TABLE);
@@ -315,6 +348,10 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
 
     /* Private */
 
+    private void broadcastChange() {
+        mContext.sendBroadcast(new Intent(BROADCAST_STRING));
+    }
+
     private void lockForWrite() {
         mWriteLock.lock();
 
@@ -327,6 +364,7 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
         if (mMonitor.notifyListeners()) {
             mDbConnection.setTransactionSuccessful();
             mDbConnection.endTransaction();
+            broadcastChange();
         }
 
         mWriteLock.unlock();
@@ -425,28 +463,17 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) {
-                System.out.println("true - 1");
-                return true;
-            }
+            if (this == o) { return true; }
 
             if (o == null || !(o instanceof RangzenAppMessage) || this.mMessage == null) {
-                System.out.println("false - 1");
                 return false;
             }
 
             final RangzenAppMessage appMessage = (RangzenAppMessage) o;
-            System.out.println("comparing some shit");
-            System.out.println(this.toString());
-            System.out.println(appMessage.toString());
 
-            if (appMessage.mMessage == null) {
-                System.out.println("false - 2");
-                return false;
-            }
+            if (appMessage.mMessage == null) { return false; }
 
             final boolean compare = this.mMessage.equals(appMessage.mMessage);
-            System.out.println("final" + compare);
 
             return compare;
         }

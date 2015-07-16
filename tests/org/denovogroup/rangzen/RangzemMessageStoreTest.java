@@ -112,6 +112,30 @@ public class RangzemMessageStoreTest {
     }
 
     /**
+     * Tests the RangzenAppMessage object.
+     */
+    @Test
+    public void testRangzenAppMessageObject() {
+        storeMessages();
+
+        final List<RangzenMessageStore.RangzenAppMessage> messageList = store.getAllMessages();
+        assertNotNull(messageList);
+        assertFalse(messageList.isEmpty());
+
+        final int messageListSize = messageList.size();
+
+        final RangzenMessageStore.RangzenAppMessage appMessage = messageList.get(0);
+        assertNotNull(appMessage);
+        final RangzenMessageStore.RangzenAppMessage appMessage2 = store.lookupByMessage(appMessage.mMessage);
+        assertNotNull(appMessage2);
+
+        assertTrue(appMessage.equals(appMessage));
+        assertTrue(appMessage.equals(appMessage2));
+        assertTrue(messageList.remove(appMessage));
+        assertTrue(messageListSize - 1 == messageList.size());
+    }
+
+    /**
      * Regression test for the bug where getKMessages messages only returned one message
      * per unique priority score.
      */
