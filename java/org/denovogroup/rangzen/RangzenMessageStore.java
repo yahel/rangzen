@@ -15,6 +15,7 @@ import org.denovogroup.rangzen.RangzenMessageStore.RangzenAppMessage.RangzenMess
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -45,22 +46,84 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
         return sRangezenMessageStore;
     }
 
+    /**
+     * A helper method for if a priority is within the bounds of acceptable priorities
+     *
+     * @param priority
+     * @return
+     */
     public static boolean priorityAcceptable(final double priority) {
         return priority >= 0.0D && priority <= 2.0D;
     }
 
+    /* Sqlite Constants */
+
+    /** The sqlite3 db file name */
+    public static final String DATABASE_NAME = "message.db";
+    /** The db version */
+    public static final int DATABASE_VERSION = 1;
+    /** The table in the db file where we store the messages */
+    public static final String MSG_TABLE = "messages";
+
+    /** Raw sqlite3 that removes the msg table from our db */
+    public static final String DROP_MSG_TABLE = "DROP TABLE IF EXISTS " + MSG_TABLE;
+
+    /** Raw sqlite3 that creates our db */
+    public static final String CREATE_MSG_TABLE = "CREATE TABLE " + MSG_TABLE + " (" +
+            RangzenMessageColumns._ID + " INTEGER PRIMARY KEY, "
+            + RangzenMessageColumns.message + " TEXT, "
+            + RangzenMessageColumns.id + " TEXT, "
+            + RangzenMessageColumns.priority + " DOUBLE, "
+            + RangzenMessageColumns.timeStored + " LONG"
+            + ");";
+
+    /** Android sqlite3 queries the message row */
+    public static final String WHERE_MESSAGE = RangzenMessageColumns.message + "=?";
+
+    /** Raw sqlite3 that searches for a message CONTAINING %s */
+    public static final String SEARCH_FOR_MSG =
+            "SELECT * FROM " + MSG_TABLE + " WHERE " + RangzenMessageColumns.message +
+                    " LIKE '%%%s%%' COLLATE NOCASE ORDER BY " + RangzenMessageColumns.priority +
+                    " COLLATE NOCASE;";
+
+    /** Android sqlite3 that orders our results by priority and then alpha */
+    public static final String ORDER_BY_PRIORITY_THEN_CASE =
+            RangzenMessageColumns.priority + " DESC, " + RangzenMessageColumns.message + " DESC";
+
+    /** Same as ORDER_BY_PRIORITY_THEN_CASE but also limits the number of results */
+    public static final String ORDER_BY_PRIORITY_THEN_CASE_WITH_LIMIT =
+            ORDER_BY_PRIORITY_THEN_CASE + " Limit %d";
+
     /* Start Instance */
 
+    /** Android application context */
     private final Context mContext;
+    /** Helper for storing listeners */
     private final SQLiteDatabase mDbConnection;
+    /** Write lock, we allow nested calls into write calls */
+    private final AtomicInteger mWriteCount;
+    /** Helper that notifies listeners when db changes occure */
     private final DbCountMonitor mMonitor;
+    /** read lock for sqlite */
     private final Lock mReadLock;
+    /** write lock for sqlite */
     private final Lock mWriteLock;
 
+    /**
+     * Standard constructor,
+     *
+     * @param context - a non-null context.
+     */
     public RangzenMessageStore(final Context context) {
         this(context, DATABASE_NAME);
     }
 
+    /**
+     * Debug constructor, will create a db with the name {@code debugDatabaseName}
+     *
+     * @param context           - a non-null context.
+     * @param debugDatabaseName - name of the data store to create.
+     */
     public RangzenMessageStore(final Context context, final String debugDatabaseName) {
         super(context, debugDatabaseName, null, DATABASE_VERSION);
 
@@ -69,6 +132,7 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
 
         mMonitor = new DbCountMonitor();
 
+        mWriteCount = new AtomicInteger(0);
         final ReadWriteLock readWriteLock = new ReentrantReadWriteLock(true);
         mReadLock = readWriteLock.readLock();
         mWriteLock = readWriteLock.writeLock();
@@ -89,14 +153,32 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
 
     /* Public API */
 
-    public void setDbListener(final DbCountMonitor.CursorListener cursorListener) {
+    /**
+     * Set a Listener waiting for changes to the datastore. This must be called on the
+     * UI thread.
+     *
+     * @param cursorListener
+     */
+    public void setDbListener(final DbCountMonitor.DbListener cursorListener) {
         mMonitor.addListener(cursorListener);
     }
 
-    public void removeDbListener(final DbCountMonitor.CursorListener cursorListener) {
-        mMonitor.removeListener(cursorListener);
+    /**
+     * Removes a {@link DbCountMonitor.DbListener} if it is currently in the listener list.
+     * this must be called on the UI thread.
+     *
+     * @param dbListener
+     */
+    public void removeDbListener(final DbCountMonitor.DbListener dbListener) {
+        mMonitor.removeListener(dbListener);
     }
 
+    /**
+     * Returns a cursor, set prior to the first item, containing all
+     * {@link org.denovogroup.rangzen.RangzenMessageStore.RangzenAppMessage} in the db.
+     *
+     * @return
+     */
     public Cursor getAllMessageCursor() {
         Cursor cursor;
 
@@ -117,10 +199,22 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
         return cursor;
     }
 
+    /**
+     * Get number of messages currently contained in the db
+     *
+     * @return - number of messages.
+     */
     public long getMessageCount() {
         return DatabaseUtils.queryNumEntries(mDbConnection, MSG_TABLE);
     }
 
+    /**
+     * Gets a list of {@link org.denovogroup.rangzen.RangzenMessageStore.RangzenAppMessage}
+     * currently stored in the db that have the exact message {@code messageQuery}
+     *
+     * @param messageQuery
+     * @return
+     */
     public List<RangzenAppMessage> queryMessages(final String messageQuery) {
         final List<RangzenAppMessage> returnList = new ArrayList<>();
 
@@ -143,6 +237,12 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
         return returnList;
     }
 
+    /**
+     * Gets a list of all {@link org.denovogroup.rangzen.RangzenMessageStore.RangzenAppMessage}
+     * all stored in the db.
+     *
+     * @return
+     */
     public List<RangzenAppMessage> getAllMessages() {
         final List<RangzenAppMessage> returnList = new ArrayList<>();
 
@@ -183,7 +283,6 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
         if (kMsgs <= 0) {
             throw new IllegalArgumentException(String.format("kMsgs is <= 0 kMsgs:%s", kMsgs));
         }
-//        if (kMsgs <= 0) { throw new IllegalArgumentException("kMsgs is <= 0"); }
 
         final List<RangzenAppMessage> returnList = new ArrayList<>(kMsgs);
         final String query = String.format(ORDER_BY_PRIORITY_THEN_CASE_WITH_LIMIT, kMsgs);
@@ -194,12 +293,12 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
         try {
             cursor = mDbConnection.query(
                     MSG_TABLE,// Table to query
-                    null,// Return only these two columns
+                    null,     // Return only these two columns
                     null,     // no query string
                     null,     // no query string
                     null,     // group by - default
                     null,     // having   - default
-                    query);// order by
+                    query);   // order by
         } finally {
             mReadLock.unlock();
         }
@@ -340,6 +439,9 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
         }
     }
 
+    /**
+     * Deletes ALL messages in the db.
+     */
     public void deleteAll() {
         lockForWrite();
         mDbConnection.execSQL("delete from " + MSG_TABLE);
@@ -355,13 +457,13 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
     private void lockForWrite() {
         mWriteLock.lock();
 
-        if (mMonitor.willNotifyListeners()) {
+        if (mWriteCount.getAndIncrement() == 0) {
             mDbConnection.beginTransaction();
         }
     }
 
     private void unlockForWrite() {
-        if (mMonitor.notifyListeners()) {
+        if (mWriteCount.decrementAndGet() == 0) {
             mDbConnection.setTransactionSuccessful();
             mDbConnection.endTransaction();
             broadcastChange();
@@ -372,6 +474,9 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
 
     /* Db Message object */
 
+    /**
+     * Represents a Rangzen Message
+     */
     public static class RangzenAppMessage {
 
         /** The message body */
@@ -491,31 +596,5 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
         }
     }
 
-    /* Sqlite Constants */
 
-    public static final String DATABASE_NAME = "message.db";
-    public static final int DATABASE_VERSION = 1;
-    public static final String MSG_TABLE = "messages";
-
-    public static final String DROP_MSG_TABLE = "DROP TABLE IF EXISTS " + MSG_TABLE;
-
-    public static final String CREATE_MSG_TABLE = "CREATE TABLE " + MSG_TABLE + " (" +
-            RangzenMessageColumns._ID + " INTEGER PRIMARY KEY, "
-            + RangzenMessageColumns.message + " TEXT, "
-            + RangzenMessageColumns.id + " TEXT, "
-            + RangzenMessageColumns.priority + " DOUBLE, "
-            + RangzenMessageColumns.timeStored + " LONG"
-            + ");";
-
-    public static final String WHERE_MESSAGE = RangzenMessageColumns.message + "=?";
-
-    public static final String SEARCH_FOR_MSG =
-            "SELECT * FROM " + MSG_TABLE + " WHERE " + RangzenMessageColumns.message +
-                    " LIKE '%%%s%%' COLLATE NOCASE ORDER BY " + RangzenMessageColumns.priority +
-                    " COLLATE NOCASE;";
-
-    public static final String ORDER_BY_PRIORITY_THEN_CASE =
-            RangzenMessageColumns.priority + " DESC, " + RangzenMessageColumns.message + " DESC";
-    public static final String ORDER_BY_PRIORITY_THEN_CASE_WITH_LIMIT =
-            ORDER_BY_PRIORITY_THEN_CASE + " Limit %d";
 }
