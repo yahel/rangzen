@@ -466,6 +466,8 @@ public class RangzenMessageStore extends SQLiteOpenHelper {
         if (mWriteCount.decrementAndGet() == 0) {
             mDbConnection.setTransactionSuccessful();
             mDbConnection.endTransaction();
+
+            mMonitor.notifyAllListeners();
             broadcastChange();
         }
 
