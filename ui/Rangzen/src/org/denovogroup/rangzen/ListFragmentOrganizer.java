@@ -31,20 +31,15 @@
 
 package org.denovogroup.rangzen;
 
-import android.graphics.Bitmap;
-import android.graphics.Point;
-import android.graphics.drawable.BitmapDrawable;
 import java.util.List;
 
-import org.denovogroup.rangzen.MessageStore.Message;
+import org.denovogroup.rangzen.RangzenMessageStore.RangzenAppMessage;
 
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.ListView;
 
 /**
@@ -79,19 +74,17 @@ public class ListFragmentOrganizer extends ListFragment {
 
         ListView listView = (ListView) view.findViewById(android.R.id.list);
 
-        MessageStore m = new MessageStore(getActivity(),
-                StorageBase.ENCRYPTION_DEFAULT);
+
+        RangzenMessageStore m = RangzenMessageStore.getInstance(getActivity());
 
         if (whichScreen == FragmentType.FEED) {
-            List<Message> messages = m.getAllMessages(
-                    MessageStore.NOT_SAVED_MESSAGES, null);
+            List<RangzenAppMessage> messages = m.getAllMessages();
             FeedListAdapter mFeedListAdaper = new FeedListAdapter(
                     getActivity(), R.layout.feed_row, messages);
             listView.setAdapter(mFeedListAdaper);
         }
         if (whichScreen == FragmentType.SAVED) {
-            List<Message> messages = m.getAllMessages(
-                    MessageStore.SAVED_MESSAGES, null);
+            List<RangzenAppMessage> messages = m.getAllMessages();
             SavedFeedListAdapter f = new SavedFeedListAdapter(getActivity(),
                     R.layout.feed_row_save, messages);
             listView.setAdapter(f);

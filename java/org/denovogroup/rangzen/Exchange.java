@@ -30,14 +30,15 @@
  */
 package org.denovogroup.rangzen;
 
-import com.squareup.wire.Wire;
-import com.squareup.wire.Message;
-
 import android.util.Log;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import com.squareup.wire.Message;
+import com.squareup.wire.Wire;
+
+import org.denovogroup.rangzen.RangzenMessageStore.RangzenAppMessage;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -55,7 +56,7 @@ public class Exchange implements Runnable {
   /** Store of friends to use in this exchange. */
   /* package */ FriendStore friendStore;
   /** Store of messages to use in this exchange. */
-  /* package */ MessageStore messageStore;
+  /* package */ RangzenMessageStore messageStore;
   /** Input stream connected to the remote communication partner. */
   /* package */ InputStream in;
   /** Output stream connected to the remote communication partner. */
@@ -143,7 +144,7 @@ public class Exchange implements Runnable {
    * @param messageStore A store of messages to exchange with the remote peer.
    */
   public Exchange(InputStream in, OutputStream out, boolean asInitiator, 
-                  FriendStore friendStore, MessageStore messageStore, 
+                  FriendStore friendStore, RangzenMessageStore messageStore,
                   ExchangeCallback callback) throws IllegalArgumentException {
     this.in = in;
     this.out = out;
@@ -198,19 +199,13 @@ public class Exchange implements Runnable {
    * return them. If no messages, returns a empty list.
    *
    * @return The top NUM_MESSAGES_TO_SEND in the MessageStore.
-   * @see NUM_MESSAGES_TO_SEND;
+   * @see {@link Exchange#NUM_MESSAGES_TO_SEND};
    */
-  /* package */ List<RangzenMessage> getMessages() { 
-    List<RangzenMessage> messages = new ArrayList<RangzenMessage>();
-    for (int k=0; k<NUM_MESSAGES_TO_SEND; k++) {
-      MessageStore.Message messageFromStore = messageStore.getKthMessage(k, 0, null);
-      if (messageFromStore == null) {
-        break;
-      }
-      messages.add(new RangzenMessage.Builder()
-                                     .text(messageFromStore.getMessage())
-                                     .priority(messageFromStore.getPriority())
-                                     .build());
+  /* package */ List<RangzenMessage> getMessages() {
+    final List<RangzenAppMessage> messagesFromDb = messageStore.getKMessages(NUM_MESSAGES_TO_SEND);
+    final List<RangzenMessage> messages = new ArrayList<RangzenMessage>(messagesFromDb.size());
+    for (RangzenAppMessage appMessage : messagesFromDb) {
+      messages.add(new RangzenMessage(appMessage.mMessage, appMessage.mPriority));
     }
     return messages;
   }
@@ -220,18 +215,12 @@ public class Exchange implements Runnable {
    * object, and write that Message out to the output stream.
    */
   private void sendMessages() {
-    List<RangzenMessage> messages = new ArrayList<RangzenMessage>();
-    for (int k=0; k<NUM_MESSAGES_TO_SEND; k++) {
-      MessageStore.Message messageFromStore = messageStore.getKthMessage(k, 0, null);
-      if (messageFromStore == null) {
-        break;
-      }
-      messages.add(new RangzenMessage.Builder()
-                                     .text(messageFromStore.getMessage())
-                                     .priority(messageFromStore.getPriority())
-                                     .build());
+    final List<RangzenAppMessage> messagesFromDb = messageStore.getKMessages(NUM_MESSAGES_TO_SEND);
+    final List<RangzenMessage> messages = new ArrayList<RangzenMessage>(messagesFromDb.size());
+    for (RangzenAppMessage appMessage : messagesFromDb) {
+      messages.add(new RangzenMessage(appMessage.mMessage, appMessage.mPriority));
     }
-    CleartextMessages messagesMessage = new CleartextMessages.Builder()
+    final CleartextMessages messagesMessage = new CleartextMessages.Builder()
                                                              .messages(messages)
                                                              .build();
     lengthValueWrite(out, messagesMessage); 

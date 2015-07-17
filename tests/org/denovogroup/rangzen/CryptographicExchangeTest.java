@@ -81,12 +81,12 @@ import okio.ByteString;
 @RunWith(RobolectricTestRunner.class)
 public class CryptographicExchangeTest {
   /** A message store to pass to the exchange. */
-  private MockMessageStore messageStoreA;
+  private RangzenMessageStore messageStoreA;
   /** A friend store to pass to the exchange. */
   private FriendStore friendStoreA;
 
   /** A message store to pass to the exchange. */
-  private MockMessageStore messageStoreB;
+  private RangzenMessageStore messageStoreB;
   /** A friend store to pass to the exchange. */
   private FriendStore friendStoreB;
 
@@ -144,9 +144,9 @@ public class CryptographicExchangeTest {
 
     SlidingPageIndicator context = Robolectric.buildActivity(SlidingPageIndicator.class).create().get();
 
-    messageStoreA = new MockMessageStore(context, StorageBase.ENCRYPTION_DEFAULT); 
+    messageStoreA = new RangzenMessageStore(context, "Debug1" + RangzenMessageStore.DATABASE_NAME);
     friendStoreA = new MockFriendStore(context, StorageBase.ENCRYPTION_DEFAULT); 
-    messageStoreB = new MockMessageStore(context, StorageBase.ENCRYPTION_DEFAULT); 
+    messageStoreB = new RangzenMessageStore(context, "Debug2" + RangzenMessageStore.DATABASE_NAME);
     friendStoreB = new MockFriendStore(context, StorageBase.ENCRYPTION_DEFAULT); 
 
     callback = new ExchangeCallback() {
@@ -172,9 +172,7 @@ public class CryptographicExchangeTest {
   public void emptyListsTest() throws IOException, InterruptedException {
     // This test involves empty friend/message lists.
     assertTrue(friendStoreA.getAllFriends().isEmpty());
-    assertNull(messageStoreA.getKthMessage(0, MessageStore.NOT_SAVED_MESSAGES));
     assertTrue(friendStoreB.getAllFriends().isEmpty());
-    assertNull(messageStoreB.getKthMessage(0, MessageStore.NOT_SAVED_MESSAGES));
 
     performExchange();
 
@@ -192,14 +190,12 @@ public class CryptographicExchangeTest {
   public void emptyFriendsSomeMessagesTest() throws IOException, InterruptedException {
     // This test involves empty friend/message lists.
     assertTrue(friendStoreA.getAllFriends().isEmpty());
-    assertNull(messageStoreA.getKthMessage(0, MessageStore.NOT_SAVED_MESSAGES));
     assertTrue(friendStoreB.getAllFriends().isEmpty());
-    assertNull(messageStoreB.getKthMessage(0, MessageStore.NOT_SAVED_MESSAGES));
 
     // 3 messeages in A's MessageStore, 0 in B's.
-    messageStoreA.addMessage(TEST_MESSAGE_1, TEST_PRIORITY_1);
-    messageStoreA.addMessage(TEST_MESSAGE_2, TEST_PRIORITY_2);
-    messageStoreA.addMessage(TEST_MESSAGE_3, TEST_PRIORITY_3);
+    messageStoreA.insertMessage(TEST_MESSAGE_1, TEST_PRIORITY_1);
+    messageStoreA.insertMessage(TEST_MESSAGE_2, TEST_PRIORITY_2);
+    messageStoreA.insertMessage(TEST_MESSAGE_3, TEST_PRIORITY_3);
 
     assertEquals(3, messageStoreA.getMessageCount());
     assertEquals(0, messageStoreB.getMessageCount());
@@ -221,7 +217,7 @@ public class CryptographicExchangeTest {
    */
   @Test(timeout=5000)
   public void onePartyHasNoFriendsTest() throws IOException, InterruptedException {
-    // ExchangeB has 3 friends, 
+    // ExchangeB has 3 friends,
     friendStoreB.addFriendBytes(TEST_FRIEND_1);
     friendStoreB.addFriendBytes(TEST_FRIEND_2);
     friendStoreB.addFriendBytes(TEST_FRIEND_3);
@@ -351,7 +347,7 @@ public class CryptographicExchangeTest {
    */
   private CryptographicExchange createExchange(boolean asInitiator, 
                                    InputStream inputStream, OutputStream outputStream,
-                                   FriendStore friendStore, MessageStore messageStore) {
+                                   FriendStore friendStore, RangzenMessageStore messageStore) {
 
 
     CryptographicExchange exchange = new CryptographicExchange(inputStream,
@@ -389,50 +385,6 @@ public class CryptographicExchangeTest {
       return mockFriends;
     }
   }
-
-  /**
-   * A mock of MessageStore allowing us to easily pass two separate message stores
-   * to separate exchanges for testing.
-   *
-   * It doesn't test for duplicate messages.
-   */
-  private class MockMessageStore extends MessageStore {
-    /** Mock storage of messages, without regard to priority. */
-    private ArrayList<Message> mockMessages = new ArrayList<Message>();
-
-    /** Check how many times getKthMessage was called. */
-    public int kthCalls = 0;
-
-    /**
-     * Pass-through constructor.
-     */
-    public MockMessageStore(Context context, int encryptionMode) { 
-      super(context, encryptionMode);
-    }
-
-    @Override
-    public boolean addMessage(String message, double priority) {
-      mockMessages.add(new Message(priority, message));
-      return true;
-    }
-
-    @Override
-    public int getMessageCount() {
-      return mockMessages.size();  
-    }
-
-    @Override
-    public Message getKthMessage(int k, int messageType) {
-      kthCalls++;
-      try {
-        return mockMessages.get(k);
-      } catch (IndexOutOfBoundsException e) {
-        return null;
-      }
-    }
-  }
-
-
 
   // TODO(lerner): Remove all methods below when they turn out not to be needed.
   // /** 

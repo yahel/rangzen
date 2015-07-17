@@ -34,14 +34,9 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
 import android.util.Log;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -288,7 +283,7 @@ public class BluetoothSpeaker {
                              mSocket.getOutputStream(),
                              false,
                              new FriendStore(mContext, StorageBase.ENCRYPTION_DEFAULT),
-                             new MessageStore(mContext, StorageBase.ENCRYPTION_DEFAULT),
+                             RangzenMessageStore.getInstance(mContext),
                              mContext.mExchangeCallback);
     //mExchange.execute((Boolean) null);
     // Start the exchange.

@@ -31,10 +31,7 @@
 
 package org.denovogroup.rangzen;
 
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.QRCodeWriter;
 
 import android.content.Context;
 import android.content.res.Resources;
@@ -43,18 +40,15 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -88,63 +82,60 @@ public class FragmentOrganizer extends Fragment {
      * This method controls five fragment options, with different cases for
      * each, mostly it returns a formatted fragment, but it also creates the
      * UIHelper.
-     * 
-     * @param inflater
-     *            A tool used to get the java code of a layout in XML.
-     * @param container
-     *            This fragments containing frame.
-     * @param savedInstanceState
-     *            The memory of previous instances of this fragment.
+     *
+     * @param inflater           A tool used to get the java code of a layout in XML.
+     * @param container          This fragments containing frame.
+     * @param savedInstanceState The memory of previous instances of this fragment.
      * @return returns the layout (fragment), already formatted to be displayed.
      */
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
+                             Bundle savedInstanceState) {
 
         Bundle b = getArguments();
         FragmentType whichScreen = (FragmentType) b
                 .getSerializable("whichScreen");
         switch (whichScreen) {
-        case FIRSTINTRO:
-            return firstIntro(inflater, container);
+            case FIRSTINTRO:
+                return firstIntro(inflater, container);
 
-        case SECONDINTRO:
-            return secondIntro(inflater, container);
+            case SECONDINTRO:
+                return secondIntro(inflater, container);
 
-        case THIRDINTRO:
-            return thirdIntro(inflater, container);
+            case THIRDINTRO:
+                return thirdIntro(inflater, container);
 
-        case SECONDABOUT:
+            case SECONDABOUT:
 
-            View view5 = (View) inflater.inflate(R.layout.info, container,
-                    false);
-            return view5;
+                View view5 = (View) inflater.inflate(R.layout.info, container,
+                        false);
+                return view5;
 
-        case TRANSPARENT:
+            case TRANSPARENT:
 
-            View view6 = (View) inflater.inflate(R.layout.permissions,
-                    container, false);
-            view6.setSoundEffectsEnabled(false);
-            return view6;
+                View view6 = (View) inflater.inflate(R.layout.permissions,
+                        container, false);
+                view6.setSoundEffectsEnabled(false);
+                return view6;
 
-        case POST:
-            return post(inflater, container);
+            case POST:
+                return post(inflater, container);
 
-        case QRWrite:
-            return makeQRWrite(inflater, container);
+            case QRWrite:
+                return makeQRWrite(inflater, container);
 
-        case DEBUG:
-            return debug(inflater, container);
+            case DEBUG:
+                return debug(inflater, container);
 
-        default:
-            return null;
+            default:
+                return null;
         }
     }
 
     /**
      * This method creates a fragment for the debug screen. It also creates an
      * on click listener for the refreshing of the screen.
-     * 
+     *
      * @param inflater
      * @param container
      * @return
@@ -156,11 +147,9 @@ public class FragmentOrganizer extends Fragment {
 
     /**
      * This will create the fragment for the second slide for the QR section.
-     * 
-     * @param inflater
-     *            LayoutInflater object that creates a java object from xml.
-     * @param container
-     *            The parent ViewGroup to the current view.
+     *
+     * @param inflater  LayoutInflater object that creates a java object from xml.
+     * @param container The parent ViewGroup to the current view.
      * @return Completed, formatted view (what the fragment will look like).
      */
     private View makeQRWrite(LayoutInflater inflater, ViewGroup container) {
@@ -175,9 +164,8 @@ public class FragmentOrganizer extends Fragment {
 
     /**
      * Writes the given Matrix on a new Bitmap object.
-     * 
-     * @param matrix
-     *            the matrix to write.
+     *
+     * @param matrix the matrix to write.
      * @return the new {@link Bitmap}-object.
      */
     public static Bitmap toBitmap(BitMatrix matrix) {
@@ -194,11 +182,9 @@ public class FragmentOrganizer extends Fragment {
 
     /**
      * This will create the fragment for the first introductory slide.
-     * 
-     * @param inflater
-     *            LayoutInflater object that creates a java object from xml.
-     * @param container
-     *            The parent ViewGroup to the current view.
+     *
+     * @param inflater  LayoutInflater object that creates a java object from xml.
+     * @param container The parent ViewGroup to the current view.
      * @return Completed, formatted view (what the fragment will look like).
      */
     private View firstIntro(LayoutInflater inflater, ViewGroup container) {
@@ -221,11 +207,9 @@ public class FragmentOrganizer extends Fragment {
 
     /**
      * This will create the fragment for the second introductory slide.
-     * 
-     * @param inflater
-     *            LayoutInflater object that creates a java object from xml.
-     * @param container
-     *            The parent ViewGroup to the current view.
+     *
+     * @param inflater  LayoutInflater object that creates a java object from xml.
+     * @param container The parent ViewGroup to the current view.
      * @return Completed, formatted view (what the fragment will look like).
      */
     private View secondIntro(LayoutInflater inflater, ViewGroup container) {
@@ -249,11 +233,9 @@ public class FragmentOrganizer extends Fragment {
 
     /**
      * This will create the fragment for the third introductory slide.
-     * 
-     * @param inflater
-     *            LayoutInflater object that creates a java object from xml.
-     * @param container
-     *            The parent ViewGroup to the current view.
+     *
+     * @param inflater  LayoutInflater object that creates a java object from xml.
+     * @param container The parent ViewGroup to the current view.
      * @return Completed, formatted view (what the fragment will look like).
      */
     private View thirdIntro(LayoutInflater inflater, ViewGroup container) {
@@ -279,11 +261,9 @@ public class FragmentOrganizer extends Fragment {
 
     /**
      * This will create the fragment for "create post" page.
-     * 
-     * @param inflater
-     *            LayoutInflater object that creates a java object from xml.
-     * @param container
-     *            The parent ViewGroup to the current view.
+     *
+     * @param inflater  LayoutInflater object that creates a java object from xml.
+     * @param container The parent ViewGroup to the current view.
      * @return Completed, formatted view (what the fragment will look like).
      */
     private View post(LayoutInflater inflater, ViewGroup container) {
@@ -297,18 +277,18 @@ public class FragmentOrganizer extends Fragment {
 
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count,
-                    int after) {
+                                          int after) {
             }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before,
-                    int count) {
+                                      int count) {
                 TextView characterCount = (TextView) getActivity()
                         .findViewById(R.id.characterCount);
                 EditText textBox = (EditText) getActivity().findViewById(
                         R.id.editText1);
                 characterCount.setText(String.valueOf(140 - textBox.getText()
-                        .length()));
+                                                                   .length()));
             }
 
             @Override
@@ -333,18 +313,17 @@ public class FragmentOrganizer extends Fragment {
              * Stores the text of the TextView in the MessageStore with default
              * priority 1.0f. Displays a Toast upon completion and exits the
              * Activity.
-             * 
+             *
              * @param v
              *            The view which is clicked - in this case, the Button.
              */
             @Override
             public void onClick(View v) {
-                MessageStore messageStore = new MessageStore(getActivity(),
-                        StorageBase.ENCRYPTION_DEFAULT);
+                RangzenMessageStore messageStore = RangzenMessageStore.getInstance(getActivity());
                 String message = ((TextView) getActivity().findViewById(
                         R.id.editText1)).getText().toString();
                 float priority = 1.0f;
-                messageStore.addMessage(message, priority);
+                messageStore.insertMessage(message, priority);
                 Toast.makeText(getActivity(), "Message sent!",
                         Toast.LENGTH_SHORT).show();
                 getActivity().setResult(Opener.POSTED_MESSAGE);
@@ -358,11 +337,8 @@ public class FragmentOrganizer extends Fragment {
     /**
      * This takes the image, caches it, resizes it and then adds it to the
      * relative layout.
-     * 
-     * @param picture
-     *            The location of the picture e.g - R.drawable.xxxx
-     * @param position
-     *            Which slide is currently asking to display the image.
+     *
+     * @param picture The location of the picture e.g - R.drawable.xxxx
      */
     private void showFullScreenImage(int picture) {
         Display display = getActivity().getWindowManager().getDefaultDisplay();
@@ -381,19 +357,15 @@ public class FragmentOrganizer extends Fragment {
      * Finds the drawable in the resources and determines how much data will
      * need to be decoded into a bitmap to reduce the number of operations done
      * on the bitmap for resizing
-     * 
-     * @param res
-     *            getResources()
-     * @param resId
-     *            R.drawable.xxxx
-     * @param reqWidth
-     *            The width of the screen
-     * @param reqHeight
-     *            The height of the screen
+     *
+     * @param res       getResources()
+     * @param resId     R.drawable.xxxx
+     * @param reqWidth  The width of the screen
+     * @param reqHeight The height of the screen
      * @return Returns the bitmap calculated to the screen size
      */
     public static Bitmap decodeSampledBitmapFromResource(Resources res,
-            int resId, int reqWidth, int reqHeight) {
+                                                         int resId, int reqWidth, int reqHeight) {
 
         // First decode with inJustDecodeBounds=true to check dimensions
         final BitmapFactory.Options options = new BitmapFactory.Options();
@@ -411,18 +383,15 @@ public class FragmentOrganizer extends Fragment {
 
     /**
      * Does scaling math to determine proper scaling of the image.
-     * 
-     * @param options
-     *            Allows the caller to query the set without allocating memory
-     *            for the pixels
-     * @param reqWidth
-     *            The screen width
-     * @param reqHeight
-     *            Screen Height
+     *
+     * @param options   Allows the caller to query the set without allocating memory
+     *                  for the pixels
+     * @param reqWidth  The screen width
+     * @param reqHeight Screen Height
      * @return Proper Ratio???
      */
     public static int calculateInSampleSize(BitmapFactory.Options options,
-            int reqWidth, int reqHeight) {
+                                            int reqWidth, int reqHeight) {
         // Raw height and width of image
         final int height = options.outHeight;
         final int width = options.outWidth;
@@ -463,9 +432,9 @@ public class FragmentOrganizer extends Fragment {
                 RelativeLayout.LayoutParams.WRAP_CONTENT);
         layoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
         layoutParams.setMargins(0, (int) getPixels(marginFromTop), 0, 0); // (L,
-                                                                          // T,
-                                                                          // ?,
-                                                                          // ?)
+        // T,
+        // ?,
+        // ?)
         tv.setLayoutParams(layoutParams);
     }
 
@@ -474,9 +443,8 @@ public class FragmentOrganizer extends Fragment {
      * textViews. Borrowed from
      * http://stackoverflow.com/questions/2406449/does-setwidthint
      * -pixels-use-dip-or-px
-     * 
-     * @param dip
-     *            Density-Independent length
+     *
+     * @param dip Density-Independent length
      */
     private float getPixels(int dip) {
         Resources r = getResources();

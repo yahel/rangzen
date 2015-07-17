@@ -31,22 +31,18 @@
 
 package org.denovogroup.rangzen;
 
-import java.util.List;
-
-import org.denovogroup.rangzen.FeedListAdapter.ViewHolder;
-import org.denovogroup.rangzen.MessageStore.Message;
-
-import android.app.Activity;
 import android.content.Context;
-import android.text.SpannableString;
 import android.text.method.LinkMovementMethod;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.TextView.BufferType;
+
+import org.denovogroup.rangzen.RangzenMessageStore.RangzenAppMessage;
+
+import java.util.List;
 
 /**
  * This class extends FeedListAdapter and has all of the same functionality as
@@ -60,7 +56,7 @@ import android.widget.TextView.BufferType;
 public class SavedFeedListAdapter extends FeedListAdapter {
 
     public SavedFeedListAdapter(Context context, int resource,
-            List<Message> items) {
+            List<RangzenAppMessage> items) {
         super(context, resource, items);
     }
     
@@ -104,11 +100,11 @@ public class SavedFeedListAdapter extends FeedListAdapter {
             mVH = (ViewHolder) v.getTag();
         }
 
-        Message m = getItem(position);
+        RangzenAppMessage m = getItem(position);
         ImageButton[] ib = {mVH.mRetweet,mVH.mTrash };
         String[] saveRetweet = { Opener.RETWEET, "" };
         for (int i = 0; i < ib.length; i++) {
-            if (s.getInt(saveRetweet[i] + m.getMessage(), 0) == 0) {
+            if (s.getInt(saveRetweet[i] + m.mMessage, 0) == 0) {
                 ib[i].setImageResource(b[i + 1]);
             } else {
                 ib[i].setImageResource(a[i + 1]);
@@ -116,10 +112,10 @@ public class SavedFeedListAdapter extends FeedListAdapter {
         }
 
         mVH.mHashtagView.setMovementMethod(LinkMovementMethod.getInstance());
-        mVH.mHashtagView.setText(applySpan(m.getMessage()),
+        mVH.mHashtagView.setText(applySpan(m.mMessage),
                 BufferType.SPANNABLE);
         mVH.mUpvoteView
-                .setText(Integer.toString((int) (100 * m.getPriority())));
+                .setText(Integer.toString((int) (100 * m.mPriority)));
 
         v.setId(position);
         return v;

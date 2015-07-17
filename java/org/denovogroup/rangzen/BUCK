@@ -12,7 +12,8 @@ android_library(
            'FriendStore.java', 
            'HotspotPeerNetwork.java',
            'LocationStore.java',
-           'MessageStore.java',
+           'DbCountMonitor.java',
+           'RangzenMessageStore.java',
            'Peer.java',
            'PeerConnectionCallback.java',
            'PeerManager.java',
@@ -23,7 +24,7 @@ android_library(
            'StorageBase.java',
            'WifiDirectFrameworkGetter.java',
            'WifiDirectPeerNetwork.java',
-           'WifiDirectSpeaker.java',
+           'WifiDirectSpeaker.java'
   ],
   visibility = [ 'PUBLIC' ],
   deps = [
