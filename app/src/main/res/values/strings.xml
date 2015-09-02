@@ -1,0 +1,71 @@
+<resources>
+
+    <item name="decode_start" type="id"/>
+    <item name="decode" type="id"/>
+    <item name="decode_failed" type="id"/>
+    <item name="decode_succeeded" type="id"/>
+    <item name="quit" type="id"/>
+
+    <string name="search_hint">Filter</string>
+    <string name="search">Search</string>
+
+    <!--
+      This is a hack to get the name of the app to be "Rangzen".
+      @string:app_name was getting read from strings.xml from zxing instead of here.
+    -->
+    <string name="app_name">Rangzen</string>
+    <string name="rangzen_app_name">Rangzen</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="continueButton">Continue</string>
+    <string name="action_search">Search</string>
+    <string name="new_post">Add Post</string>
+    <string name="optOut">Opt-Out</string>
+    <string name="open">Navigation Drawer is Open</string>
+    <string name="close">Navigation Drawer is Closed</string>
+    <string name="empty">There are no items</string>
+    <string name="refresh">Refresh</string>
+    <string name="show_only">Show Only</string>
+    <string name="crash_toast_text">Sorry for the trouble! A crash report has been sent.</string>
+
+    <string-array name="sidebar">
+        <item>Feed</item>
+        <item>New Post</item>
+        <item>Add Friend</item>
+        <item>Info</item>
+        <item>Debug</item>
+    </string-array>
+
+    <color name="whitish">#D7D7D7</color>
+    <color name="purple">#8D44AF</color>
+    <color name="purpleOld">#6d0094</color>
+    <color name="grey">#FFFEFF</color>
+
+    <string name="hint">Get the word out</string>
+    <string name="app_id">254046681454257</string>
+    <string name="aboutTitle">About Rangzen</string>
+    <string name="aboutBody">This application is a prototype for a research project done by De Novo Group.</string>
+    <string name="buildTimeTitle">Build time of this APK:</string>
+    <string name="notAvailable">NOT AVAILABLE</string>
+    <string name="FirstTitleAbout">About the Experiment</string>
+    <string name="FirstAboutParagraph">The purpose of this experiment is to evaluate a prototype of Rangzen, a new app for enabling anonymous communication during an Internet blackout, like those that have been imposed in numerous countries in the past few years. Rangzen distributes microblogs (short messages, like Tweets) directly between nearby smartphones without the help of the Internet or other networks. Messages spread through the population one hop at a time, phone to phone. Since Rangzen is an anonymous system, it can’t identify bad messages (like spam, or propaganda) based on who wrote the message. Instead, Rangzen decides whether to trust messages based on users’ friendships. Messages received from people with whom you share mutual friends are more trusted. At the same time, sharing friends is a privacy risk, so Rangzen’s design uses cryptography to learn the number of mutual friends without revealing who those friends are.</string>
+    <string name="SecondAboutParagraph">The goal of this study is two-fold: to confirm our previous simulations of the system using real-world measurements, and to collect a dataset of real-world measurements which can be used to inform future simulations.</string>
+    <string name="ThirdAboutParagraph">This prototype app will use Bluetooth to communicate with the phones of other participants when they’re nearby.</string>
+    <string name="SecondTitleAbout">What You Need to Do</string>
+    <string name="FourthAboutParagraph">To participate, simply install the app, agree to participate, and (if necessary) turn on Bluetooth and GPS when prompted. Data will be collected throughout the study whenever Bluetooth and GPS are on.</string>
+    <string name="ThirdTitleAbout">The Data We Collect &amp; Confidentiality</string>
+    <string name="FifthParagraphAbout">We’ll collect information about your location and your contacts. We’ll never collect your name or other identifying information. For your contacts, we collect only their phone number - then we’ll obscure those phone numbers and store them anonymously. We’ll store this information and use it to study how to improve Rangzen. We won’t ever share this data with researchers outside of the Rangzen project. Here are some specifics about what we’ll collect:</string>
+    <string name="SixthParagraphAbout">We will collect a list of GPS coordinates of the places you go while the app is installed. We’ll use this to determine where and when your phone exchanged messages with other phones, and to evaluate the limits of Rangzen in making peer-to-peer connections. Since we’re storing this data, we thought it might be fun for you to see where you’ve been as well - you can see this on the Locations page of the app.</string>
+    <string name="SeventhParagraphAbout">We’ll also collect an anonymized list of your contacts’ phone numbers. First, the app will transform the phone number of each of your contacts into a deterministic ID using a hash function. At the end of the experiment we’ll remove any linkability between IDs and phone numbers by mapping each phone number to an unrelated identifier (e.g. a random number). This contacts data lets us understand how messages in a real deployment of Rangzen would be prioritized based on social connections between people.</string>
+    <string name="FourthTitleAbout">Risks of the Study</string>
+    <string name="EighthParagraphAbout">We are collecting your location and derivative information of your contact book. We’ll never link this information to your name or other identifying information. As privacy researchers, we want to respect your privacy while using this potentially sensitive information - because of that we’ll never share this data outside of our research group.</string>
+    <string name="NinthParagraphAbout">The app may use more power from your battery or use a small amount of your cellular data in the process of collecting and reporting data to our research server.</string>
+    <string name="FifthTitleAbout">How You’re Helping</string>
+    <string name="TenthParagraphAbout">By participating, you’re helping to evaluate the effectiveness of Rangzen at moving messages between phones as they pass each other. We hope Rangzen and the ideas it’s based on will help people around the world communicate better.</string>
+    <string name="SixthTitleAbout">Your Rights</string>
+    <string name="EleventhParagraphAbout">Your participation in this study is totally voluntary. If you have any concerns or questions about this experiment, please contact us at rangzen@lists.berkeley.edu. You may opt-out of the experiment at any time, and we will promptly cease collecting data from your phone. Deciding not to participate, or deciding to leave the study in the middle, won’t have any consequences or penalty. Your participation in this study is unrelated to your performance and evaluation in any courses you are taking.</string>
+
+    <string name="TrackingServiceStarting">Rangzen tracking is on</string>
+    <string name="TrackingServiceNotificationTitle">Rangzen Tracking service</string>
+    <string name="TrackingServiceNotification">Please do not turn this off during the beta</string>
+</resources>

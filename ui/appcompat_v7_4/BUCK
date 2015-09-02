@@ -1,6 +1,0 @@
-android_resource(
-  name = 'appcompatRes',
-  res = 'res',
-  package = 'android.support.v7.appcompat',
-  visibility = [ 'PUBLIC' ],
-)

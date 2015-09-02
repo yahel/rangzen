@@ -1,7 +1,0 @@
-android_library(
-  name = 'httpRequest',
-  srcs = [ 
-    'HttpRequest.java'
-  ],
-  visibility = [ 'PUBLIC' ],
-)

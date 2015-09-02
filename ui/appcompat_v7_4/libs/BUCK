@@ -1,9 +1,0 @@
-prebuilt_jar(
-  name = 'android-support-v7-appcompat',
-  binary_jar = 'android-support-v7-appcompat.jar', 
-  visibility = [ 'PUBLIC' ],
-  deps = [
-    '//ui/appcompat_v7_4:appcompatRes',
-  ]
-)
-

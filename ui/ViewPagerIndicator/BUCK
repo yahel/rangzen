@@ -1,6 +1,0 @@
-android_resource(
-  name = 'viewPagerIndicatorRes',
-  res = 'res',
-  package = 'com.viewpagerindicator',
-  visibility = [ 'PUBLIC' ],
-)

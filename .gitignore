@@ -1,35 +1,7 @@
-#Generated files
-bin/
-gen/
-
-#Vim swap files
-*.swp
-
-#Built APK
-*.apk
-*.ap
-
-#Class files
-*.class
-
-.classpath
-.project
-.settings/
-
-#Eclipse/Eclim(d) related
-.metadata
-eclimd.log
-
-#Buck related files
-/buck-out/
-local.properties
-.buckd
-
-#OS X stupid stuff
+.gradle
+/local.properties
+/.idea/workspace.xml
+/.idea/libraries
 .DS_Store
-
-#Temporary Files
-*~
-
-lint.xml
-
+/build
+/captures
