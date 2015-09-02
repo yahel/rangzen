@@ -4,28 +4,21 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <android.support.v4.app.FragmentTabHost
-        android:id="@android:id/tabhost"
+    <FrameLayout
+        android:id="@+id/mainContent"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <FrameLayout
-            android:id="@+id/tabcontent"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"/>
-
-    </android.support.v4.app.FragmentTabHost>
+        android:layout_height="match_parent" >
+    </FrameLayout>
 
     <ListView
-        android:id="@+id/drawerList"
-        android:layout_width="240dp"
-        android:layout_height="match_parent"
-        android:layout_gravity="start"
+        android:padding="5dp"
         android:background="#343434"
         android:divider="@drawable/divider"
         android:dividerHeight="1px"
-        android:padding="5dp" >
+        android:id="@+id/drawerList"
+        android:layout_width="240dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start" >
     </ListView>
 
 </android.support.v4.widget.DrawerLayout>

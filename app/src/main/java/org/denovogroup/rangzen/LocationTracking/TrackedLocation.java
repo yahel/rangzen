@@ -1,4 +1,4 @@
-package org.denovogroup.rangzen.LocationTracking;
+package org.denovogroup.rangzen.locationtracking;
 
 /**
  * Created by Liran on 8/31/2015.

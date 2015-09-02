@@ -101,9 +101,6 @@ public class RangzenService extends Service {
     /** The BluetoothSpeaker for the app. */
     private static BluetoothSpeaker mBluetoothSpeaker;
 
-    /** The peer being spoken to at the moment. */
-    public Peer currentPeer;
-
     /** Message store. */
     private MessageStore mMessageStore; 
     /** Ongoing exchange. */
@@ -298,7 +295,6 @@ public class RangzenService extends Service {
       }
 
       Log.i(TAG, "connecting to " + peer);
-      currentPeer = peer;
       // TODO(lerner): Why not just use mPeerManager?
       PeerManager peerManager = PeerManager.getInstance(this);
 
@@ -409,7 +405,6 @@ public class RangzenService extends Service {
                                     myFriends.size(), friendOverlap));
           }
         }
-        RangzenService.this.mPeerManager.recordExchangeTime(currentPeer, new Date());
         RangzenService.this.cleanupAfterExchange();
       }
 

@@ -29,51 +29,32 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.denovogroup.rangzen.UI;
+package org.denovogroup.rangzen.ui;
 
-import java.util.HashMap;
-import java.util.List;
-
-import org.denovogroup.rangzen.R;
-import org.denovogroup.rangzen.backend.MessageStore;
-import org.denovogroup.rangzen.backend.MessageStore.Message;
-import org.denovogroup.rangzen.backend.StorageBase;
-
-import android.app.SearchManager;
+import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
-import android.text.SpannableString;
-import android.text.Spanned;
-import android.text.TextPaint;
-import android.text.method.LinkMovementMethod;
-import android.text.style.ClickableSpan;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.ImageButton;
+import android.widget.BaseAdapter;
 import android.widget.TextView;
-import android.widget.TextView.BufferType;
 
-public class FeedListAdapter extends ArrayAdapter<Message> {
+import org.denovogroup.rangzen.R;
+import org.denovogroup.rangzen.backend.MessageStore;
+import org.denovogroup.rangzen.backend.StorageBase;
 
-    HashMap<String, Integer> mIdMap = new HashMap<String, Integer>();
+public class FeedListAdapter extends BaseAdapter {
 
-    protected final static String TAG = "FeedListAdapter";
-
-    protected int[] a = { R.drawable.ic_action_important_yellow,
-            R.drawable.ic_action_repeat_green, R.drawable.ic_action_discard_red };
-
-    protected int[] b = { R.drawable.ic_action_important,
-            R.drawable.ic_action_repeat, R.drawable.ic_action_discard };
+    /** Activity context passed in to the FeedListAdapter. */
+    private Context mContext;
+    /** Message store to be used to get the messages and trust score. */
+    private MessageStore mMessageStore;
 
     /**
      * Holds references to views so that findViewById() is not needed to be
      * called so many times.
      */
-    protected ViewHolder mVH;
-    
+    private ViewHolder mViewHolder;
 
     /**
      * Sets the feed text fields to be their values from messages from memory.
@@ -83,12 +64,29 @@ public class FeedListAdapter extends ArrayAdapter<Message> {
      * @param context
      *            The context of the activity that spawned this class.
      */
-    public FeedListAdapter(Context context, int resource, List<Message> items) {
-        super(context, resource, items);
+    public FeedListAdapter(Context context) {
+        this.mContext = context;
     }
 
-    public FeedListAdapter(Context context, int resource) {
-        super(context, resource);
+    @Override
+    public int getCount() {
+        mMessageStore = new MessageStore((Activity) mContext,
+                StorageBase.ENCRYPTION_DEFAULT);
+        return mMessageStore.getMessageCount();
+    }
+
+    /**
+     * Returns the name of the item in the ListView of the NavigationDrawer at
+     * this position.
+     */
+    @Override
+    public Object getItem(int position) {
+        return "No Name";
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
     }
 
     /**
@@ -106,129 +104,28 @@ public class FeedListAdapter extends ArrayAdapter<Message> {
      */
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-
-        StorageBase s = new StorageBase(getContext(),
+        MessageStore messageStore = new MessageStore((Activity) mContext,
                 StorageBase.ENCRYPTION_DEFAULT);
-        View v = convertView;
-
-        if (v == null) {
-            LayoutInflater inflater = (LayoutInflater) getContext()
+        MessageStore.Message message = messageStore.getKthMessage(position);
+        if (convertView == null) {
+            LayoutInflater inflater = (LayoutInflater) mContext
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            v = inflater.inflate(R.layout.feed_row, parent, false);
+            convertView = inflater.inflate(R.layout.feed_row, parent, false);
 
-            mVH = new ViewHolder();
-            mVH.mUpvoteView = (TextView) v.findViewById(R.id.upvoteView);
-            mVH.mHashtagView = (TextView) v.findViewById(R.id.hashtagView);
+            mViewHolder = new ViewHolder();
+            mViewHolder.mUpvoteView = (TextView) convertView
+                    .findViewById(R.id.upvoteView);
+            mViewHolder.mHashtagView = (TextView) convertView
+                    .findViewById(R.id.hashtagView);
 
-            mVH.mFavorite = (ImageButton) v.findViewById(R.id.saveButton);
-            mVH.mTrash = (ImageButton) v.findViewById(R.id.eraseButton);
-            mVH.mRetweet = (ImageButton) v.findViewById(R.id.retweetButton);
-
-            v.setTag(mVH);
+            convertView.setTag(mViewHolder);
         } else {
-            mVH = (ViewHolder) v.getTag();
+            mViewHolder = (ViewHolder) convertView.getTag();
         }
+        mViewHolder.mHashtagView.setText(message.getMessage());
+        mViewHolder.mUpvoteView.setText(Double.toString(message.getPriority()));
 
-        Message m = getItem(position);
-        ImageButton[] ib = { mVH.mFavorite, mVH.mRetweet, mVH.mTrash };
-        String[] saveRetweet = { Opener.SAVE, Opener.RETWEET, "" };
-
-        for (int i = 0; i < ib.length; i++) {
-            if (s.getInt(saveRetweet[i] + m.getMessage(), 0) == 0) {
-                ib[i].setImageResource(b[i]);
-            } else {
-                ib[i].setImageResource(a[i]);
-            }
-        }
-
-        mVH.mHashtagView.setMovementMethod(LinkMovementMethod.getInstance());
-        mVH.mHashtagView.setText(applySpan(m.getMessage()),
-                BufferType.SPANNABLE);
-        mVH.mUpvoteView
-                .setText(Integer.toString((int) (100 * m.getPriority())));
-
-        v.setId(position);
-        return v;
-    }
-
-    /**
-     * Creates a span object for use in a spannable string in the list view for
-     * the feed. It removes the underline usually in a span and has a custom
-     * onClickListener.
-     * 
-     * @author jesus
-     * 
-     */
-    class InnerSpan extends ClickableSpan {
-
-        public void onClick(View tv) {
-            TextView t = (TextView) tv;
-            Log.d(TAG, t.getText().toString());
-            Spanned s = (Spanned) t.getText();
-            int start = s.getSpanStart(this);
-            int end = s.getSpanEnd(this);
-            Log.d(TAG, "onClick [" + s.subSequence(start, end) + "]");
-            Intent intent = new Intent();
-            intent.setClass(getContext(), SearchableActivity.class);
-            intent.setAction(Intent.ACTION_SEARCH);
-            intent.putExtra(SearchManager.QUERY, s.subSequence(start, end).toString());
-            getContext().startActivity(intent);
-        }
-
-        @Override
-        public void updateDrawState(TextPaint ds) {
-            super.updateDrawState(ds);
-            ds.setUnderlineText(false);
-        }
-    }
-
-    String getType() {
-        return TAG;
-    }
-
-    /**
-     * Creates a SpannableString object for the TextView from the feed. It
-     * applies multiple spans (for the possibly multiple) hashtags in a feed
-     * message.
-     * 
-     * @param feedText
-     *            - Text in a feed ListView item.
-     * @return String to be placed in ListView TextView.
-     */
-    protected SpannableString applySpan(String feedText) {
-        SpannableString spannable = new SpannableString(feedText);
-        final String spannableString = spannable.toString();
-        int start = 0;
-        int end = 0;
-        while (true) {
-            ClickableSpan spany = new InnerSpan();
-            start = spannableString.indexOf("#", end);
-
-            if (start < 0) {
-                break;
-            }
-
-            end = spannableString.indexOf(" ", start);
-            if (end < 0) {
-                end = spannableString.length();
-            }
-            spannable.setSpan(spany, start, end,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-        return spannable;
-    }
-    
-    public void refresh() {
-        MessageStore m = new MessageStore(getContext(),
-                StorageBase.ENCRYPTION_DEFAULT);
-        List<Message> messages = m.getAllMessages(
-                MessageStore.NOT_SAVED_MESSAGES, null);
-        Log.d(TAG, "get count = " + Integer.toString(getCount()));
-        clear();
-        if (messages.size() > 0) {
-            Log.d(TAG, "messages size = " + Integer.toString(messages.size()));
-            addAll(messages);
-        }
+        return convertView;
     }
 
     /**
@@ -236,17 +133,13 @@ public class FeedListAdapter extends ArrayAdapter<Message> {
      * is held by the row object that keeps references to the views so that they
      * do not have to be looked up every time they are populated or reshown.
      */
-    protected static class ViewHolder {
+    static class ViewHolder {
         /** The view object that holds the hashtag for this current row item. */
-        protected TextView mHashtagView;
+        private TextView mHashtagView;
         /**
          * The view object that holds the trust score for this current row item.
          */
-        protected TextView mUpvoteView;
+        private TextView mUpvoteView;
 
-        protected ImageButton mFavorite;
-        protected ImageButton mTrash;
-        protected ImageButton mRetweet;
     }
-
 }

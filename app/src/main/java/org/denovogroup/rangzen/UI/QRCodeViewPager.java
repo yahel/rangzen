@@ -29,17 +29,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.denovogroup.rangzen.UI;
+package org.denovogroup.rangzen.ui;
 
 import org.denovogroup.rangzen.R;
 import org.denovogroup.rangzen.backend.StorageBase;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
 import android.view.KeyEvent;
 import android.view.MenuItem;
+import android.widget.TextView;
 
 import com.viewpagerindicator.PageIndicator;
 
@@ -76,7 +78,7 @@ public class QRCodeViewPager extends FragmentActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
-        if(getActionBar()!=null) {
+        if(getActionBar() != null) {
             getActionBar().setDisplayHomeAsUpEnabled(true);
             getActionBar().setTitle("Add Friend");
             /*int titleId = getResources().getIdentifier("action_bar_title", "id",
@@ -117,13 +119,13 @@ public class QRCodeViewPager extends FragmentActivity {
             //     }
             // } else {
           if (keyCode == KeyEvent.KEYCODE_BACK) {
-            if(getActionBar()!=null) {
-                getActionBar().setTitle("Feed");
-                /*int titleId = getResources().getIdentifier(
-                        "action_bar_title", "id", "android");
-                TextView abTitle = (TextView) findViewById(titleId);
-                abTitle.setTextColor(Color.WHITE);*/
-            }
+              if(getActionBar() != null) {
+                  getActionBar().setTitle("Feed");
+               /*   int titleId = getResources().getIdentifier(
+                          "action_bar_title", "id", "android");
+                  TextView abTitle = (TextView) findViewById(titleId);
+                  abTitle.setTextColor(Color.WHITE);*/
+              }
             finish();
           }
         }

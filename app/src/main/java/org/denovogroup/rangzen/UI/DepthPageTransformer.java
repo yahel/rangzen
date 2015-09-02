@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.denovogroup.rangzen.UI;
+package org.denovogroup.rangzen.ui;
 
 import android.support.v4.view.ViewPager.PageTransformer;
 import android.view.View;

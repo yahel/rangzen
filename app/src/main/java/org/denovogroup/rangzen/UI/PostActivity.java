@@ -1,6 +1,7 @@
-package org.denovogroup.rangzen.UI;
+package org.denovogroup.rangzen.ui;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -11,6 +12,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import org.denovogroup.rangzen.R;
 
@@ -25,8 +27,8 @@ public class PostActivity extends FragmentActivity {
             getActionBar().setDisplayHomeAsUpEnabled(true);
             getActionBar().setTitle("New Post");
             /*int titleId = getResources().getIdentifier("action_bar_title", "id", "android");
-        TextView abTitle = (TextView) findViewById(titleId);
-        abTitle.setTextColor(Color.WHITE);*/
+            TextView abTitle = (TextView) findViewById(titleId);
+            abTitle.setTextColor(Color.WHITE);*/
         }
         Fragment fragment = new FragmentOrganizer();
         Bundle b = new Bundle();
@@ -56,7 +58,7 @@ public class PostActivity extends FragmentActivity {
             InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             EditText mEditText = (EditText) findViewById(R.id.editText1);
             mgr.hideSoftInputFromWindow(mEditText.getWindowToken(), 0);
-            if(getActionBar()!=null)  getActionBar().setTitle("Feed");
+            getActionBar().setTitle("Feed");
             //setResult(0);
             finish();
             return true;

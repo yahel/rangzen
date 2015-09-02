@@ -46,7 +46,7 @@ import android.util.Log;
 public class BluetoothBroadcastReceiver extends BroadcastReceiver {
 
   /** Included in Android log messages. */
-  public static final String TAG = "BTBroadcastReceiver";
+  public static final String TAG = "BtBroadcastReceiver";
 
   /** A default value to be returned when getting extras. */
   private static final int DEFAULT_INT = -500;

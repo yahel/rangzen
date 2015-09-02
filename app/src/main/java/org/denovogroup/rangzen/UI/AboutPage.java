@@ -29,7 +29,7 @@
  * possibility of such damage.
  */
 
-package org.denovogroup.rangzen.UI;
+package org.denovogroup.rangzen.ui;
 
 import android.os.Bundle;
 import android.view.View;

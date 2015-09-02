@@ -202,10 +202,10 @@ public class Exchange implements Runnable {
    *
    * @return The top NUM_MESSAGES_TO_SEND in the MessageStore.
    */
-  /* package */ List<RangzenMessage> getMessages() {
+  /* package */ List<RangzenMessage> getMessages() { 
     List<RangzenMessage> messages = new ArrayList<RangzenMessage>();
     for (int k=0; k<NUM_MESSAGES_TO_SEND; k++) {
-      MessageStore.Message messageFromStore = messageStore.getKthMessage(k, 0, null);
+      MessageStore.Message messageFromStore = messageStore.getKthMessage(k);
       if (messageFromStore == null) {
         break;
       }
@@ -224,7 +224,7 @@ public class Exchange implements Runnable {
   private void sendMessages() {
     List<RangzenMessage> messages = new ArrayList<RangzenMessage>();
     for (int k=0; k<NUM_MESSAGES_TO_SEND; k++) {
-      MessageStore.Message messageFromStore = messageStore.getKthMessage(k, 0, null);
+      MessageStore.Message messageFromStore = messageStore.getKthMessage(k);
       if (messageFromStore == null) {
         break;
       }

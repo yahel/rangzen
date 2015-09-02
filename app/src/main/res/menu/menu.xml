@@ -1,25 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:compat="http://schemas.android.com/apk/res-auto"
-    xmlns:app="http://schemas.android.com/apk/res-auto" >
-    
-    <item 
-        android:id="@+id/menu_search"
-        android:icon="@drawable/ic_action_search"
-        android:title="@string/search"
-        compat:showAsAction="collapseActionView|ifRoom"
-        app:actionViewClass="android.support.v7.widget.SearchView"/>
-
+    xmlns:compat="http://schemas.android.com/apk/res-auto" >
 
     <item
         android:id="@+id/new_post"
         android:icon="@drawable/ic_action_new_event_light"
         android:title="@string/new_post"
-        compat:showAsAction="always"/>
-    <item
-        android:id="@+id/refresh"
-        android:icon="@drawable/ic_action_refresh"
-        android:title="@string/refresh"
-        compat:showAsAction="always"/>
-
+        compat:showAsAction="ifRoom"/>
 </menu>

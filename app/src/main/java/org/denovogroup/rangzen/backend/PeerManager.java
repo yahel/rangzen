@@ -34,7 +34,6 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -149,7 +148,6 @@ public class PeerManager {
    *
    * @param peer The Peer to find in the list.
    * @return True if the peer is in the list, false otherwise.
-   * @see org.denovogroup.rangzen.backend.Peer
    */
   public synchronized boolean isKnownPeer(Peer peer) {
     for (Peer peerInList : mCurrentPeers) {
@@ -188,7 +186,6 @@ public class PeerManager {
    * @param peerDesired The peer to look up.
    * @return The canonical version of the given peer, which is the same
    * object if the peer is not yet known to the PeerManager.
-   * @see org.denovogroup.rangzen.backend.Peer
    */
   public synchronized Peer getCanonicalPeer(Peer peerDesired) {
     if (peerDesired == null) {
@@ -302,7 +299,7 @@ public class PeerManager {
    * @param peer The remote peer about whom we are remembering an exchange.
    * @param exchangeTime The time at which we had an exchange with the peer.
    */
-  public void recordExchangeTime(Peer peer, Date exchangeTime) {
+  private void recordExchangeTime(Peer peer, Date exchangeTime) {
     BluetoothDevice device = peer.getNetwork().getBluetoothDevice();
     if (device == null) {
       Log.e(TAG, "Recording exchange time of non-bluetooth peer! Can't do it.");
@@ -343,14 +340,18 @@ public class PeerManager {
    * @return The Date at which the last known successful exchange with the peer
    * occurred, or the epoch if none is known.
    */
-  public Date getLastExchangeTime(Peer peer) {
+  private Date getLastExchangeTime(Peer peer) {
     BluetoothDevice device = peer.getNetwork().getBluetoothDevice();
     if (device == null) {
       Log.e(TAG, "Getting last exchange time of non-bluetooth peer! Can't do it!");
       return null;
     } else {
       Date when = exchangeTimes.get(device.getAddress());
-      return when;
+      if (when == null) {
+        return new Date(0);
+      } else {
+        return when;
+      }
     }
   }
 

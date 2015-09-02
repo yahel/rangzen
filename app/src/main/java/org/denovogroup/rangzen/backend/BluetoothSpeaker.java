@@ -272,11 +272,6 @@ public class BluetoothSpeaker {
     }
     Log.i(TAG, "Calling mServerSocket.accept()");
     mSocket = mServerSocket.accept();
-
-    PeerManager pm = PeerManager.getInstance(mContext);
-    Peer p = new Peer(new BluetoothPeerNetwork(mSocket.getRemoteDevice()));
-    mContext.currentPeer =  pm.getCanonicalPeer(p);
-
     Log.i(TAG, "Accepted socket from " + mSocket.getRemoteDevice());
     Log.i(TAG, "Accepted socket connected? " + mSocket.isConnected());
     mExchange = new CryptographicExchange(mSocket.getInputStream(),
@@ -321,7 +316,6 @@ public class BluetoothSpeaker {
   private String bufferToString(char[] charArray) {
     return new String(charArray, 0, 10);
   }
-
 
   public void connect(Peer peer, PeerConnectionCallback callback) {
     // Start connecting in a new thread, passing the callback and peer.

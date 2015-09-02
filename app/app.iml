@@ -116,8 +116,8 @@
     <orderEntry type="library" exported="" name="support-v4-22.2.1" level="project" />
     <orderEntry type="library" exported="" name="gson-2.3" level="project" />
     <orderEntry type="library" exported="" name="mockito-all-1.9.5" level="project" />
-    <orderEntry type="library" exported="" name="sqlite4java-0.282" level="project" />
     <orderEntry type="library" exported="" name="asm-tree-5.0.1" level="project" />
+    <orderEntry type="library" exported="" name="sqlite4java-0.282" level="project" />
     <orderEntry type="library" exported="" name="asm-analysis-5.0.1" level="project" />
     <orderEntry type="library" exported="" name="multidex-1.0.1" level="project" />
     <orderEntry type="library" exported="" name="vtd-xml-2.11" level="project" />

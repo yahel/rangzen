@@ -1,4 +1,4 @@
-package org.denovogroup.rangzen.LocationTracking;
+package org.denovogroup.rangzen.locationtracking;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -17,7 +17,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import org.denovogroup.rangzen.R;
-import org.denovogroup.rangzen.backend.DatabaseHandler;
+import org.denovogroup.rangzen.backend.NetworkHandler;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -26,7 +26,7 @@ import java.util.TimerTask;
  * Created by Liran on 8/31/2015.
  *
  * This service is the main handler for all location tracking events in the app, it will sample location updates
- * in a fixed interval and broadcast them to a server defined by the DatabaseHandler class, every item is first
+ * in a fixed interval and broadcast them to a server defined by the NetworkHandler class, every item is first
  * being saved into a local memory cache and then being sent to the server, if the sending process was successful
  * the item will be removed from the cache. This lazy sending mechanism ensure that all the data will be sent to
  * the server eventually.
@@ -117,15 +117,7 @@ public class TrackingService extends Service implements LocationListener {
         locationUpdateTimer.cancel();
     }
 
-    /** check if the device is currently connected to an internet service such as WiFi and GSM
-     *
-     * @return true is connected, false otherwise
-     */
-    private boolean isNetworkConnected(){
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Service.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = cm.getActiveNetworkInfo();
-        return (networkInfo != null && networkInfo.isConnected());
-    }
+
 
     @Override
     public void onLocationChanged(Location location) {
@@ -154,7 +146,7 @@ public class TrackingService extends Service implements LocationListener {
      * @return true if all items have been sent and cache is now empty, false otherwise
      */
     private boolean flushCache(){
-        if(isNetworkConnected() && !isFlushing){
+        if(NetworkHandler.isNetworkConnected() && !isFlushing){
             isFlushing = true;
             LocationCacheHandler cacheHandler = LocationCacheHandler.getInstance(getApplicationContext());
             Cursor cursor = cacheHandler.getCursor();
@@ -184,14 +176,14 @@ public class TrackingService extends Service implements LocationListener {
         return false;
     }
 
-    /** Request the DatabaseHandler to send the object to server
+    /** Request the NetworkHandler to send the object to server
      *
      * @param trackedLocation the object to be sent
      * @return true is object has been sent succesfuly, false otherwise
      */
     private boolean sendToServer(TrackedLocation trackedLocation){
-        DatabaseHandler dbHandler = DatabaseHandler.getInstance();
-        if(isNetworkConnected() && trackedLocation != null && dbHandler != null){
+        NetworkHandler dbHandler = NetworkHandler.getInstance(getApplicationContext());
+        if(NetworkHandler.isNetworkConnected() && trackedLocation != null && dbHandler != null){
             //Log.d(LOG_TAG,"sending to server");
             if(dbHandler.sendLocation(trackedLocation)){
                 //Log.d(LOG_TAG,"data sent");

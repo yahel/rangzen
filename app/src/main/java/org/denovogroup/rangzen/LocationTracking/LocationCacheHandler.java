@@ -1,4 +1,4 @@
-package org.denovogroup.rangzen.LocationTracking;
+package org.denovogroup.rangzen.locationtracking;
 
 import android.content.ContentValues;
 import android.content.Context;

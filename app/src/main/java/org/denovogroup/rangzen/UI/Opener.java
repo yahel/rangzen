@@ -29,49 +29,41 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.denovogroup.rangzen.UI;
+package org.denovogroup.rangzen.ui;
 
-import org.denovogroup.rangzen.LocationTracking.TrackingService;
+import org.denovogroup.rangzen.locationtracking.TrackingService;
 import org.denovogroup.rangzen.R;
+import org.denovogroup.rangzen.ui.FragmentOrganizer.FragmentType;
 import org.denovogroup.rangzen.backend.FriendStore;
 import org.denovogroup.rangzen.backend.MessageStore;
 import org.denovogroup.rangzen.backend.StorageBase;
 
 import android.app.Activity;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.app.SearchManager;
-import android.app.TaskStackBuilder;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTabHost;
-import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
-import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -87,44 +79,31 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     private ActionBarDrawerToggle mDrawerListener;
     private SidebarListAdapter mSidebarAdapter;
     private static TextView mCurrentTextView;
+    private static boolean mHasStored = false;
     private static boolean mFirstTime = true;
     private static final String TAG = "Opener";
-    
-    public static final String SAVE = "SAVE";
-    public static final String RETWEET = "RETWEET";
-
-    private FragmentTabHost mTabHost;
 
     // Create reciever object
     private BroadcastReceiver receiver = new NewMessageReceiver();
 
     // Set When broadcast event will fire.
     private IntentFilter filter = new IntentFilter(MessageStore.NEW_MESSAGE);
-    public final static int POSTED_MESSAGE = 999;
 
     private final static int QR = 10;
-    private final static int MESSAGE = 20;
-    private final static int UPVOTE = 1;
-    private final static int DOWNVOTE = 0;
+    private final static int Message = 20;
 
     /** Initialize the contents of the activities menu. */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.menu, menu);
+        getMenuInflater().inflate(R.menu.menu, menu);
 
-        MenuItem searchItem = menu.findItem(R.id.menu_search);
-        SearchManager searchManager = (SearchManager) getSystemService(SEARCH_SERVICE);
-        if (searchItem != null) {
-            SearchView searchView = (SearchView) searchItem.getActionView();
-            if (searchView != null) {
-                Log.e(TAG, "SearchView Not Null");
-                searchView.setSearchableInfo(searchManager
-                        .getSearchableInfo(getComponentName()));
-            } else 
-                Log.e(TAG, "SearchView Null");
-            searchView.setIconifiedByDefault(false);
-        }
+        MessageStore messageStore = new MessageStore(this,
+                StorageBase.ENCRYPTION_DEFAULT);
+
+        messageStore
+                .addMessage(
+                        "This is the Rangzen message feed. Messages in the ether will appear here.",
+                        1L);
         return true;
     }
 
@@ -135,9 +114,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.drawer_layout);
-        addMessagesToStore();
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
         // activityRootView = drawerLayout;
         mListView = (ListView) findViewById(R.id.drawerList);
@@ -168,41 +145,29 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, Gravity.LEFT);
 
-        setUpTabHost();
-
-        //start tracking service
+        //prompt user about location tracking
         if(savedInstanceState == null) {
-            Intent trackingServiceIntent = new Intent(this, TrackingService.class);
-            this.startService(trackingServiceIntent);
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("During the beta Rangzen will need to monitor your location at all time, please keep the tracking service running until the end of the beta")
+                    .setTitle("Disclaimer");
+            builder.setCancelable(false);
+            builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    //start tracking service
+                    Intent trackingServiceIntent = new Intent(Opener.this, TrackingService.class);
+                    Opener.this.startService(trackingServiceIntent);
+                }
+            });
+            builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    //turn off tracking service if running
+                    Intent trackingServiceIntent = new Intent(Opener.this, TrackingService.class);
+                    Opener.this.stopService(trackingServiceIntent);
+                }
+            });
+            AlertDialog dialog = builder.create();
+            dialog.show();
         }
-    }
-    
-    private void addMessagesToStore() {
-        MessageStore messageStore = new MessageStore(this,
-                StorageBase.ENCRYPTION_DEFAULT);
-
-        messageStore
-                .addMessage(
-                        "This is the Rangzen message feed. Messages in the ether will appear here.",
-                        1L);
-    }
-
-    private void setUpTabHost() {
-
-        mTabHost = (FragmentTabHost) findViewById(android.R.id.tabhost);
-        mTabHost.setup(this, getSupportFragmentManager(), R.id.tabcontent);
-
-        Bundle b = new Bundle();
-        b.putSerializable("whichScreen",
-                ListFragmentOrganizer.FragmentType.FEED);
-        Bundle b3 = new Bundle();
-        b3.putSerializable("whichScreen",
-                ListFragmentOrganizer.FragmentType.SAVED);
-
-        mTabHost.addTab(mTabHost.newTabSpec("Trust").setIndicator("Trust"),
-                ListFragmentOrganizer.class, b);
-        mTabHost.addTab(mTabHost.newTabSpec("Favorite")
-                .setIndicator("Favorite"), ListFragmentOrganizer.class, b3);
     }
 
     /**
@@ -213,6 +178,29 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
         mDrawerListener.syncState();
+        switchToFeed();
+    }
+
+    /**
+     * Switches current open fragment to feed fragment. Call this method after
+     * closing an activity.
+     */
+    public void switchToFeed() {
+        Log.d("Opener", "Switching to feed fragment.");
+        Fragment needAdd = new ListFragmentOrganizer();
+        Bundle b = new Bundle();
+        b.putSerializable("whichScreen",
+                ListFragmentOrganizer.FragmentType.FEED);
+        needAdd.setArguments(b);
+        FragmentManager fragmentManager = getSupportFragmentManager();
+
+        FragmentTransaction ft = fragmentManager.beginTransaction();
+
+        ft.replace(R.id.mainContent, needAdd);
+
+        ft.commitAllowingStateLoss();
+        mFirstTime = false;
+        selectItem(0);
     }
 
     /**
@@ -226,9 +214,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         }
         if (item.getItemId() == R.id.new_post) {
             showFragment(1);
-        }
-        if (item.getItemId() == R.id.refresh) {
-            notifyDataSetChanged();
         }
         return super.onOptionsItemSelected(item);
     }
@@ -265,11 +250,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         if (position != 2) {
             String[] sidebar = getResources().getStringArray(R.array.sidebar);
             setTitle(sidebar[position]);
-        } else {
-            /*int titleId = getResources().getIdentifier("action_bar_title",
-                    "id", "android");
-            TextView abTitle = (TextView) findViewById(titleId);
-            abTitle.setTextColor(Color.WHITE);*/
         }
     }
 
@@ -281,11 +261,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      *            The title of the page the user has chosen to navigate to.
      */
     public void setTitle(String title) {
-        getSupportActionBar().setTitle(title);
-        /*int titleId = getResources().getIdentifier("action_bar_title", "id",
-                "android");
-        TextView abTitle = (TextView) findViewById(titleId);
-        abTitle.setTextColor(Color.WHITE);*/
+        if(getSupportActionBar() != null) getSupportActionBar().setTitle(title);
     }
 
     public void makeTitleBold(int position) {
@@ -310,13 +286,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         Log.i(TAG, "Got activity result back in Opener!");
 
-        /*int titleId = getResources().getIdentifier("action_bar_title", "id",
-                "android");
-        TextView abTitle = (TextView) findViewById(titleId);
-        abTitle.setTextColor(Color.WHITE);
-        abTitle.setText("Feed");*/
-        getSupportActionBar().setTitle("Feed");
-
         // Check whether the activity that returned was the QR code activity,
         // and whether it succeeded.
         if (requestCode == QR && resultCode == RESULT_OK) {
@@ -324,7 +293,7 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
             FriendStore fs = new FriendStore(this,
                     StorageBase.ENCRYPTION_DEFAULT);
             String code = intent
-                    .getStringExtra("SCAN_RESULT");//com.google.zxing.client.android.CaptureActivity.CODE_CONTENTS_EXTRA_KEY
+                    .getStringExtra("barcode_data");
             // Convert the code into a public Rangzen ID.
             byte[] publicIDBytes = FriendStore.getPublicIDFromQR(code);
             Log.i(TAG, "In Opener, received intent with code " + code);
@@ -354,9 +323,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
                         .show();
             }
         }
-        if (requestCode == POSTED_MESSAGE ) {
-            notifyDataSetChanged();
-        }
     }
 
     /**
@@ -369,29 +335,44 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      *            chosen.
      */
     public void showFragment(int position) {
-        if (position == 1) {
+        Fragment needAdd = null;
+        if (position == 0) {
+            needAdd = new ListFragmentOrganizer();
+            Bundle b = new Bundle();
+            b.putSerializable("whichScreen",
+                    ListFragmentOrganizer.FragmentType.FEED);
+            needAdd.setArguments(b);
+
+        } else if (position == 1) {
             Intent intent = new Intent();
             intent.setClass(this, PostActivity.class);
-            startActivityForResult(intent, MESSAGE);
+            startActivityForResult(intent, Message);
             return;
         } else if (position == 2) {
             Intent intent = new Intent("com.google.zxing.client.android.SCAN");
             intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
+            // startActivityForResult(intent, 0);
             startActivityForResult(intent, QR);
             return;
-        } else if (position == 3) {
-            Intent intent = new Intent();
-            intent.setClass(this, InfoActivity.class);
-            startActivityForResult(intent, MESSAGE); // reverts action bar back
-                                                     // to feed
-            return;
         } else {
-            // debug screen
-            Intent intent = new Intent();
-            intent.setClass(this, DebugActivity.class);
-            startActivityForResult(intent, MESSAGE);
-            return;
+            needAdd = new FragmentOrganizer();
+            Bundle b = new Bundle();
+            b.putSerializable("whichScreen", FragmentType.SECONDABOUT);
+            needAdd.setArguments(b);
         }
+        makeTitleBold(position);
+        FragmentManager fragmentManager = getSupportFragmentManager();
+
+        FragmentTransaction ft = fragmentManager.beginTransaction();
+
+        ft.replace(R.id.mainContent, needAdd);
+
+        if (!mFirstTime) {
+            Log.d("Opener", "added to backstack");
+            ft.addToBackStack(null);
+        }
+        mFirstTime = false;
+        ft.commit();
     }
 
     public SidebarListAdapter getSidebarAdapter() {
@@ -418,7 +399,6 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
         super.onResume();
         notifyDataSetChanged();
         registerReceiver(receiver, filter);
-        notifyDataSetChanged();
         Log.i(TAG, "Registered receiver");
     }
 
@@ -442,27 +422,12 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
          * ListFragmentOrganizer and when the user returns to the feed then the
          * feed will check its own data set and not crash.
          * 
-<<<<<<< HEAD
-<<<<<<< HEAD
          * 2) The previous/current fragment is the feed, it needs to be notified
          * immediately that there was a change in the underlying dataset.
-=======
-         * If the message is a NEW_MESSAGE and not SAVE_MESSAGE then create a
-         * notification.
->>>>>>> Added remove, but it creates an error, fixed the saved count and regular count, fixed rows keeping their button clicks.
-=======
-         * If the message is a NEW_MESSAGE and not SAVE_MESSAGE then create a
-         * notification.
->>>>>>> refs/remotes/origin/garcia43_favorite
          */
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent.getAction() == MessageStore.NEW_MESSAGE) {
-                notifyDataSetChanged();
-                createNotification();
-            } else {
-                notifyDataSetChanged();
-            }
+            notifyDataSetChanged();
         }
     }
 
@@ -471,142 +436,12 @@ public class Opener extends ActionBarActivity implements OnItemClickListener {
      */
     private void notifyDataSetChanged() {
         Fragment feed = getSupportFragmentManager().findFragmentById(
-                R.id.tabcontent);
+                R.id.mainContent);
         if (feed instanceof ListFragmentOrganizer) {
-            Log.d(TAG, "inside instanceof");
             ListFragmentOrganizer org = (ListFragmentOrganizer) feed;
             FeedListAdapter adapt = (FeedListAdapter) org.getListView()
                     .getAdapter();
-
-            adapt.refresh();
             adapt.notifyDataSetChanged();
         }
     }
-
-    private void createNotification() {
-        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(
-                this).setSmallIcon(R.drawable.ic_launcher)
-                .setContentTitle("New Message")
-                .setContentText("You've received new messages.").setNumber(1);
-
-        NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
-
-        String[] events = new String[6];
-        // Sets a title for the Inbox in expanded layout
-        inboxStyle.setBigContentTitle("Event tracker details:");
-
-        for (int i = 0; i < events.length; i++) {
-
-            inboxStyle.addLine(events[i]);
-        }
-        mBuilder.setStyle(inboxStyle);
-        Intent resultIntent = new Intent(this, Opener.class);
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
-        stackBuilder.addParentStack(Opener.class);
-        stackBuilder.addNextIntent(resultIntent);
-        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,
-                PendingIntent.FLAG_UPDATE_CURRENT);
-        mBuilder.setContentIntent(resultPendingIntent);
-        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-        mNotificationManager.notify(0, mBuilder.build());
-    }
-
-    /**
-     * This is an onclick listener created in feed_row.xml. It's a button that
-     * allows the user to save a message.
-     * 
-     * @param view
-     *            - This is the button view.
-     */
-    public void onSave(View view) {
-
-        ImageView iv = (ImageView) view;
-        iv.setAdjustViewBounds(true);
-        iv.setImageResource(R.drawable.ic_action_important_yellow);
-
-        ViewGroup vg = (ViewGroup) view.getParent(); // rel layout
-        ViewGroup vg2 = (ViewGroup) vg.getParent(); // root
-        TextView hashtagView = (TextView) vg2.getChildAt(0); // id-messageAndScore
-
-        MessageStore messageStore = new MessageStore(this,
-                StorageBase.ENCRYPTION_DEFAULT);
-        String text = hashtagView.getText().toString();
-        double p = messageStore.getPriority((text));
-
-        messageStore.saveMessage(text, p);
-
-        StorageBase m = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
-        m.putInt(SAVE + hashtagView.getText().toString(), 1);
-    }
-
-    /**
-     * This is an onclick listener created in feed_row.xml. It's a button that
-     * allows the user to delete a message.
-     * 
-     * @param view
-     *            - This is the button view.
-     */
-    public void onDelete(View view) {
-        ViewGroup vg = (ViewGroup) view.getParent(); // rel layout
-        RelativeLayout vg2 = (RelativeLayout) vg.getParent(); // root
-        TextView hashtagView = (TextView) vg2.getChildAt(0); // id-messageAndScore
-        final String item = hashtagView.getText().toString();
-
-        ImageView iv = (ImageView) view;
-        iv.setImageResource(R.drawable.ic_action_discard_red);
-
-        Fragment feed = getSupportFragmentManager().findFragmentById(
-                R.id.tabcontent);
-        if (feed instanceof ListFragmentOrganizer) {
-            ListFragmentOrganizer org = (ListFragmentOrganizer) feed;
-            final FeedListAdapter adapt = (FeedListAdapter) org.getListView()
-                    .getAdapter();
-
-            Animation anim = AnimationUtils.loadAnimation(this,
-                    android.R.anim.slide_out_right);
-            anim.setDuration(1000);
-
-            anim.setAnimationListener(new Animation.AnimationListener() {
-
-                @Override
-                public void onAnimationStart(Animation animation) {
-                }
-
-                @Override
-                public void onAnimationRepeat(Animation animation) {
-                }
-
-                @Override
-                public void onAnimationEnd(Animation animation) {
-                    MessageStore ms = new MessageStore(getApplicationContext(),
-                            StorageBase.ENCRYPTION_DEFAULT);
-                    ms.deleteMessage(item);
-                    adapt.refresh();
-                    adapt.notifyDataSetChanged();
-                }
-            });
-            vg2.startAnimation(anim);
-        }
-    }
-
-    /**
-     * This is an onclick listener created in feed_row.xml. It's a button that
-     * allows the user to retweet a message.
-     * 
-     * @param view
-     *            - This is the button view.
-     */
-    public void onRetweet(View view) {
-        ViewGroup vg = (ViewGroup) view.getParent(); // rel layout
-        final RelativeLayout vg2 = (RelativeLayout) vg.getParent(); // root
-        final TextView hashtagView = (TextView) vg2.getChildAt(0); // id-messageAndScore
-        
-        ImageButton iv = (ImageButton) view;
-        iv.setAdjustViewBounds(true);
-        iv.setImageResource(R.drawable.ic_action_repeat_green);
-        StorageBase m = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
-        m.putInt(RETWEET + hashtagView.getText().toString(), 1);
-    }
-
 }

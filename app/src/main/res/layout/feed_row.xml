@@ -1,83 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/RelativeLayout1"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/listitem_selector"
-    android:minHeight="100dp"
+    android:minHeight="30dp"
     android:orientation="vertical"
-    android:paddingBottom="5dp"
+    android:paddingBottom="3dp"
     android:paddingEnd="0dp"
     android:paddingStart="0dp"
-    android:paddingTop="5dp" >
+    android:paddingTop="17dp" >
 
-    <TextView
-        android:id="@+id/hashtagView"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentTop="true"
-        android:paddingLeft="12dp"
-        android:paddingRight="12dp"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:textColor="@android:color/black" />
-
-    <RelativeLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentRight="true"
-        android:layout_below="@+id/hashtagView" >
-
-        <ImageButton
-            android:id="@+id/eraseButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentTop="true"
-            android:background="@android:color/transparent"
-            android:focusable="false"
-            android:onClick="onDelete"
-            android:padding="10dip"
-            android:src="@drawable/ic_action_discard" />
-
-        <ImageButton
-            android:focusable="false"
-            android:id="@+id/saveButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_toLeftOf="@+id/eraseButton"
-            android:background="@android:color/transparent"
-            android:onClick="onSave"
-            android:padding="10dip"
-            android:src="@drawable/ic_action_important_dark" />
+        android:layout_height="match_parent"
+        android:paddingBottom="17dp" >
 
         <TextView
             android:id="@+id/upvoteView"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentLeft="true"
-            android:layout_centerVertical="true"
+            android:layout_height="fill_parent"
             android:gravity="center"
             android:paddingEnd="15dp"
-            android:paddingStart="28dp"
-            android:textColor="@android:color/black"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:paddingStart="25dp"
+            android:textColor="@android:color/black" />
 
-        <ImageButton
-            android:id="@+id/retweetButton"
+        <LinearLayout
+            android:layout_width="1dp"
+            android:layout_height="fill_parent"
+            android:paddingEnd="15dp"
+            android:paddingStart="0dp"
+            android:textColor="@android:color/black" />
+
+        <LinearLayout
+            android:id="@+id/hashtagHolder"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_toLeftOf="@+id/saveButton"
-            android:background="@android:color/transparent"
-            android:padding="10dip"
-            android:onClick="onRetweet"
-            android:src="@drawable/ic_action_repeat" />
+            android:orientation="vertical"
+            android:paddingEnd="20dp"
+            android:paddingStart="15dp" >
 
-    </RelativeLayout>
-
-</RelativeLayout>
+            <TextView
+                android:id="@+id/hashtagView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:maxWidth="320dp"
+                android:minWidth="250dp"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textColor="@android:color/black" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

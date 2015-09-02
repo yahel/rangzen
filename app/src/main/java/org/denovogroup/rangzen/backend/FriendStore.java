@@ -77,6 +77,8 @@ public class FriendStore {
   /**
    * Adds the given friend.
    *
+   * @param friend The friend to add.
+   *
    * @return Returns true if the friend was stored, false if the friend was already
    * stored.
    */

@@ -29,9 +29,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.denovogroup.rangzen.UI;
+package org.denovogroup.rangzen.ui;
 
-import org.denovogroup.rangzen.UI.FragmentOrganizer.FragmentType;
+import org.denovogroup.rangzen.ui.FragmentOrganizer.FragmentType;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;

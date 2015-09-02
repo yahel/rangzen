@@ -31,7 +31,6 @@
 package org.denovogroup.rangzen.backend;
 
 import android.util.Log;
-
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.InvalidParameterException;
@@ -43,7 +42,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-
 import org.spongycastle.crypto.AsymmetricCipherKeyPair;
 import org.spongycastle.crypto.KeyGenerationParameters;
 import org.spongycastle.crypto.agreement.DHStandardGroups;
@@ -353,7 +351,6 @@ public class Crypto {
    * If the input is an empty list, the output is an empty list.
    * If the input is null, the output is null.
    *
-   * @param The byte arrays to be converted.
    * @return A list of ByteStrings wrapping the given byte[]s. Null if the input
    * was null, an empty list if the input was an empty list.
    */
@@ -373,7 +370,6 @@ public class Crypto {
    * If the input is an empty list, the output is an empty list.
    * If the input is null, the output is null.
    *
-   * @param The ByteStrings to be converted.
    * @return A list of byte[] extracted from the ByteStrings.
    */
   public static ArrayList<byte[]> byteStringsToArrays(List<ByteString> byteStrings) {

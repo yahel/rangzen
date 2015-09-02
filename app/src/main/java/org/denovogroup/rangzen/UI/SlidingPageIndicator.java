@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.denovogroup.rangzen.UI;
+package org.denovogroup.rangzen.ui;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -195,7 +195,7 @@ public class SlidingPageIndicator extends FragmentActivity {
     /**
      * Async task that creates the personal QR code and stores it as a file in
      * internal memory.
-     *            - personal QR code string
+     *
      */
     private class CreateQRCode extends AsyncTask<String, Integer, Integer> {
 

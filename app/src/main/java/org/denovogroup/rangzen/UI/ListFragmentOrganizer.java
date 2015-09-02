@@ -29,21 +29,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.denovogroup.rangzen.UI;
+package org.denovogroup.rangzen.ui;
 
-import java.util.List;
-
-import org.denovogroup.rangzen.R;
-import org.denovogroup.rangzen.backend.MessageStore;
-import org.denovogroup.rangzen.backend.MessageStore.Message;
-import org.denovogroup.rangzen.backend.StorageBase;
-
+import android.graphics.Bitmap;
+import android.graphics.Point;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
+import android.util.Log;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.ListView;
+
+import org.denovogroup.rangzen.R;
 
 /**
  * This class is meant to be an organizer for the list views that will be
@@ -52,14 +53,15 @@ import android.widget.ListView;
 public class ListFragmentOrganizer extends ListFragment {
 
     /**
-     * There are two list Fragments in the UI, the feed and possibly the friends
+     * There are two list Fragments in the ui, the feed and possibly the friends
      * page.
      */
     enum FragmentType {
-        FEED, SAVED
+        FEED, FRIENDS
     }
 
-    private static final String TAG = "ListFragmentOrganizer";
+    /** Creates and populates the content for the feed fragment. */
+    private FeedListAdapter mFeedListAdaper;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -70,32 +72,39 @@ public class ListFragmentOrganizer extends ListFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
 
+        Log.d("Opener", "feed's on create was called");
         Bundle b = getArguments();
         FragmentType whichScreen = (FragmentType) b
                 .getSerializable("whichScreen");
-        View view = (View) inflater.inflate(R.layout.feed, container, false);
+        switch (whichScreen) {
+        case FEED:
+            View view = (View) inflater
+                    .inflate(R.layout.feed, container, false);
 
-        ListView listView = (ListView) view.findViewById(android.R.id.list);
+            ImageView iv = (ImageView) view.findViewById(R.id.normal_image);
 
-        MessageStore m = new MessageStore(getActivity(),
-                StorageBase.ENCRYPTION_DEFAULT);
+            Display display = getActivity().getWindowManager().getDefaultDisplay();
+            Point size = new Point();
+            display.getSize(size);
+            int width = size.x;
+            int height = (int) (size.y);
 
-        if (whichScreen == FragmentType.FEED) {
-            List<Message> messages = m.getAllMessages(
-                    MessageStore.NOT_SAVED_MESSAGES, null);
-            FeedListAdapter mFeedListAdaper = new FeedListAdapter(
-                    getActivity(), R.layout.feed_row, messages);
+            Bitmap bd = FragmentOrganizer.decodeSampledBitmapFromResource(getResources(), R.drawable.firstb,
+                    width, height);
+            BitmapDrawable ob = new BitmapDrawable(bd);
+            iv.setBackgroundDrawable(ob);
+           
+
+            ListView listView = (ListView) view.findViewById(android.R.id.list);
+            mFeedListAdaper = new FeedListAdapter(getActivity());
             listView.setAdapter(mFeedListAdaper);
+            return view;
+        case FRIENDS:
+            View view2 = inflater.inflate(R.layout.feed_row, container, false);
+            return view2;
+        default:
+            return null;
         }
-        if (whichScreen == FragmentType.SAVED) {
-            List<Message> messages = m.getAllMessages(
-                    MessageStore.SAVED_MESSAGES, null);
-            SavedFeedListAdapter f = new SavedFeedListAdapter(getActivity(),
-                    R.layout.feed_row_save, messages);
-            listView.setAdapter(f);
-        }
-
-        return view;
     }
 
     @Override
